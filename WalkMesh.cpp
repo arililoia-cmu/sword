@@ -148,7 +148,7 @@ void WalkMesh::walk_in_triangle(WalkPoint const &start, glm::vec3 const &step, W
 	times[1] = step_coords.y >= 0 ? 2.0f : - coords.y / step_coords.y;
 	times[2] = step_coords.z >= 0 ? 2.0f : - coords.z / step_coords.z;
 
-	uint32_t minindex = std::distance(times.begin(), std::min_element(times.begin(), times.end()));
+	auto minindex = std::distance(times.begin(), std::min_element(times.begin(), times.end()));
 	time = std::min(1.0f, times[minindex]);
 	auto next = start.weights + step_coords * time;
 

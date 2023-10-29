@@ -1,3 +1,4 @@
+#pragma once
 #include "Mode.hpp"
 
 #include "Scene.hpp"
@@ -42,4 +43,5 @@ struct PlayMode : Mode {
 		//camera is attatched to camera_transform and will be pitched by mouse up/down motion:
 		Scene::Camera *camera = nullptr;
 	} player;
+	Player enemy;
 };
