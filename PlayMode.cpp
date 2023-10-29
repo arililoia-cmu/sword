@@ -15,13 +15,13 @@
 
 GLuint phonebank_meshes_for_lit_color_texture_program = 0;
 Load< MeshBuffer > phonebank_meshes(LoadTagDefault, []() -> MeshBuffer const * {
-	MeshBuffer const *ret = new MeshBuffer(data_path("phone-bank.pnct"));
+	MeshBuffer const *ret = new MeshBuffer(data_path("sword.pnct"));
 	phonebank_meshes_for_lit_color_texture_program = ret->make_vao_for_program(lit_color_texture_program->program);
 	return ret;
 });
 
 Load< Scene > phonebank_scene(LoadTagDefault, []() -> Scene const * {
-	return new Scene(data_path("phone-bank.scene"), [&](Scene &scene, Scene::Transform *transform, std::string const &mesh_name){
+	return new Scene(data_path("sword.scene"), [&](Scene &scene, Scene::Transform *transform, std::string const &mesh_name){
 		Mesh const &mesh = phonebank_meshes->lookup(mesh_name);
 
 		scene.drawables.emplace_back(transform);
@@ -39,32 +39,49 @@ Load< Scene > phonebank_scene(LoadTagDefault, []() -> Scene const * {
 
 WalkMesh const *walkmesh = nullptr;
 Load< WalkMeshes > phonebank_walkmeshes(LoadTagDefault, []() -> WalkMeshes const * {
-	WalkMeshes *ret = new WalkMeshes(data_path("phone-bank.w"));
+	WalkMeshes *ret = new WalkMeshes(data_path("sword.w"));
 	walkmesh = &ret->lookup("WalkMesh");
 	return ret;
 });
 
 PlayMode::PlayMode() : scene(*phonebank_scene) {
 	//create a player transform:
+
+	for (auto &transform : scene.transforms) {
+		if (transform.name == "Player"){
+			player.body_transform = &transform;
+			player.at = walkmesh->nearest_walk_point(player.body_transform->position + glm::vec3(0.0f, 0.0001f, 0.0f));
+			player_height = glm::length(player.body_transform->position - walkmesh->to_world_point(player.at));
+		}
+	}
+
+	//create player transform at player feet and player body transform to control body
 	scene.transforms.emplace_back();
 	player.transform = &scene.transforms.back();
-
-	//create a player camera attached to a child of the player transform:
-	scene.transforms.emplace_back();
-	scene.cameras.emplace_back(&scene.transforms.back());
-	player.camera = &scene.cameras.back();
-	player.camera->fovy = glm::radians(60.0f);
-	player.camera->near = 0.01f;
-	player.camera->transform->parent = player.transform;
-
-	//player's eyes are 1.8 units above the ground:
-	player.camera->transform->position = glm::vec3(0.0f, 0.0f, 1.8f);
-
-	//rotate camera facing direction (-z) to player facing direction (+y):
-	player.camera->transform->rotation = glm::angleAxis(glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+	player.body_transform->parent = player.transform;
 
 	//start player walking at nearest walk point:
-	player.at = walkmesh->nearest_walk_point(player.transform->position);
+	player.transform->position = walkmesh->to_world_point(player.at);
+	//place player body above ground
+	player.body_transform->position = glm::vec3(0.0f, 0.0f, player_height);
+
+	//setup camera
+	if (scene.cameras.size() != 1) throw std::runtime_error("Expecting scene to have exactly one camera, but it has " + std::to_string(scene.cameras.size()));
+	player.camera = &scene.cameras.front();
+	player.camera->fovy = glm::radians(60.0f);
+	player.camera->near = 0.01f;
+
+	//between camera and player
+	scene.transforms.emplace_back();
+	player.camera_transform = &scene.transforms.back();
+	player.camera_transform->parent = player.body_transform;
+	player.camera_transform->rotation = glm::angleAxis(glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));; //dictates camera's original rotation
+
+	player.camera->transform->parent = player.camera_transform;
+	player.camera->transform->position = glm::vec3(0.0f, -5.0f, 0.0f);
+
+	//rotate camera facing direction relative to player direction
+	player.camera->transform->rotation = glm::angleAxis(glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 
 }
 
@@ -129,6 +146,10 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 			pitch = std::max(pitch, 0.05f * 3.1415926f);
 			player.camera->transform->rotation = glm::angleAxis(pitch, glm::vec3(1.0f, 0.0f, 0.0f));
 
+			glm::mat4x3 frame = player.camera->transform->make_local_to_parent();
+			glm::vec3 forward = -frame[2];
+			player.camera->transform->position = -5.0f * forward; // Camera distance behind player
+
 			return true;
 		}
 	}
@@ -140,7 +161,7 @@ void PlayMode::update(float elapsed) {
 	//player walking:
 	{
 		//combine inputs into a move:
-		constexpr float PlayerSpeed = 3.0f;
+		constexpr float PlayerSpeed = 5.0f;
 		glm::vec2 move = glm::vec2(0.0f);
 		if (left.pressed && !right.pressed) move.x =-1.0f;
 		if (!left.pressed && right.pressed) move.x = 1.0f;
@@ -151,7 +172,7 @@ void PlayMode::update(float elapsed) {
 		if (move != glm::vec2(0.0f)) move = glm::normalize(move) * PlayerSpeed * elapsed;
 
 		//get move in world coordinate system:
-		glm::vec3 remain = player.transform->make_local_to_world() * glm::vec4(move.x, move.y, 0.0f, 0.0f);
+		glm::vec3 remain = player.camera_transform->make_local_to_world() * glm::vec4(move.x, move.y, 0.0f, 0.0f);
 
 		//using a for() instead of a while() here so that if walkpoint gets stuck in
 		// some awkward case, code will not infinite loop:

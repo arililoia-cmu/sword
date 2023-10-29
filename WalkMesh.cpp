@@ -31,19 +31,31 @@ WalkMesh::WalkMesh(std::vector< glm::vec3 > const &vertices_, std::vector< glm::
 		glm::vec3 const &b = vertices[tri.y];
 		glm::vec3 const &c = vertices[tri.z];
 		glm::vec3 out = glm::normalize(glm::cross(b-a, c-a));
-
+		
 		float da = glm::dot(out, normals[tri.x]);
 		float db = glm::dot(out, normals[tri.y]);
 		float dc = glm::dot(out, normals[tri.z]);
-
+		
 		assert(da > 0.1f && db > 0.1f && dc > 0.1f);
 	}
 }
 
 //project pt to the plane of triangle a,b,c and return the barycentric weights of the projected point:
 glm::vec3 barycentric_weights(glm::vec3 const &a, glm::vec3 const &b, glm::vec3 const &c, glm::vec3 const &pt) {
-	//TODO: implement!
-	return glm::vec3(0.25f, 0.25f, 0.5f);
+
+	// Adapted from https://gamedev.stackexchange.com/questions/23743/whats-the-most-efficient-way-to-find-barycentric-coordinates
+	// (though this really is a very standard computation, we did this computation in 15462)
+	glm::vec3 v0 = b - a, v1 = c - a, v2 = pt - a;
+    float d00 = glm::dot(v0, v0);
+    float d01 = glm::dot(v0, v1);
+    float d11 = glm::dot(v1, v1);
+    float d20 = glm::dot(v2, v0);
+    float d21 = glm::dot(v2, v1);
+    float denom = d00 * d11 - d01 * d01;
+    float v = (d11 * d20 - d01 * d21) / denom;
+    float w = (d00 * d21 - d01 * d20) / denom;
+    float u = 1.0f - v - w;
+	return glm::vec3(u,v,w);
 }
 
 WalkPoint WalkMesh::nearest_walk_point(glm::vec3 const &world_point) const {
@@ -121,18 +133,54 @@ void WalkMesh::walk_in_triangle(WalkPoint const &start, glm::vec3 const &step, W
 	auto &time = *time_;
 
 	glm::vec3 step_coords;
-	{ //project 'step' into a barycentric-coordinates direction:
-		//TODO
-		step_coords = glm::vec3(0.0f);
+	{ //project 'step' into a barycentric-coordinates direction
+		glm::vec3 const &a = vertices[start.indices.x];
+		glm::vec3 const &b = vertices[start.indices.y];
+		glm::vec3 const &c = vertices[start.indices.z];
+		step_coords = barycentric_weights(a,b,c,step) - barycentric_weights(a,b,c,glm::vec3(0)) ;
 	}
 	
+	glm::vec3 coords = start.weights;
+	glm::uvec3 ind = start.indices;
+
+	std::vector<float> times (3);
+	times[0] = step_coords.x >= 0 ? 2.0f : - coords.x / step_coords.x;
+	times[1] = step_coords.y >= 0 ? 2.0f : - coords.y / step_coords.y;
+	times[2] = step_coords.z >= 0 ? 2.0f : - coords.z / step_coords.z;
+
+	uint32_t minindex = std::distance(times.begin(), std::min_element(times.begin(), times.end()));
+	time = std::min(1.0f, times[minindex]);
+	auto next = start.weights + step_coords * time;
+
 	//if no edge is crossed, event will just be taking the whole step:
-	time = 1.0f;
+
 	end = start;
 
 	//figure out which edge (if any) is crossed first.
 	// set time and end appropriately.
-	//TODO
+	if (times[minindex] >= 1.0f){
+		end.weights = next;
+	} else {
+		if (minindex == 0){
+			end.weights.z = next.x;
+			end.weights.y = next.z;
+			end.weights.x = next.y; 
+			end.indices.z = ind.x;
+			end.indices.y = ind.z;
+			end.indices.x = ind.y;
+		} else if (minindex == 1){
+			end.weights.z = next.y;
+			end.weights.y = next.x;
+			end.weights.x = next.z; 
+			end.indices.z = ind.y;
+			end.indices.y = ind.x;
+			end.indices.x = ind.z;
+		} else {
+			end.weights = next;
+		}
+		// assert(std::abs(end.weights.z) < 0.00001f);
+		end.weights.z = 0.0f;
+	}
 
 	//Remember: our convention is that when a WalkPoint is on an edge,
 	// then wp.weights.z == 0.0f (so will likely need to re-order the indices)
@@ -148,12 +196,23 @@ bool WalkMesh::cross_edge(WalkPoint const &start, WalkPoint *end_, glm::quat *ro
 	assert(start.weights.z == 0.0f); //*must* be on an edge.
 	glm::uvec2 edge = glm::uvec2(start.indices);
 
+	glm::uvec2 oppedge = glm::uvec2(edge.x, edge.y);
+	auto f = next_vertex.find(oppedge);
+
 	//check if 'edge' is a non-boundary edge:
-	if (edge.x == edge.y /* <-- TODO: use a real check, this is just here so code compiles */) {
+	if (f != next_vertex.end()) {
 		//it is!
 
 		//make 'end' represent the same (world) point, but on triangle (edge.y, edge.x, [other point]):
-		//TODO
+		end.indices.x = edge.y;
+		end.indices.y = edge.x;
+		end.indices.z = f->second; 
+
+		auto wp = vertices[start.indices[0]] * start.weights[0] 
+		  + vertices[start.indices[1]] * start.weights[1] 
+		  + vertices[start.indices[2]] * start.weights[2];
+
+		end.weights = barycentric_weights( vertices[end.indices[0]],  vertices[end.indices[1]],  vertices[end.indices[2]], wp);
 
 		//make 'rotation' the rotation that takes (start.indices)'s normal to (end.indices)'s normal:
 		//TODO
