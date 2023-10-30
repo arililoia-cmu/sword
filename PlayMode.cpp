@@ -264,13 +264,14 @@ void PlayMode::update(float elapsed) {
 
 		walk_pawn(player);	
 		enemy.bt->tick();// AI Thinking
-		PlayMode::Control enemy_control=enemy.bt->GetControl();
+		PlayMode::Control& enemy_control=enemy.bt->GetControl();
 		//simple enemy that walks toward player
 		enemy.pawn_control.move = enemy_control.move*elapsed;
-
 		//and locks on player
-
 		enemy.pawn_control.rotate = enemy_control.rotate;
+
+		//Todo:  enemy_control.attack=0;
+		//Todo:   enemy_control.parry=0;
 
 		walk_pawn(enemy);	
 

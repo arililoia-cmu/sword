@@ -155,7 +155,7 @@ class BehaviorTree{
                 std::cout<<"AI Thinking End---------"<<std::endl;
             }
         }
-        PlayMode::Control GetControl(){
+        PlayMode::Control& GetControl(){
             return status->control;
         }
 };
