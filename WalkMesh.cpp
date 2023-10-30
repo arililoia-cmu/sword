@@ -149,12 +149,12 @@ void WalkMesh::walk_in_triangle(WalkPoint const &start, glm::vec3 const &step, W
 
 	//figure out which edge (if any) is crossed first.
 	// set time and end appropriately.
-	for(size_t i = 0; i < 3; i++)
+	for(auto i = 0; i < 3; i++)
 	{
-		float startBary = start.weights[i];
+		auto startBary = start.weights[i];
 		if(stepEndBary[i] <= 0.0f) // We exited on the side opposite this vert
 		{
-			float timeToReachOpEdge = startBary / (startBary - stepEndBary[i]);
+			auto timeToReachOpEdge = startBary / (startBary - stepEndBary[i]);
 			
 			if(timeToReachOpEdge < nearestEdgeTime)
 			{
@@ -170,7 +170,7 @@ void WalkMesh::walk_in_triangle(WalkPoint const &start, glm::vec3 const &step, W
 
 	if(nearestEdgeOpVert != 3)
 	{
-		for(size_t i = 0; i < 3; i++)
+		for(auto i = 0; i < 3; i++)
 		{
 			end.indices[i] = start.indices[(i + nearestEdgeOpVert + 1) % 3];
 			end.weights[i] = endWeights[(i + nearestEdgeOpVert + 1) % 3];
