@@ -267,6 +267,7 @@ void PlayMode::update(float elapsed) {
 		PlayMode::Control& enemy_control=enemy.bt->GetControl();
 		//simple enemy that walks toward player
 		enemy.pawn_control.move = enemy_control.move*elapsed;
+		enemy_control.move=glm::vec3(0,0,0);//like a consumer pattern
 		//and locks on player
 		enemy.pawn_control.rotate = enemy_control.rotate;
 

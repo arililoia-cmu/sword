@@ -79,7 +79,7 @@ class WalkToPlayerTask: public Node{
         }
         virtual bool run() override{
             std::cout<<"Walking"<<std::endl;
-            if(status->distanceToPlayer>1){
+            if(status->distanceToPlayer>3){
                 std::cout<<"Approaches to the position"<<std::endl;
 
             	constexpr float EnemySpeed = 2.0f;
@@ -89,6 +89,8 @@ class WalkToPlayerTask: public Node{
                 status->control.move=emove;
                 float angle = std::atan2(diff.y, diff.x);
                 status->control.rotate=	angle;
+            }else{
+                std::cout<<"Already There"<<std::endl;
             }
             return true;
         }
