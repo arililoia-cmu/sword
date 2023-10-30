@@ -9,8 +9,7 @@ void BehaviorTreeTestCase(){
 	Selector* selector1 = new Selector;
     //selector1->SetBehaviorTree(bt);
 	BlackBoard* blackBoard = new BlackBoard{};
-    blackBoard->distanceToPlayer=5;
-	CheckIfPlayerExist* checkExist = new CheckIfPlayerExist(blackBoard);
+	CheckIfPlayerExist* checkExist = new CheckIfPlayerExist(blackBoard,true);
     //checkExist->SetBehaviorTree(bt);
 	WalkToPlayerTask* approach = new WalkToPlayerTask(blackBoard);
     //approach->SetBehaviorTree(bt);

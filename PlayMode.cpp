@@ -12,6 +12,7 @@
 #include <glm/gtx/quaternion.hpp>
 
 #include <random>
+#include"BehaviorTree.hpp"
 
 GLuint phonebank_meshes_for_lit_color_texture_program = 0;
 Load< MeshBuffer > phonebank_meshes(LoadTagDefault, []() -> MeshBuffer const * {
@@ -75,6 +76,10 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 	enemy.transform->position = walkmesh->to_world_point(enemy.at);
 	enemy.default_rotation = glm::angleAxis(glm::radians(180.0f), glm::vec3(0.0f, 0.0f, 1.0f)); //dictates enemy's original rotation wrt +x
 
+	enemy.bt=new BehaviorTree();
+	enemy.bt->Init();//AI Initialize
+	enemy.bt->SetEnemy(&enemy);
+	enemy.bt->SetPlayer(&player);
 	//setup camera
 	if (scene.cameras.size() != 1) throw std::runtime_error("Expecting scene to have exactly one camera, but it has " + std::to_string(scene.cameras.size()));
 	player.camera = &scene.cameras.front();
@@ -172,7 +177,7 @@ void PlayMode::walk_pawn(PlayMode::Pawn &pawn) {
 	glm::vec3 remain = pawn.pawn_control.move;
 	///std::cout << remain.x << "," << remain.y << "," << remain.z << "\n";
 
-	//using a for() instead of a while() here so that if walkpoint gets stuck in
+	//using a for() instead of a while() here so that if walkpoint gets stuck I
 	// some awkward case, code will not infinite loop:
 	for (uint32_t iter = 0; iter < 10; ++iter) {
 		if (remain == glm::vec3(0.0f)) break;
@@ -258,16 +263,14 @@ void PlayMode::update(float elapsed) {
 		player.pawn_control.move = pmove;
 
 		walk_pawn(player);	
-
+		enemy.bt->tick();// AI Thinking
+		PlayMode::Control enemy_control=enemy.bt->GetControl();
 		//simple enemy that walks toward player
-		constexpr float EnemySpeed = 2.0f;
-		glm::vec3 diff = player.transform->position - enemy.transform->position;
-		glm::vec3 emove = glm::normalize(diff) * EnemySpeed * elapsed;
-		enemy.pawn_control.move = emove;
+		enemy.pawn_control.move = enemy_control.move*elapsed;
 
 		//and locks on player
-		float angle = std::atan2(diff.y, diff.x);
-		enemy.pawn_control.rotate = angle;
+
+		enemy.pawn_control.rotate = enemy_control.rotate;
 
 		walk_pawn(enemy);	
 

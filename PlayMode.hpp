@@ -3,12 +3,12 @@
 
 #include "Scene.hpp"
 #include "WalkMesh.hpp"
-
+//#include "BehaviorTree.hpp"
 #include <glm/glm.hpp>
 
 #include <vector>
 #include <deque>
-
+class BehaviorTree;//Forward Declaration
 struct PlayMode : Mode {
 	PlayMode();
 	virtual ~PlayMode();
@@ -56,7 +56,7 @@ struct PlayMode : Mode {
 	void walk_pawn(PlayMode::Pawn &pawn);
 
 	struct Enemy : Pawn {
-		
+		BehaviorTree* bt;
 	} enemy;
 
 	struct Player : Pawn {
