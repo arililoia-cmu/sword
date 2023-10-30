@@ -163,7 +163,7 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 
 			glm::mat4x3 frame = player.camera->transform->make_local_to_parent();
 			glm::vec3 forward = -frame[2];
-			player.camera->transform->position = -5.0f * forward; // Camera distance behind player
+			player.camera->transform->position = -glm::length(player.camera->transform->position) * forward; // Camera distance behind player
 
 			return true;
 		}
