@@ -1,6 +1,6 @@
 #pragma once
 #include<iostream>
-#include<List>
+#include<list>
 #include"PlayMode.hpp"
 #include <glm/glm.hpp>
 //Insruction: https://cplusplus.com/forum/general/141582/
