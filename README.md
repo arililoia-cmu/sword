@@ -1,6 +1,6 @@
-# (TODO: your game's title)
+Blind Swordsman
 
-Author: (TODO: your name)
+Author: Kevin You, Ajax Shung, Ari Liloia, Zhu Yiqu
 
 Design: (TODO: In two sentences or fewer, describe what is new and interesting about your game.)
 
