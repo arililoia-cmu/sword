@@ -48,22 +48,32 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 	//create a player transform:
 
 	for (auto &transform : scene.transforms) {
-		if (transform.name == "Player"){
+		if (transform.name == "Player_Body"){
 			player.body_transform = &transform;
 			player.at = walkmesh->nearest_walk_point(player.body_transform->position + glm::vec3(0.0f, 0.0001f, 0.0f));
-			player_height = glm::length(player.body_transform->position - walkmesh->to_world_point(player.at));
+			float height = glm::length(player.body_transform->position - walkmesh->to_world_point(player.at));
+			player.body_transform->position = glm::vec3(0.0f, 0.0f, height);
+		} else if (transform.name == "Enemy_Body"){
+			enemy.body_transform = &transform;
+			enemy.at = walkmesh->nearest_walk_point(enemy.body_transform->position + glm::vec3(0.0f, 0.0001f, 0.0f));
+			float height = glm::length(enemy.body_transform->position - walkmesh->to_world_point(enemy.at));
+			enemy.body_transform->position = glm::vec3(0.0f, 0.0f, height);
 		}
 	}
 
-	//create player transform at player feet and player body transform to control body
+	//create player transform at player feet and start player walking at nearest walk point:
 	scene.transforms.emplace_back();
 	player.transform = &scene.transforms.back();
 	player.body_transform->parent = player.transform;
-
-	//start player walking at nearest walk point:
 	player.transform->position = walkmesh->to_world_point(player.at);
-	//place player body above ground
-	player.body_transform->position = glm::vec3(0.0f, 0.0f, player_height);
+	player.is_player = true;
+
+	//same for enemy
+	scene.transforms.emplace_back();
+	enemy.transform = &scene.transforms.back();
+	enemy.body_transform->parent = enemy.transform;
+	enemy.transform->position = walkmesh->to_world_point(enemy.at);
+	enemy.default_rotation = glm::angleAxis(glm::radians(180.0f), glm::vec3(0.0f, 0.0f, 1.0f)); //dictates enemy's original rotation wrt +x
 
 	//setup camera
 	if (scene.cameras.size() != 1) throw std::runtime_error("Expecting scene to have exactly one camera, but it has " + std::to_string(scene.cameras.size()));
@@ -75,7 +85,7 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 	scene.transforms.emplace_back();
 	player.camera_transform = &scene.transforms.back();
 	player.camera_transform->parent = player.body_transform;
-	player.camera_transform->rotation = glm::angleAxis(glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));; //dictates camera's original rotation
+	player.camera_transform->rotation = glm::angleAxis(glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)); //dictates camera's original rotation wrt +y (not +x)
 
 	player.camera->transform->parent = player.camera_transform;
 	player.camera->transform->position = glm::vec3(0.0f, -5.0f, 0.0f);
@@ -157,6 +167,78 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 	return false;
 }
 
+void PlayMode::walk_pawn(PlayMode::Pawn &pawn) {
+
+	glm::vec3 remain = pawn.pawn_control.move;
+	///std::cout << remain.x << "," << remain.y << "," << remain.z << "\n";
+
+	//using a for() instead of a while() here so that if walkpoint gets stuck in
+	// some awkward case, code will not infinite loop:
+	for (uint32_t iter = 0; iter < 10; ++iter) {
+		if (remain == glm::vec3(0.0f)) break;
+		WalkPoint end;
+		float time;
+		walkmesh->walk_in_triangle(pawn.at, remain, &end, &time);
+		pawn.at = end;
+		if (time == 1.0f) {
+			//finished within triangle:
+			remain = glm::vec3(0.0f);
+			break;
+		}
+		//some step remains:
+		remain *= (1.0f - time);
+		//try to step over edge:
+		glm::quat rotation;
+		if (walkmesh->cross_edge(pawn.at, &end, &rotation)) {
+			//stepped to a new triangle:
+			pawn.at = end;
+			//rotate step to follow surface:
+			remain = rotation * remain;
+		} else {
+			//ran into a wall, bounce / slide along it:
+			glm::vec3 const &a = walkmesh->vertices[pawn.at.indices.x];
+			glm::vec3 const &b = walkmesh->vertices[pawn.at.indices.y];
+			glm::vec3 const &c = walkmesh->vertices[pawn.at.indices.z];
+			glm::vec3 along = glm::normalize(b-a);
+			glm::vec3 normal = glm::normalize(glm::cross(b-a, c-a));
+			glm::vec3 in = glm::cross(normal, along);
+
+			//check how much 'remain' is pointing out of the triangle:
+			float d = glm::dot(remain, in);
+			if (d < 0.0f) {
+				//bounce off of the wall:
+				remain += (-1.25f * d) * in;
+			} else {
+				//if it's just pointing along the edge, bend slightly away from wall:
+				remain += 0.01f * d * in;
+			}
+		}
+	}
+
+	if (remain != glm::vec3(0.0f)) {
+		std::cout << "NOTE: code used full iteration budget for walking." << std::endl;
+	}
+
+	//update player's position to respect walking:
+	pawn.transform->position = walkmesh->to_world_point(pawn.at);
+
+	{ //rotates enemy, not player
+		if (!pawn.is_player){
+			glm::vec3 upDir = walkmesh->to_world_smooth_normal(player.at);
+			pawn.transform->rotation = glm::inverse(pawn.default_rotation) *  glm::angleAxis(pawn.pawn_control.rotate, upDir);  
+		}
+	}
+
+	{ //update player's rotation to respect local (smooth) up-vector:
+		glm::quat adjust = glm::rotation(
+			pawn.transform->rotation * glm::vec3(0.0f, 0.0f, 1.0f), //current up vector
+			walkmesh->to_world_smooth_normal(pawn.at) //smoothed up vector at walk location
+		);
+		pawn.transform->rotation = glm::normalize(adjust * pawn.transform->rotation);
+	}
+
+}
+
 void PlayMode::update(float elapsed) {
 	//player walking:
 	{
@@ -172,66 +254,22 @@ void PlayMode::update(float elapsed) {
 		if (move != glm::vec2(0.0f)) move = glm::normalize(move) * PlayerSpeed * elapsed;
 
 		//get move in world coordinate system:
-		glm::vec3 remain = player.camera_transform->make_local_to_world() * glm::vec4(move.x, move.y, 0.0f, 0.0f);
+		glm::vec3 pmove = player.camera_transform->make_local_to_world() * glm::vec4(move.x, move.y, 0.0f, 0.0f);
+		player.pawn_control.move = pmove;
 
-		//using a for() instead of a while() here so that if walkpoint gets stuck in
-		// some awkward case, code will not infinite loop:
-		for (uint32_t iter = 0; iter < 10; ++iter) {
-			if (remain == glm::vec3(0.0f)) break;
-			WalkPoint end;
-			float time;
-			walkmesh->walk_in_triangle(player.at, remain, &end, &time);
-			player.at = end;
-			if (time == 1.0f) {
-				//finished within triangle:
-				remain = glm::vec3(0.0f);
-				break;
-			}
-			//some step remains:
-			remain *= (1.0f - time);
-			//try to step over edge:
-			glm::quat rotation;
-			if (walkmesh->cross_edge(player.at, &end, &rotation)) {
-				//stepped to a new triangle:
-				player.at = end;
-				//rotate step to follow surface:
-				remain = rotation * remain;
-			} else {
-				//ran into a wall, bounce / slide along it:
-				glm::vec3 const &a = walkmesh->vertices[player.at.indices.x];
-				glm::vec3 const &b = walkmesh->vertices[player.at.indices.y];
-				glm::vec3 const &c = walkmesh->vertices[player.at.indices.z];
-				glm::vec3 along = glm::normalize(b-a);
-				glm::vec3 normal = glm::normalize(glm::cross(b-a, c-a));
-				glm::vec3 in = glm::cross(normal, along);
+		walk_pawn(player);	
 
-				//check how much 'remain' is pointing out of the triangle:
-				float d = glm::dot(remain, in);
-				if (d < 0.0f) {
-					//bounce off of the wall:
-					remain += (-1.25f * d) * in;
-				} else {
-					//if it's just pointing along the edge, bend slightly away from wall:
-					remain += 0.01f * d * in;
-				}
-			}
-		}
+		//simple enemy that walks toward player
+		constexpr float EnemySpeed = 2.0f;
+		glm::vec3 diff = player.transform->position - enemy.transform->position;
+		glm::vec3 emove = glm::normalize(diff) * EnemySpeed * elapsed;
+		enemy.pawn_control.move = emove;
 
-		if (remain != glm::vec3(0.0f)) {
-			std::cout << "NOTE: code used full iteration budget for walking." << std::endl;
-		}
+		//and locks on player
+		float angle = std::atan2(diff.y, diff.x);
+		enemy.pawn_control.rotate = angle;
 
-		//update player's position to respect walking:
-		player.transform->position = walkmesh->to_world_point(player.at);
-
-		{ //update player's rotation to respect local (smooth) up-vector:
-			
-			glm::quat adjust = glm::rotation(
-				player.transform->rotation * glm::vec3(0.0f, 0.0f, 1.0f), //current up vector
-				walkmesh->to_world_smooth_normal(player.at) //smoothed up vector at walk location
-			);
-			player.transform->rotation = glm::normalize(adjust * player.transform->rotation);
-		}
+		walk_pawn(enemy);	
 
 		/*
 		glm::mat4x3 frame = camera->transform->make_local_to_parent();
