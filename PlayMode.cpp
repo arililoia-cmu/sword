@@ -292,6 +292,7 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 void PlayMode::walk_pawn(PlayMode::Pawn &pawn, float elapsed) {
 
 	glm::vec3 remain = pawn.pawn_control.move;
+	
 	///std::cout << remain.x << "," << remain.y << "," << remain.z << "\n";
 
 	//using a for() instead of a while() here so that if walkpoint gets stuck I
@@ -360,7 +361,12 @@ void PlayMode::walk_pawn(PlayMode::Pawn &pawn, float elapsed) {
 	}
 
 	// attacking
-	{
+	{	
+		// this variable is so that we can play the appropriate sound 
+		// when the stance changes, and we don't need to worry about 
+		// coordinating timers for sounds with animations
+		bool stance_changed_in_attack = false;
+
 		uint8_t& stance = pawn.pawn_control.stance;
 		float& st = pawn.pawn_control.swingTime;
 		if (stance == 0){ // idle
@@ -368,8 +374,10 @@ void PlayMode::walk_pawn(PlayMode::Pawn &pawn, float elapsed) {
 			pawn.arm_transform->rotation = glm::angleAxis(0.0f, glm::vec3(0.0f, 0.0f, 1.0f));
 			pawn.wrist_transform->rotation = glm::angleAxis(0.0f, glm::vec3(0.0f, 1.0f, 0.0f));
 			if (pawn.pawn_control.attack){
+				if (stance != 1){ stance_changed_in_attack = true; }
 				stance = 1;
 			} else if (pawn.pawn_control.parry){
+				if (stance != 4){ stance_changed_in_attack = true; }
 				stance = 4;
 			}
 		} else if (stance == 1 || stance == 2 || stance == 3){ // fast downswing, fast upswing, slow upswing
@@ -384,30 +392,17 @@ void PlayMode::walk_pawn(PlayMode::Pawn &pawn, float elapsed) {
 			if (stance == 1){ 
 				st += elapsed;
 				if (st > dur){
+					if (stance != 3){ stance_changed_in_attack = true; }
 					stance = 3;
 					st = 1.0f; 
 				}
 
-				clock_t current_time = clock();
-				float elapsed = (float)(current_time - previous_sword_whoosh_time);
-				if ((elapsed / CLOCKS_PER_SEC) > min_sword_whoosh_interval){
-					fast_downswing_sound = Sound::play(*fast_downswing, 1.0f, 0.0f);
-					previous_sword_whoosh_time = clock();
-				}
 
 			} else {
 
-				if (stance == 2){
-					clock_t current_time = clock();
-					float elapsed = (float)(current_time - previous_sword_whoosh_time);
-					if ((elapsed / CLOCKS_PER_SEC) > min_sword_whoosh_interval){
-						fast_upswing_sound = Sound::play(*fast_upswing, 1.0f, 0.0f);
-						previous_sword_whoosh_time = clock();
-					}
-				}
-
 				st -= elapsed;
 				if (st < 0.0f){
+					if (stance != 0){ stance_changed_in_attack = true; }
 					stance = 0;
 				}
 			} 
@@ -424,6 +419,7 @@ void PlayMode::walk_pawn(PlayMode::Pawn &pawn, float elapsed) {
 				st += elapsed;
 				// Hold parry stance for additional duration
 				if (st > 2 * dur){ 
+					if (stance != 5){ stance_changed_in_attack = true; }
 					stance = 5;
 				}
 			} else {
@@ -432,8 +428,20 @@ void PlayMode::walk_pawn(PlayMode::Pawn &pawn, float elapsed) {
 				}
 				st -= elapsed;
 				if (st < 0.0f){
+					if (stance != 0){ stance_changed_in_attack = true; }
 					stance = 0;
 				}
+			}
+		}
+
+		if (stance_changed_in_attack){
+			// fast downswing
+			if (stance == 1) {
+				fast_downswing_sound = Sound::play(*fast_downswing, 1.0f, 0.0f);
+			}
+			// fast upswing
+			if (stance == 2) {
+				fast_upswing_sound = Sound::play(*fast_upswing, 1.0f, 0.0f);
 			}
 		}
 	}
