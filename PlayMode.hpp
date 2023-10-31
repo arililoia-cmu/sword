@@ -83,9 +83,16 @@ struct PlayMode : Mode {
 
 	// sound stuff starts here:
 	// set previous clang time to something ridiculous
-	clock_t previous_sword_clang_time = clock();
-	float min_sword_clang_interval = 0.2;
+	clock_t previous_player_sword_clang_time = clock();
+	clock_t previous_enemy_sword_clang_time = clock();
+	clock_t previous_sword_whoosh_time = clock();
+	float min_player_sword_clang_interval = 0.2;
+	float min_enemy_sword_clang_interval = 0.1;
+	float min_sword_whoosh_interval = 0.2;
 
-	std::shared_ptr< Sound::PlayingSample > sword_clang_sound;
+	std::shared_ptr< Sound::PlayingSample > w_conv1_sound;
+	std::shared_ptr< Sound::PlayingSample > w_conv2_sound;
+	std::shared_ptr< Sound::PlayingSample > fast_upswing_sound;
+	std::shared_ptr< Sound::PlayingSample > fast_downswing_sound;
 	// sound stuff ends here:
 };

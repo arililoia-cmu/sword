@@ -56,9 +56,23 @@ Load<CollideMeshes> SWORD_COLLIDE_MESHES(LoadTagDefault, []() -> CollideMeshes c
 		return ret;
 	});
 
+// in lieu of the 'multisample' object i'd like to make, for the demo,
+// i'm loading in the sounds invidually and selecting them randomly to play.
 // sound stuff starts here:
-Load< Sound::Sample > sword_clang(LoadTagDefault, []() -> Sound::Sample const * {
+Load< Sound::Sample > w_conv1(LoadTagDefault, []() -> Sound::Sample const * {
 	return new Sound::Sample(data_path("sound/sword_clang/w_conv1.wav"));
+});
+
+Load< Sound::Sample > w_conv2(LoadTagDefault, []() -> Sound::Sample const * {
+	return new Sound::Sample(data_path("sound/sword_clang/w_conv2.wav"));
+});
+
+Load< Sound::Sample > fast_downswing(LoadTagDefault, []() -> Sound::Sample const * {
+	return new Sound::Sample(data_path("sound/sword_whoosh/fast_downswing.wav"));
+});
+
+Load< Sound::Sample > fast_upswing(LoadTagDefault, []() -> Sound::Sample const * {
+	return new Sound::Sample(data_path("sound/sword_whoosh/fast_upswing.wav"));
 });
 // sound stuff ends here
 
@@ -146,17 +160,18 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 				// {
 				// 	player.pawn_control.stance = 5;
 				// }
-			}
 
-			// sound stuff starts here:
-			clock_t current_time = clock();
-			float elapsed = (float)(current_time - previous_sword_clang_time);
+				// sound stuff starts here:
+				clock_t current_time = clock();
+				float elapsed = (float)(current_time - previous_player_sword_clang_time);
 
-			if ((elapsed / CLOCKS_PER_SEC) > min_sword_clang_interval){
-				sword_clang_sound = Sound::play(*sword_clang, 1.0f, 0.0f);
-				previous_sword_clang_time = clock();
+				if ((elapsed / CLOCKS_PER_SEC) > min_player_sword_clang_interval){
+					w_conv1_sound = Sound::play(*w_conv1, 1.0f, 0.0f);
+					previous_player_sword_clang_time = clock();
+				}
+				// sound stuff ends here
+
 			}
-			// sound stuff ends here
 
 		};
 
@@ -172,6 +187,14 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 				// {
 				// 	enemy.pawn_control.stance = 5;
 				// }
+
+				clock_t current_time = clock();
+				float elapsed = (float)(current_time - previous_enemy_sword_clang_time);
+
+				if ((elapsed / CLOCKS_PER_SEC) > min_enemy_sword_clang_interval){
+					w_conv2_sound = Sound::play(*w_conv2, 1.0f, 0.0f);
+					previous_enemy_sword_clang_time = clock();
+				}
 			}
 		};
 	
@@ -364,7 +387,25 @@ void PlayMode::walk_pawn(PlayMode::Pawn &pawn, float elapsed) {
 					stance = 3;
 					st = 1.0f; 
 				}
+
+				clock_t current_time = clock();
+				float elapsed = (float)(current_time - previous_sword_whoosh_time);
+				if ((elapsed / CLOCKS_PER_SEC) > min_sword_whoosh_interval){
+					fast_downswing_sound = Sound::play(*fast_downswing, 1.0f, 0.0f);
+					previous_sword_whoosh_time = clock();
+				}
+
 			} else {
+
+				if (stance == 2){
+					clock_t current_time = clock();
+					float elapsed = (float)(current_time - previous_sword_whoosh_time);
+					if ((elapsed / CLOCKS_PER_SEC) > min_sword_whoosh_interval){
+						fast_upswing_sound = Sound::play(*fast_upswing, 1.0f, 0.0f);
+						previous_sword_whoosh_time = clock();
+					}
+				}
+
 				st -= elapsed;
 				if (st < 0.0f){
 					stance = 0;
