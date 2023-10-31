@@ -42,7 +42,7 @@ struct PlayMode : Mode {
 		uint8_t stance = 0; // state variable, 0 is idle, 1 is swing forward, 2 is swing backward (bounce), 3 is swing backward (normal), 
 		// 4 is down parry, 5 is up parry
 
-		float const swingCD = 1.0f;
+		float swingHit = 0.0f; // logged on block
 		float swingTime = 0.0f;
 	}; 
 

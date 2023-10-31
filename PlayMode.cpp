@@ -155,6 +155,7 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 				if(player.pawn_control.stance == 1)
 				{
 					player.pawn_control.stance = 2;
+					player.pawn_control.swingHit = player.pawn_control.swingTime;
 				}
 				// else if(player.pawn_control.stance == 4)
 				// {
@@ -182,6 +183,7 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 				if(enemy.pawn_control.stance == 1)
 				{
 					enemy.pawn_control.stance = 2;
+					enemy.pawn_control.swingHit = enemy.pawn_control.swingTime;
 				}
 				// else if(enemy.pawn_control.stance == 4)
 				// {
@@ -372,7 +374,7 @@ void PlayMode::walk_pawn(PlayMode::Pawn &pawn, float elapsed) {
 			} else if (pawn.pawn_control.parry){
 				stance = 4;
 			}
-		} else if (stance == 1 || stance == 2 || stance == 3){ // fast downswing, fast upswing, slow upswing
+		} else if (stance == 1 || stance == 3){ // fast downswing, fast upswing, slow upswing
 			const float dur = (stance < 3) ? 0.4f : 1.0f; //total time of downswing/upswing
 			float rt = st / dur;
 			float adt_time = 1 - (1-rt)*(1-rt)*(1-rt) * (2 - (1-rt)*(1-rt)*(1-rt)); // Time scaling, imitates acceleration
@@ -397,20 +399,38 @@ void PlayMode::walk_pawn(PlayMode::Pawn &pawn, float elapsed) {
 
 			} else {
 
-				if (stance == 2){
-					clock_t current_time = clock();
-					float elapsed = (float)(current_time - previous_sword_whoosh_time);
-					if ((elapsed / CLOCKS_PER_SEC) > min_sword_whoosh_interval){
-						fast_upswing_sound = Sound::play(*fast_upswing, 1.0f, 0.0f);
-						previous_sword_whoosh_time = clock();
-					}
-				}
-
 				st -= elapsed;
 				if (st < 0.0f){
 					stance = 0;
 				}
 			} 
+		} else if (stance == 2) {
+
+			const float dur = 0.4f;
+			const float delay = 0.4f;
+			float dt = pawn.pawn_control.swingHit;
+			float rt = (st + delay) / dur * (dt) / (dt + delay);
+
+			float adt_time = 1 - (1-rt)*(1-rt)*(1-rt) * (2 - (1-rt)*(1-rt)*(1-rt)); // Time scaling, imitates acceleration
+
+			pawn.arm_transform->position = glm::vec3(0.0f, 0.0f, 1.0f - adt_time * 1.5f);
+			pawn.arm_transform->rotation = glm::angleAxis(M_PI_2f * adt_time / 2.0f, glm::normalize(glm::vec3(0.0f, 0.0f, 1.0f)));
+			pawn.wrist_transform->rotation = glm::angleAxis(M_PI_2f * -adt_time * 1.2f, glm::normalize(glm::vec3(0.0f, 1.0f, 0.0f)));
+
+			st -= elapsed;
+			if (st < -delay){
+				stance = 0;
+				st = 0.0f;
+			}
+
+			{
+				clock_t current_time = clock();
+				float elapsed = (float)(current_time - previous_sword_whoosh_time);
+				if ((elapsed / CLOCKS_PER_SEC) > min_sword_whoosh_interval){
+					fast_upswing_sound = Sound::play(*fast_upswing, 1.0f, 0.0f);
+					previous_sword_whoosh_time = clock();
+				}
+			}
 		} else if (stance == 4 || stance == 5){ // parry
 			const float dur = 0.25f; //total time of down parry, total parry time is thrice due to holding 
 			float rt = (st < dur) ? st / dur : 1.0f;
