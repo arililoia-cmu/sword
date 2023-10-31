@@ -373,8 +373,8 @@ void PlayMode::update(float elapsed) {
 		//Todo:  enemy_control.attack=0;
 		//Todo:   enemy_control.parry=0;
 
-		enemy.pawn_control.attack = mainAction.pressed; // For demonstration purposes bound to player attack
-		enemy.pawn_control.parry = secondAction.pressed; 
+		enemy.pawn_control.attack = enemy_control.attack; // mainAction.pressed; // For demonstration purposes bound to player attack
+		enemy.pawn_control.parry = enemy_control.parry; //secondAction.pressed; 
 
 		walk_pawn(enemy, elapsed);	
 
