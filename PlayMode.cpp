@@ -127,10 +127,40 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 	enemy.arm_transform = &scene.transforms.back();
 	enemy.arm_transform->parent = enemy.body_transform;
 	enemy.wrist_transform->parent = enemy.arm_transform;
+	
+	auto playerSwordHit = [this](Scene::Transform* t) -> void
+		{
+			if(t == enemy.sword_transform)
+			{
+				if(player.pawn_control.stance == 1)
+				{
+					player.pawn_control.stance = 2;
+				}
+				// else if(player.pawn_control.stance == 4)
+				// {
+				// 	player.pawn_control.stance = 5;
+				// }
+			}
+		};
 
+	auto enemySwordHit = [this](Scene::Transform* t) -> void
+		{
+			if(t == player.sword_transform)
+			{
+				if(enemy.pawn_control.stance == 1)
+				{
+					enemy.pawn_control.stance = 2;
+				}
+				// else if(enemy.pawn_control.stance == 4)
+				// {
+				// 	enemy.pawn_control.stance = 5;
+				// }
+			}
+		};
+	
 	// Create and add colliders
-	collEng.cs.emplace_back(player.sword_transform, playerSwordCollMesh, (AABB){glm::vec3(0.0f), glm::vec3(0.0f)});
-	collEng.cs.emplace_back(enemy.sword_transform, enemySwordCollMesh, (AABB){glm::vec3(0.0f), glm::vec3(0.0f)});
+	collEng.cs.emplace_back(player.sword_transform, playerSwordCollMesh, (AABB){glm::vec3(0.0f), glm::vec3(0.0f)}, playerSwordHit);
+	collEng.cs.emplace_back(enemy.sword_transform, enemySwordCollMesh, (AABB){glm::vec3(0.0f), glm::vec3(0.0f)}, enemySwordHit);
 }
 
 PlayMode::~PlayMode() {

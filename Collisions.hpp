@@ -1,6 +1,7 @@
 #ifndef COLLISIONS_HPP
 #define COLLISIONS_HPP
 
+#include <functional>
 #include <glm/glm.hpp>
 
 #include "Mesh.hpp"
@@ -39,7 +40,7 @@ struct CollideMeshes
 // MUST BE CONVEX
 struct Collider
 {
-	Collider(Scene::Transform* t, CollideMesh const* m, AABB ab) : transform(t), mesh(m), aabb(ab) {};
+	Collider(Scene::Transform* t, CollideMesh const* m, AABB ab, std::function<void(Scene::Transform*)> c) : transform(t), mesh(m), aabb(ab), callback(c) {};
 	
 	// Finds the farthest point in the direction d
 	// (This obviously is only guaranteed to be useful if we're convex)
@@ -49,6 +50,8 @@ struct Collider
 	Scene::Transform* transform;
 	CollideMesh const* mesh;
 	AABB aabb;
+
+	std::function<void(Scene::Transform*)> callback;
 };
 
 struct Collisions

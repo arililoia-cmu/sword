@@ -246,7 +246,9 @@ void Collisions::broadPhase(std::vector<Collider>& colliders)
 		{
 			if(GJK(colliders[i], colliders[j]))
 			{
-				std::cout << "collider [" << i << "] hit collider [" << j << "]" << std::endl;
+				colliders[i].callback(colliders[j].transform);
+				colliders[j].callback(colliders[i].transform);
+				//std::cout << "collider [" << i << "] hit collider [" << j << "]" << std::endl;
 			}
 			// AABB& ciaabb = colliders[i].aabb;
 			// AABB& cjaabb = colliders[j].aabb;
