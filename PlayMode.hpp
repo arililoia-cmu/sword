@@ -24,7 +24,7 @@ struct PlayMode : Mode {
 	struct Button {
 		uint8_t downs = 0;
 		uint8_t pressed = 0;
-	} left, right, down, up, mainAction;
+	} left, right, down, up, secondAction, mainAction;
 
 	//local copy of the game scene (so code can change it during gameplay):
 	Scene scene;
@@ -35,7 +35,10 @@ struct PlayMode : Mode {
 		uint8_t attack = 0;
 		uint8_t parry = 0;
 
-		float const swingCooldown = 1.0f;
+		uint8_t stance = 0; // state variable, 0 is idle, 1 is swing forward, 2 is swing backward (bounce), 3 is swing backward (normal), 
+		// 4 is down parry, 5 is up parry
+
+		float const swingCD = 1.0f;
 		float swingTime = 0.0f;
 	}; 
 
@@ -51,12 +54,14 @@ struct PlayMode : Mode {
 		glm::quat default_rotation = glm::angleAxis(0.0f, glm::vec3(0.0f, 0.0f, 1.0f)); // Describes ``front'' direction with respect to +x
 
 		// TODO
+		Scene::Transform *arm_transform = nullptr;
 		Scene::Transform *wrist_transform = nullptr;
 		Scene::Transform *sword_transform = nullptr;
 
 		Control pawn_control;
 	};
-	void walk_pawn(PlayMode::Pawn &pawn);
+	void walk_pawn(PlayMode::Pawn &pawn, float elapsed);
+
 
 	struct Enemy : Pawn {
 		BehaviorTree* bt;

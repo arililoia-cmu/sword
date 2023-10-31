@@ -63,6 +63,10 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 			player.sword_transform = &transform;
 		} else if (transform.name == "Player_Wrist"){
 			player.wrist_transform = &transform;
+		} else if (transform.name == "Enemy_Sword"){
+			enemy.sword_transform = &transform;
+		} else if (transform.name == "Enemy_Wrist"){
+			enemy.wrist_transform = &transform;
 		}
 	}
 
@@ -102,6 +106,17 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 	//rotate camera facing direction relative to player direction
 	player.camera->transform->rotation = glm::angleAxis(glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 
+
+	//arm transform between body and wrist
+	scene.transforms.emplace_back();
+	player.arm_transform = &scene.transforms.back();
+	player.arm_transform->parent = player.body_transform;
+	player.wrist_transform->parent = player.arm_transform;
+	scene.transforms.emplace_back();
+	enemy.arm_transform = &scene.transforms.back();
+	enemy.arm_transform->parent = enemy.body_transform;
+	enemy.wrist_transform->parent = enemy.arm_transform;
+
 }
 
 PlayMode::~PlayMode() {
@@ -133,6 +148,10 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 			mainAction.downs += 1;
 			mainAction.pressed = true;
 			return true;
+		} else if (evt.key.keysym.sym == SDLK_e) {
+			secondAction.downs += 1;
+			secondAction.pressed = true;
+			return true;
 		}
 	} else if (evt.type == SDL_KEYUP) {
 		if (evt.key.keysym.sym == SDLK_a) {
@@ -149,6 +168,9 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 			return true;
 		} else if (evt.key.keysym.sym == SDLK_SPACE) {
 			mainAction.pressed = false;
+			return true;
+		} else if (evt.key.keysym.sym == SDLK_e) {
+			secondAction.pressed = false;
 			return true;
 		}
 	} else if (evt.type == SDL_MOUSEBUTTONDOWN) {
@@ -183,7 +205,7 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 	return false;
 }
 
-void PlayMode::walk_pawn(PlayMode::Pawn &pawn) {
+void PlayMode::walk_pawn(PlayMode::Pawn &pawn, float elapsed) {
 
 	glm::vec3 remain = pawn.pawn_control.move;
 	///std::cout << remain.x << "," << remain.y << "," << remain.z << "\n";
@@ -253,6 +275,66 @@ void PlayMode::walk_pawn(PlayMode::Pawn &pawn) {
 		pawn.transform->rotation = glm::normalize(adjust * pawn.transform->rotation);
 	}
 
+	// attacking
+	{
+		uint8_t& stance = pawn.pawn_control.stance;
+		float& st = pawn.pawn_control.swingTime;
+		if (stance == 0){ // idle
+			pawn.arm_transform->position = glm::vec3(0.0f, 0.0f, 1.0f);
+			pawn.arm_transform->rotation = glm::angleAxis(0.0f, glm::vec3(0.0f, 0.0f, 1.0f));
+			pawn.wrist_transform->rotation = glm::angleAxis(0.0f, glm::vec3(0.0f, 1.0f, 0.0f));
+			if (pawn.pawn_control.attack){
+				stance = 1;
+			} else if (pawn.pawn_control.parry){
+				stance = 4;
+			}
+		} else if (stance == 1 || stance == 2 || stance == 3){ // fast downswing, fast upswing, slow upswing
+			const float dur = (stance < 3) ? 0.4f : 1.0f; //total time of downswing/upswing
+			float rt = st / dur;
+			float adt_time = 1 - (1-rt)*(1-rt)*(1-rt) * (2 - (1-rt)*(1-rt)*(1-rt)); // Time scaling, imitates acceleration
+
+			pawn.arm_transform->position = glm::vec3(0.0f, 0.0f, 1.0f - adt_time * 1.5f);
+			pawn.arm_transform->rotation = glm::angleAxis(M_PI_2f * adt_time / 2.0f, glm::normalize(glm::vec3(0.0f, 0.0f, 1.0f)));
+			pawn.wrist_transform->rotation = glm::angleAxis(M_PI_2f * -adt_time * 1.2f, glm::normalize(glm::vec3(0.0f, 1.0f, 0.0f)));
+
+			if (stance == 1){ 
+				st += elapsed;
+				if (st > dur){
+					stance = 3;
+					st = 1.0f; 
+				}
+			} else {
+				st -= elapsed;
+				if (st < 0.0f){
+					stance = 0;
+				}
+			} 
+		} else if (stance == 4 || stance == 5){ // parry
+			const float dur = 0.25f; //total time of down parry, total parry time is thrice due to holding 
+			float rt = (st < dur) ? st / dur : 1.0f;
+			float adt_time = 1 - (1-rt)*(1-rt)*(1-rt) * (2 - (1-rt)*(1-rt)*(1-rt)); // Time scaling, imitates acceleration
+
+			pawn.arm_transform->position = glm::vec3(0.0f, 0.0f, 1.0f - adt_time / 2.0f);
+			pawn.arm_transform->rotation = glm::angleAxis(M_PI_2f * adt_time * 1.5f, glm::normalize(glm::vec3(0.0f, 0.0f, 1.0f)));
+			pawn.wrist_transform->rotation = glm::angleAxis(M_PI_2f * adt_time / 1.3f, glm::normalize(glm::vec3(0.0f, 1.0f, 0.0f)));
+
+			if (stance == 4){ 
+				st += elapsed;
+				// Hold parry stance for additional duration
+				if (st > 2 * dur){ 
+					stance = 5;
+				}
+			} else {
+				if (st > dur){
+					st = dur;
+				}
+				st -= elapsed;
+				if (st < 0.0f){
+					stance = 0;
+				}
+			}
+		}
+	}
 }
 
 void PlayMode::update(float elapsed) {
@@ -273,7 +355,13 @@ void PlayMode::update(float elapsed) {
 		glm::vec3 pmove = player.camera_transform->make_local_to_world() * glm::vec4(move.x, move.y, 0.0f, 0.0f);
 		player.pawn_control.move = pmove;
 
-		walk_pawn(player);	
+		player.pawn_control.attack = mainAction.pressed; // Attack input control
+		player.pawn_control.parry = secondAction.pressed; // Attack input control
+
+		walk_pawn(player, elapsed);	
+
+
+
 		enemy.bt->tick();// AI Thinking
 		PlayMode::Control& enemy_control=enemy.bt->GetControl();
 		//simple enemy that walks toward player
@@ -285,7 +373,10 @@ void PlayMode::update(float elapsed) {
 		//Todo:  enemy_control.attack=0;
 		//Todo:   enemy_control.parry=0;
 
-		walk_pawn(enemy);	
+		enemy.pawn_control.attack = mainAction.pressed; // For demonstration purposes bound to player attack
+		enemy.pawn_control.parry = secondAction.pressed; 
+
+		walk_pawn(enemy, elapsed);	
 
 		/*
 		glm::mat4x3 frame = camera->transform->make_local_to_parent();
@@ -297,30 +388,7 @@ void PlayMode::update(float elapsed) {
 		*/
 	}
 
-	// player attacking
-	{
-		float& st = player.pawn_control.swingTime;
-		if(st > 0.0f)
-		{
-			st -= elapsed;
-			if(st <= 0.0f)
-			{
-				st = 0.0f;
-				player.wrist_transform->rotation = glm::angleAxis(0.0f, glm::normalize(glm::vec3(0.0f, 1.0f, 0.0f)));
-			}
-			else
-			{
-				player.wrist_transform->rotation = glm::angleAxis(M_PI_2f * -(1.0f - (st / player.pawn_control.swingCooldown)), glm::normalize(glm::vec3(0.0f, 1.0f, 0.0f)));
-			}
-		}
-		if(mainAction.pressed)
-		{
-			if(st == 0.0f)
-			{
-				st = player.pawn_control.swingCooldown;
-			}
-		}
-	}
+	
 
 	//reset button press counters:
 	left.downs = 0;
