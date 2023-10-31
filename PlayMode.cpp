@@ -56,6 +56,12 @@ Load<CollideMeshes> SWORD_COLLIDE_MESHES(LoadTagDefault, []() -> CollideMeshes c
 		return ret;
 	});
 
+// sound stuff starts here:
+Load< Sound::Sample > sword_clang(LoadTagDefault, []() -> Sound::Sample const * {
+	return new Sound::Sample(data_path("sound/sword_clang/w_conv1.wav"));
+});
+// sound stuff ends here
+
 PlayMode::PlayMode() : scene(*phonebank_scene) {
 	//create a player transform:
 
@@ -141,6 +147,17 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 				// 	player.pawn_control.stance = 5;
 				// }
 			}
+
+			// sound stuff starts here:
+			clock_t current_time = clock();
+			float elapsed = (float)(current_time - previous_sword_clang_time);
+
+			if ((elapsed / CLOCKS_PER_SEC) > min_sword_clang_interval){
+				sword_clang_sound = Sound::play(*sword_clang, 1.0f, 0.0f);
+				previous_sword_clang_time = clock();
+			}
+			// sound stuff ends here
+
 		};
 
 	auto enemySwordHit = [this](Scene::Transform* t) -> void

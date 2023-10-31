@@ -5,11 +5,12 @@
 #include "WalkMesh.hpp"
 // #include "BehaviorTree.hpp"
 #include "Collisions.hpp"
-
+#include "Sound.hpp"
 #include <glm/glm.hpp>
 
 #include <vector>
 #include <deque>
+#include <ctime>
 
 class BehaviorTree;//Forward Declaration
 struct PlayMode : Mode {
@@ -79,4 +80,12 @@ struct PlayMode : Mode {
 	} player;	
 	
 	Collisions collEng;
+
+	// sound stuff starts here:
+	// set previous clang time to something ridiculous
+	clock_t previous_sword_clang_time = clock();
+	float min_sword_clang_interval = 0.2;
+
+	std::shared_ptr< Sound::PlayingSample > sword_clang_sound;
+	// sound stuff ends here:
 };
