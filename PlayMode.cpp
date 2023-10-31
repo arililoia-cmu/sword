@@ -74,6 +74,10 @@ Load< Sound::Sample > fast_downswing(LoadTagDefault, []() -> Sound::Sample const
 Load< Sound::Sample > fast_upswing(LoadTagDefault, []() -> Sound::Sample const * {
 	return new Sound::Sample(data_path("sound/sword_whoosh/fast_upswing.wav"));
 });
+
+Load< Sound::Sample > footstep_wconv1(LoadTagDefault, []() -> Sound::Sample const * {
+	return new Sound::Sample(data_path("sound/footstep/footstep_wconv1.wav"));
+});
 // sound stuff ends here
 
 PlayMode::PlayMode() : scene(*phonebank_scene) {
@@ -486,6 +490,15 @@ void PlayMode::update(float elapsed) {
 		if (!left.pressed && right.pressed) move.x = 1.0f;
 		if (down.pressed && !up.pressed) move.y =-1.0f;
 		if (!down.pressed && up.pressed) move.y = 1.0f;
+
+		if ((left.pressed != right.pressed) || (down.pressed != up.pressed)){
+			clock_t current_time = clock();
+			float footstep_elapsed = (float)(current_time - previous_footstep_time);
+			if ((footstep_elapsed / CLOCKS_PER_SEC) > min_footstep_interval){
+				footstep_wconv1_sound = Sound::play(*footstep_wconv1, 1.0f, 0.0f);
+				previous_footstep_time = clock();
+			}
+		}
 
 		//make it so that moving diagonally doesn't go faster:
 		if (move != glm::vec2(0.0f)) move = glm::normalize(move) * PlayerSpeed * elapsed;
