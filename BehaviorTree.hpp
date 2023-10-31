@@ -70,6 +70,28 @@ class CheckIfPlayerExist:public Node{
         }
         
 };
+
+class CheckDistance:public Node{
+    private:
+        BlackBoard* status;
+        bool isNegative;
+        float distance;
+    public:
+        CheckDistance(BlackBoard* status,bool isNegative,float distance):status(status),isNegative(isNegative),distance(distance){
+        }
+        virtual bool run() override{
+            if(status->distanceToPlayer<distance){
+            //    std::cout<<status->distanceToPlayer<<std::endl;
+                return !isNegative;
+            }else{
+            //    std::cout<<status->distanceToPlayer<<std::endl;
+                return isNegative;
+            }
+        }
+        
+};
+
+
 class WalkToPlayerTask: public Node{
     private:
         BlackBoard* status;
@@ -78,10 +100,9 @@ class WalkToPlayerTask: public Node{
             
         }
         virtual bool run() override{
-            std::cout<<"Walking"<<std::endl;
-            if(status->distanceToPlayer>3){
-                std::cout<<"Approaches to the position"<<std::endl;
 
+            if(status->distanceToPlayer>4){
+                std::cout<<"Walking"<<std::endl;
             	constexpr float EnemySpeed = 2.0f;
 		        glm::vec3 diff = status->player->transform->position - status-> enemy->transform->position;
 		        glm::vec3 emove = glm::normalize(diff) * EnemySpeed ;
@@ -121,19 +142,23 @@ class BehaviorTree{
         void Init(){
             std::cout<<"AI Initialize Start"<<std::endl;
         	Sequence* rt = new Sequence, * sequence1 = new Sequence;
+            Sequence* atkSequence=new Sequence;
 	        Selector* selector1 = new Selector;
 	        BlackBoard* blackBoard = new BlackBoard{};
             //blackBoard->distanceToPlayer=5;
 	        CheckIfPlayerExist* checkExist = new CheckIfPlayerExist(blackBoard,true);
 	        WalkToPlayerTask* approach = new WalkToPlayerTask(blackBoard);
 	        AttackTask* attack = new AttackTask(blackBoard);
+            CheckDistance* checkDistance=new CheckDistance(blackBoard,false,4.5f);
             status=blackBoard;
 
         	rt->addChild(selector1);
 	        selector1->addChild(checkExist);
 	        selector1->addChild(sequence1);
 	        sequence1->addChild(approach);
-            sequence1->addChild(attack);
+            sequence1-> addChild(atkSequence);
+            atkSequence->addChild(checkDistance);
+            atkSequence->addChild(attack);
             SetRoot(rt);
             std::cout<<"AI Initialize End"<<std::endl;
         }
