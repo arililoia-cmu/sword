@@ -12,7 +12,8 @@
 #include <glm/gtx/quaternion.hpp>
 
 #include <random>
-#include"BehaviorTree.hpp"
+#include "BehaviorTree.hpp"
+
 #define M_PI_2f 1.57079632679489661923f
 GLuint phonebank_meshes_for_lit_color_texture_program = 0;
 Load< MeshBuffer > phonebank_meshes(LoadTagDefault, []() -> MeshBuffer const * {
@@ -38,12 +39,22 @@ Load< Scene > phonebank_scene(LoadTagDefault, []() -> Scene const * {
 	});
 });
 
-WalkMesh const *walkmesh = nullptr;
+WalkMesh const* walkmesh = nullptr;
 Load< WalkMeshes > phonebank_walkmeshes(LoadTagDefault, []() -> WalkMeshes const * {
 	WalkMeshes *ret = new WalkMeshes(data_path("sword.w"));
 	walkmesh = &ret->lookup("WalkMesh");
 	return ret;
 });
+
+CollideMesh const* playerSwordCollMesh = nullptr;
+CollideMesh const* enemySwordCollMesh = nullptr;
+Load<CollideMeshes> SWORD_COLLIDE_MESHES(LoadTagDefault, []() -> CollideMeshes const*
+	{
+		CollideMeshes* ret = new CollideMeshes(data_path("sword.c"));
+		playerSwordCollMesh = &ret->lookup("PlayerSwordCollMesh");
+		enemySwordCollMesh = &ret->lookup("EnemySwordCollMesh");
+		return ret;
+	});
 
 PlayMode::PlayMode() : scene(*phonebank_scene) {
 	//create a player transform:
@@ -117,6 +128,9 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 	enemy.arm_transform->parent = enemy.body_transform;
 	enemy.wrist_transform->parent = enemy.arm_transform;
 
+	// Create and add colliders
+	collEng.cs.emplace_back(player.sword_transform, playerSwordCollMesh, (AABB){glm::vec3(0.0f), glm::vec3(0.0f)});
+	collEng.cs.emplace_back(enemy.sword_transform, enemySwordCollMesh, (AABB){glm::vec3(0.0f), glm::vec3(0.0f)});
 }
 
 PlayMode::~PlayMode() {
@@ -388,7 +402,8 @@ void PlayMode::update(float elapsed) {
 		*/
 	}
 
-	
+	// VERY TEMPORARY
+	collEng.broadPhase(collEng.cs);
 
 	//reset button press counters:
 	left.downs = 0;

@@ -3,11 +3,14 @@
 
 #include "Scene.hpp"
 #include "WalkMesh.hpp"
-//#include "BehaviorTree.hpp"
+// #include "BehaviorTree.hpp"
+#include "Collisions.hpp"
+
 #include <glm/glm.hpp>
 
 #include <vector>
 #include <deque>
+
 class BehaviorTree;//Forward Declaration
 struct PlayMode : Mode {
 	PlayMode();
@@ -75,5 +78,5 @@ struct PlayMode : Mode {
 		Scene::Camera *camera = nullptr;
 	} player;	
 	
-
+	Collisions collEng;
 };
