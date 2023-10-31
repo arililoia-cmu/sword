@@ -24,7 +24,7 @@ struct PlayMode : Mode {
 	struct Button {
 		uint8_t downs = 0;
 		uint8_t pressed = 0;
-	} left, right, down, up;
+	} left, right, down, up, mainAction;
 
 	//local copy of the game scene (so code can change it during gameplay):
 	Scene scene;
@@ -34,6 +34,9 @@ struct PlayMode : Mode {
 		float rotate = 0.0f; // angle in world, normal direction, ignore for player 
 		uint8_t attack = 0;
 		uint8_t parry = 0;
+
+		float const swingCooldown = 1.0f;
+		float swingTime = 0.0f;
 	}; 
 
 	//player info:

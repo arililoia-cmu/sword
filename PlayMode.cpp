@@ -59,6 +59,10 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 			enemy.at = walkmesh->nearest_walk_point(enemy.body_transform->position + glm::vec3(0.0f, 0.0001f, 0.0f));
 			float height = glm::length(enemy.body_transform->position - walkmesh->to_world_point(enemy.at));
 			enemy.body_transform->position = glm::vec3(0.0f, 0.0f, height);
+		} else if (transform.name == "Player_Sword"){
+			player.sword_transform = &transform;
+		} else if (transform.name == "Player_Wrist"){
+			player.wrist_transform = &transform;
 		}
 	}
 
@@ -93,7 +97,7 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 	player.camera_transform->rotation = glm::angleAxis(glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)); //dictates camera's original rotation wrt +y (not +x)
 
 	player.camera->transform->parent = player.camera_transform;
-	player.camera->transform->position = glm::vec3(0.0f, -5.0f, 0.0f);
+	player.camera->transform->position = glm::vec3(0.0f, -10.0f, 0.0f);
 
 	//rotate camera facing direction relative to player direction
 	player.camera->transform->rotation = glm::angleAxis(glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
@@ -125,6 +129,10 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 			down.downs += 1;
 			down.pressed = true;
 			return true;
+		} else if (evt.key.keysym.sym == SDLK_SPACE) {
+			mainAction.downs += 1;
+			mainAction.pressed = true;
+			return true;
 		}
 	} else if (evt.type == SDL_KEYUP) {
 		if (evt.key.keysym.sym == SDLK_a) {
@@ -138,6 +146,9 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 			return true;
 		} else if (evt.key.keysym.sym == SDLK_s) {
 			down.pressed = false;
+			return true;
+		} else if (evt.key.keysym.sym == SDLK_SPACE) {
+			mainAction.pressed = false;
 			return true;
 		}
 	} else if (evt.type == SDL_MOUSEBUTTONDOWN) {
@@ -284,6 +295,31 @@ void PlayMode::update(float elapsed) {
 
 		camera->transform->position += move.x * right + move.y * forward;
 		*/
+	}
+
+	// player attacking
+	{
+		float& st = player.pawn_control.swingTime;
+		if(st > 0.0f)
+		{
+			st -= elapsed;
+			if(st <= 0.0f)
+			{
+				st = 0.0f;
+				player.wrist_transform->rotation = glm::angleAxis(0.0f, glm::normalize(glm::vec3(0.0f, 1.0f, 0.0f)));
+			}
+			else
+			{
+				player.wrist_transform->rotation = glm::angleAxis(M_PI_2f * -(1.0f - (st / player.pawn_control.swingCooldown)), glm::normalize(glm::vec3(0.0f, 1.0f, 0.0f)));
+			}
+		}
+		if(mainAction.pressed)
+		{
+			if(st == 0.0f)
+			{
+				st = player.pawn_control.swingCooldown;
+			}
+		}
 	}
 
 	//reset button press counters:
