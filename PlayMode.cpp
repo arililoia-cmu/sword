@@ -286,7 +286,7 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 
 			glm::mat4x3 frame = player.camera->transform->make_local_to_parent();
 			glm::vec3 forward = -frame[2];
-			player.camera->transform->position = -glm::length(player.camera->transform->position) * forward; // Camera distance behind player
+			player.camera->transform->position = -10.0f * forward; // -glm::length(player.camera->transform->position) * forward; // Camera distance behind player
 
 			return true;
 		}
@@ -376,7 +376,7 @@ void PlayMode::walk_pawn(PlayMode::Pawn &pawn, float elapsed) {
 		uint8_t& stance = pawn.pawn_control.stance;
 		float& st = pawn.pawn_control.swingTime;
 		if (stance == 0){ // idle
-			pawn.arm_transform->position = glm::vec3(0.0f, 0.0f, 1.0f);
+			pawn.arm_transform->position = glm::vec3(0.0f, 0.0f, 0.5f);
 			pawn.arm_transform->rotation = glm::angleAxis(0.0f, glm::vec3(0.0f, 0.0f, 1.0f));
 			pawn.wrist_transform->rotation = glm::angleAxis(0.0f, glm::vec3(0.0f, 1.0f, 0.0f));
 			if (pawn.pawn_control.attack){
@@ -391,7 +391,7 @@ void PlayMode::walk_pawn(PlayMode::Pawn &pawn, float elapsed) {
 			float rt = st / dur;
 			float adt_time = 1 - (1-rt)*(1-rt)*(1-rt) * (2 - (1-rt)*(1-rt)*(1-rt)); // Time scaling, imitates acceleration
 
-			pawn.arm_transform->position = glm::vec3(0.0f, 0.0f, 1.0f - adt_time * 1.5f);
+			pawn.arm_transform->position = glm::vec3(0.0f, 0.0f, 0.5f - adt_time * 1.5f);
 			pawn.arm_transform->rotation = glm::angleAxis(M_PI_2f * adt_time / 2.0f, glm::normalize(glm::vec3(0.0f, 0.0f, 1.0f)));
 			pawn.wrist_transform->rotation = glm::angleAxis(M_PI_2f * -adt_time * 1.2f, glm::normalize(glm::vec3(0.0f, 1.0f, 0.0f)));
 
@@ -421,7 +421,7 @@ void PlayMode::walk_pawn(PlayMode::Pawn &pawn, float elapsed) {
 
 			float adt_time = 1 - (1-rt)*(1-rt)*(1-rt) * (2 - (1-rt)*(1-rt)*(1-rt)); // Time scaling, imitates acceleration
 
-			pawn.arm_transform->position = glm::vec3(0.0f, 0.0f, 1.0f - adt_time * 1.5f);
+			pawn.arm_transform->position = glm::vec3(0.0f, 0.0f, 0.5f - adt_time * 0.8f);
 			pawn.arm_transform->rotation = glm::angleAxis(M_PI_2f * adt_time / 2.0f, glm::normalize(glm::vec3(0.0f, 0.0f, 1.0f)));
 			pawn.wrist_transform->rotation = glm::angleAxis(M_PI_2f * -adt_time * 1.2f, glm::normalize(glm::vec3(0.0f, 1.0f, 0.0f)));
 
@@ -444,7 +444,7 @@ void PlayMode::walk_pawn(PlayMode::Pawn &pawn, float elapsed) {
 			float rt = (st < dur) ? st / dur : 1.0f;
 			float adt_time = 1 - (1-rt)*(1-rt)*(1-rt) * (2 - (1-rt)*(1-rt)*(1-rt)); // Time scaling, imitates acceleration
 
-			pawn.arm_transform->position = glm::vec3(0.0f, 0.0f, 1.0f - adt_time / 2.0f);
+			pawn.arm_transform->position = glm::vec3(0.0f, 0.0f, 0.5f - adt_time / 4.0f);
 			pawn.arm_transform->rotation = glm::angleAxis(M_PI_2f * adt_time * 1.5f, glm::normalize(glm::vec3(0.0f, 0.0f, 1.0f)));
 			pawn.wrist_transform->rotation = glm::angleAxis(M_PI_2f * adt_time / 1.3f, glm::normalize(glm::vec3(0.0f, 1.0f, 0.0f)));
 
