@@ -80,6 +80,36 @@ Load< Sound::Sample > footstep_wconv1(LoadTagDefault, []() -> Sound::Sample cons
 });
 // sound stuff ends here
 
+// this method taken from my base 2 code:
+// https://github.com/arililoia-cmu/15-466-f23-base2/blob/8697e4fed38995ac9b5949fd30c0f75dabe02444/PlayMode.cpp
+glm::vec2 object_to_window_coordinate(Scene::Transform *object, Scene::Camera *camera){
+
+	glm::vec4 object_position = glm::vec4(object->position.x, object->position.y, object->position.z, 1.0f);
+	glm::mat4x3 object_to_world = object->make_local_to_world();
+	// object to world 3x4 x 4x1 coordinates = 3x1 world coordinates
+	glm::vec3 op_world = object_to_world * object_position;
+
+	// make a 4 vector out of op_world
+	glm::vec4 op_world_vec4 = glm::vec4(op_world.x, op_world.y, op_world.z, 1.0f);
+
+	assert(camera->transform);
+	glm::mat4 world_to_clip = camera->make_projection() * glm::mat4(camera->transform->make_world_to_local());
+	glm::vec4 op_clip = world_to_clip * op_world_vec4;
+
+	float ws_x = op_clip.x / op_clip.w;
+	float ws_y = op_clip.y / op_clip.w;
+
+	// The next step is to transform from this [-1, 1] space to window-relative coordinate
+	// taken from this stackexchange post
+	// https://stackoverflow.com/questions/8491247/c-opengl-convert-world-coords-to-screen2d-coords
+	// TODO: get window width
+	float ws_x_real = ((ws_x+1.0f)/2.0f)*1280;
+	float ws_y_real = 720 - (((ws_y+1.0f)/2.0f)*720);
+
+	return glm::vec2(ws_x_real, ws_y_real);
+
+}
+
 PlayMode::PlayMode() : scene(*phonebank_scene) {
 	//create a player transform:
 
