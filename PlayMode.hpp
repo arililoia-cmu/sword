@@ -22,7 +22,7 @@ struct PlayMode : Mode {
 	virtual void update(float elapsed) override;
 	virtual void draw(glm::uvec2 const &drawable_size) override;
 
-	glm::vec2 object_to_window_coordinate(Scene::Transform *object, Scene::Camera *camera);
+	virtual glm::vec2 object_to_window_coordinate(Scene::Transform *object, Scene::Camera *camera);
 
 	//----- game state -----
 
