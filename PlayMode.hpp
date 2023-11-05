@@ -87,10 +87,10 @@ struct PlayMode : Mode {
 	clock_t previous_enemy_sword_clang_time = clock();
 	clock_t previous_sword_whoosh_time = clock();
 	clock_t previous_footstep_time = clock();
-	float min_player_sword_clang_interval = 0.2;
-	float min_enemy_sword_clang_interval = 0.1;
-	float min_sword_whoosh_interval = 0.2;
-	float min_footstep_interval = 0.1;
+	float min_player_sword_clang_interval = 0.2f;
+	float min_enemy_sword_clang_interval = 0.1f;
+	float min_sword_whoosh_interval = 0.2f;
+	float min_footstep_interval = 0.1f;
 
 	std::shared_ptr< Sound::PlayingSample > w_conv1_sound;
 	std::shared_ptr< Sound::PlayingSample > w_conv2_sound;

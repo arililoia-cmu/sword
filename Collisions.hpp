@@ -13,6 +13,10 @@ struct AABB
 {
 	glm::vec3 min;
 	glm::vec3 max;
+	AABB(glm::vec3 input1,glm::vec3 input2){
+		min=input1;
+		max=input2;
+	}
 };
 
 struct CollideMesh

@@ -205,8 +205,10 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 		};
 	
 	// Create and add colliders
-	collEng.cs.emplace_back(player.sword_transform, playerSwordCollMesh, (AABB){glm::vec3(0.0f), glm::vec3(0.0f)}, playerSwordHit);
-	collEng.cs.emplace_back(enemy.sword_transform, enemySwordCollMesh, (AABB){glm::vec3(0.0f), glm::vec3(0.0f)}, enemySwordHit);
+	AABB first(glm::vec3(0.0f), glm::vec3(0.0f));
+	AABB second(glm::vec3(0.0f), glm::vec3(0.0f));
+	collEng.cs.emplace_back(player.sword_transform, playerSwordCollMesh,  first, playerSwordHit);
+	collEng.cs.emplace_back(enemy.sword_transform, enemySwordCollMesh, second, enemySwordHit);
 }
 
 PlayMode::~PlayMode() {
@@ -433,7 +435,7 @@ void PlayMode::walk_pawn(PlayMode::Pawn &pawn, float elapsed) {
 
 			{
 				clock_t current_time = clock();
-				float elapsed = (float)(current_time - previous_sword_whoosh_time);
+				elapsed = (float)(current_time - previous_sword_whoosh_time);
 				if ((elapsed / CLOCKS_PER_SEC) > min_sword_whoosh_interval){
 					fast_upswing_sound = Sound::play(*fast_upswing, 1.0f, 0.0f);
 					previous_sword_whoosh_time = clock();
