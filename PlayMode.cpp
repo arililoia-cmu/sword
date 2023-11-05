@@ -266,11 +266,33 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 			return true;
 		}
 	} else if (evt.type == SDL_MOUSEBUTTONDOWN) {
-		if (SDL_GetRelativeMouseMode() == SDL_FALSE) {
-			SDL_SetRelativeMouseMode(SDL_TRUE);
-			return true;
-		}
-	} else if (evt.type == SDL_MOUSEMOTION) {
+
+			if (SDL_GetRelativeMouseMode() == SDL_FALSE) {
+				SDL_SetRelativeMouseMode(SDL_TRUE);
+			}
+		//std::cout<<"sssssssssssssssssssssssssssssssssssss"<<std::endl;
+			if(evt.button.button==SDL_BUTTON_LEFT){
+				mainAction.downs += 1;
+				mainAction.pressed = true;
+				return true;
+			}else if(evt.button.button==SDL_BUTTON_RIGHT){
+				secondAction.downs += 1;
+				secondAction.pressed = true;
+				return true;
+			}
+
+
+	}else if(evt.type==SDL_MOUSEBUTTONUP){
+			if(evt.button.button==SDL_BUTTON_LEFT){
+				mainAction.pressed = false;
+				return true;
+			}else if(evt.button.button==SDL_BUTTON_RIGHT){
+				secondAction.pressed = false;
+				return true;
+			}
+	}
+	
+	 else if (evt.type == SDL_MOUSEMOTION) {
 		if (SDL_GetRelativeMouseMode() == SDL_TRUE) {
 			glm::vec2 motion = glm::vec2(
 				evt.motion.xrel / float(window_size.y),
@@ -524,8 +546,6 @@ void PlayMode::update(float elapsed) {
 		//and locks on player
 		enemy.pawn_control.rotate = enemy_control.rotate;
 
-		//Todo:  enemy_control.attack=0;
-		//Todo:   enemy_control.parry=0;
 
 		enemy.pawn_control.attack = enemy_control.attack; // mainAction.pressed; // For demonstration purposes bound to player attack
 		enemy.pawn_control.parry = enemy_control.parry; //secondAction.pressed; 

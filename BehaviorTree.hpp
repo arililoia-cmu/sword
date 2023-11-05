@@ -130,11 +130,34 @@ class AttackTask:public Node{
             return true;
         }
 };
+class ParryTask:public Node{
+    private:
+        BlackBoard* status;
+    public:
+        ParryTask(BlackBoard* status):status(status){
+
+        }
+        virtual bool run()override{
+            std::cout<<"ParryAction"<<std::endl;
+            status->control.parry=1;
+            return true;
+        }
+};
+class AttackInterrupt{
+    private:
+        BlackBoard* status;
+    public:
+        bool IsActivated(){
+           // if(status->enemy.)
+            return true;
+        }
+};
 class BehaviorTree{
     private:
         BlackBoard* status;
         Node* root;
         PlayMode::Pawn *enemy;
+     //   AttackInterrupt* input;
     public:
         BehaviorTree(){
 

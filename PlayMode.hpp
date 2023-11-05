@@ -56,7 +56,7 @@ struct PlayMode : Mode {
 
 		bool is_player = false;
 		glm::quat default_rotation = glm::angleAxis(0.0f, glm::vec3(0.0f, 0.0f, 1.0f)); // Describes ``front'' direction with respect to +x
-
+		std::string gameplay_tags;
 		// TODO
 		Scene::Transform *arm_transform = nullptr;
 		Scene::Transform *wrist_transform = nullptr;
