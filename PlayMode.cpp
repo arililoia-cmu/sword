@@ -114,7 +114,8 @@ glm::vec2 PlayMode::object_to_window_coordinate(Scene::Transform *object, Scene:
 	// https://stackoverflow.com/questions/8491247/c-opengl-convert-world-coords-to-screen2d-coords
 	float ws_x_real = ((ws_x+1.0f)/2.0f) * (drawable_size.x / 2.0f);
 	float ws_y_real = (drawable_size.y / 2.0f) - (((ws_y+1.0f)/2.0f)*(drawable_size.y / 2.0f));
-	return glm::vec2(ws_x_real, ws_y_real);
+	float ws_y_real2 = abs((drawable_size.y / 2.0f) - ws_y_real);
+	return glm::vec2(ws_x_real, ws_y_real2);
 }
 
 PlayMode::PlayMode() : scene(*phonebank_scene) {
@@ -709,16 +710,18 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 
 	glUseProgram(lit_color_texture_program->program);
 
-	glm::vec2 player_o2wc = object_to_window_coordinate(player.transform, player.camera, drawable_size);
-	float player_window_x = ((player_o2wc.x / (drawable_size.x/2.0f)) * 2.0f) - 1.0f;
-	float player_window_y = ((player_o2wc.y / (drawable_size.y/2.0f)) * 2.0f) - 1.0f;
-	float block_size = 0.2f;
+	glm::vec2 enemy_o2wc = object_to_window_coordinate(enemy.body_transform, player.camera, drawable_size);
+	float enemy_window_x = ((enemy_o2wc.x / (drawable_size.x/2.0f)) * 2.0f) - 1.0f;
+	float enemy_window_y = ((enemy_o2wc.y / (drawable_size.y/2.0f)) * 2.0f) - 1.0f;
+	float block_size = 0.1f;
+	// sqrm = square making ratio
+	float sqrm = ((float)drawable_size.y / (float)drawable_size.x);
 
 	std::vector< Vert > attribs;
-	attribs.emplace_back(glm::vec3( player_window_x - block_size, player_window_y - block_size, 0.0f), glm::vec2(0.0f, 0.0f));
-	attribs.emplace_back(glm::vec3( player_window_x - block_size,  player_window_y + block_size, 0.0f), glm::vec2(0.0f, 1.0f));
-	attribs.emplace_back(glm::vec3( player_window_x + block_size, player_window_y - block_size, 0.0f), glm::vec2(1.0f, 0.0f));
-	attribs.emplace_back(glm::vec3( player_window_x + block_size, player_window_y + block_size, 0.0f), glm::vec2(1.0f, 1.0f));
+	attribs.emplace_back(glm::vec3( enemy_window_x - block_size*sqrm, enemy_window_y - block_size, 0.0f), glm::vec2(0.0f, 0.0f));
+	attribs.emplace_back(glm::vec3( enemy_window_x - block_size*sqrm,  enemy_window_y + block_size, 0.0f), glm::vec2(0.0f, 1.0f));
+	attribs.emplace_back(glm::vec3( enemy_window_x + block_size*sqrm, enemy_window_y - block_size, 0.0f), glm::vec2(1.0f, 0.0f));
+	attribs.emplace_back(glm::vec3( enemy_window_x + block_size*sqrm, enemy_window_y + block_size, 0.0f), glm::vec2(1.0f, 1.0f));
 
 	glBindBuffer(GL_ARRAY_BUFFER, hp_buffer);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(Vert) * attribs.size(), attribs.data(), GL_STREAM_DRAW);
