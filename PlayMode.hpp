@@ -17,12 +17,25 @@ class BehaviorTree;//Forward Declaration
 
 class HpBar{
 public:
-	int current_hp;
+	int max_hp, current_hp;
+	
 	HpBar(int init_hp){
+		max_hp = init_hp;
 		current_hp = init_hp;
 	};
 
+	// enemy_draw(){
+
+	// }
+
 };
+
+struct Vert {
+		Vert(glm::vec3 const &position_, glm::vec2 const &tex_coord_) : position(position_), tex_coord(tex_coord_) { }
+		glm::vec3 position;
+		glm::vec2 tex_coord;
+	};
+
 
 struct PlayMode : Mode {
 	PlayMode();
@@ -48,6 +61,12 @@ struct PlayMode : Mode {
 
 	//local copy of the game scene (so code can change it during gameplay):
 	Scene scene;
+
+	// struct Vert {
+	// 	Vert(glm::vec3 const &position_, glm::vec2 const &tex_coord_) : position(position_), tex_coord(tex_coord_) { }
+	// 	glm::vec3 position;
+	// 	glm::vec2 tex_coord;
+	// };
 
 	struct Control {
 		glm::vec3 move = glm::vec3(0.0f); // displacement in world (should be scaled by elapsed)

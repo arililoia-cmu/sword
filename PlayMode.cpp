@@ -7,6 +7,7 @@
 #include "Load.hpp"
 #include "gl_errors.hpp"
 #include "data_path.hpp"
+#include <SDL.h>
 
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/quaternion.hpp>
@@ -671,11 +672,6 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	if (hp_buffer == 0){
 		glGenBuffers(1, &hp_buffer);
 	}
-	struct Vert {
-		Vert(glm::vec3 const &position_, glm::vec2 const &tex_coord_) : position(position_), tex_coord(tex_coord_) { }
-		glm::vec3 position;
-		glm::vec2 tex_coord;
-	};
 
 	static GLuint vao = 0;
 	if (vao == 0) {
@@ -749,7 +745,16 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	// do this later
 	// for now: drawing HP bar on top of the screen
 
-	// std::vector< glm::u8vec4 > hp_bar_data;
+	// SDL_Texture* texture = nullptr;
+	// SDL_Renderer *renderer = NULL;
+	// // call to SDL_CreateRenderer taken from initial post:
+	// // https://stackoverflow.com/questions/38813605/sdl2-program-only-works-if-renderer-is-created-with-sdl-renderer-software
+	// renderer = SDL_CreateRenderer(window, -1, 0);
+	// IMG_Init(IMG_INIT_PNG);
+	// texture = IMG_LoadTexture(renderer, data_path("dist/graphics/healthbar.png"));
+	// // grass_image = IMG_LoadTexture(renderer, "res/grass.bmp");
+	// SDL_RenderCopy(renderer, texture, NULL, NULL);
+	// SDL_RenderPresent(renderer);
 
 
 }
