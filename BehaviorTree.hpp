@@ -97,6 +97,7 @@ class ActionNode:public Node{
         time_t timestamp=0;
     public:
         bool CheckTime(){
+            if(cd==0)return true;
             time_t t=time(0);
             time_t delta=t-timestamp;
             std::cout<<delta<<std::endl;
@@ -148,7 +149,7 @@ class AttackTask:public ActionNode{
         }
         virtual bool run()override{
             if(CheckTime()){
-                std::cout<<"AttackAction"<<status->control.attack<<std::endl;
+            //    std::cout<<"AttackAction"<<status->control.attack<<std::endl;
             //    int temp=0;
             //    std::cin>>temp;
                 status->control.attack=1;
@@ -165,11 +166,12 @@ class ParryTask:public ActionNode{
         BlackBoard* status=nullptr;
     public:
         ParryTask(BlackBoard* status):status(status){
-
+            SetCDTime(3);
         }
         virtual bool run()override{
             if(CheckTime()){
                 std::cout<<"ParryAction"<<std::endl;
+
                 status->control.parry=1;
                 RegisterTime();
                 return true;
@@ -188,7 +190,7 @@ class AttackInterrupt:public Sequence{
         }
 
         bool IsActivated(){
-            if(status->enemy->gameplay_tags=="attack"){
+            if(status->player->gameplay_tags=="attack"){
                 std::cout<<"Interrupt Activated!"<<std::endl;
                 this->run();
                 return true;
@@ -209,7 +211,9 @@ class BehaviorTree{
         }
         void InitInterrupt(){
             attack_ipt=new AttackInterrupt(status);
+            CheckDistance* checkDistance=new CheckDistance(status,false,4.5f);
             ParryTask* parryTask=new ParryTask(status);
+            attack_ipt->addChild(checkDistance);
             attack_ipt->addChild(parryTask);
         }
         void Init(){
@@ -233,6 +237,7 @@ class BehaviorTree{
             atkSequence->addChild(checkDistance);
             atkSequence->addChild(attack);
             SetRoot(rt);
+            InitInterrupt();
             std::cout<<"AI Initialize End"<<std::endl;
         }
         void Start(){
@@ -251,7 +256,7 @@ class BehaviorTree{
         void tick(){
             if(attack_ipt!=nullptr){
                 if(attack_ipt->IsActivated()){
-                   // attack_ipt->run();
+                    attack_ipt->run();
                     return;
                 }
             }
