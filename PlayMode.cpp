@@ -405,10 +405,14 @@ void PlayMode::walk_pawn(PlayMode::Pawn &pawn, float elapsed) {
 			pawn.wrist_transform->rotation = glm::angleAxis(0.0f, glm::vec3(0.0f, 1.0f, 0.0f));
 			if (pawn.pawn_control.attack){
 				if (stance != 1){ stance_changed_in_attack = true; }
+				pawn.gameplay_tags="attack";
 				stance = 1;
+				pawn.pawn_control.attack=0;
 			} else if (pawn.pawn_control.parry){
 				if (stance != 4){ stance_changed_in_attack = true; }
+				pawn.gameplay_tags="parry";
 				stance = 4;
+				pawn.pawn_control.parry=0;
 			}
 		} else if (stance == 1 || stance == 3){ // fast downswing, fast upswing, slow upswing
 			const float dur = (stance < 3) ? 0.4f : 1.0f; //total time of downswing/upswing
@@ -549,7 +553,8 @@ void PlayMode::update(float elapsed) {
 
 		enemy.pawn_control.attack = enemy_control.attack; // mainAction.pressed; // For demonstration purposes bound to player attack
 		enemy.pawn_control.parry = enemy_control.parry; //secondAction.pressed; 
-
+		enemy_control.attack=0;
+		enemy_control.parry=0;
 		walk_pawn(enemy, elapsed);	
 
 		/*

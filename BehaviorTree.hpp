@@ -2,6 +2,7 @@
 #include<iostream>
 #include<list>
 #include"PlayMode.hpp"
+#include<ctime>
 #include <glm/glm.hpp>
 //Insruction: https://cplusplus.com/forum/general/141582/
 class Node{
@@ -52,8 +53,8 @@ struct BlackBoard{
 };
 class CheckIfPlayerExist:public Node{
     private:
-        BlackBoard* status;
-        bool isNegative;
+        BlackBoard* status=nullptr;
+        bool isNegative=false;
     public:
         CheckIfPlayerExist(BlackBoard* status,bool isNegative):status(status),isNegative(isNegative){
         }
@@ -73,9 +74,9 @@ class CheckIfPlayerExist:public Node{
 
 class CheckDistance:public Node{
     private:
-        BlackBoard* status;
-        bool isNegative;
-        float distance;
+        BlackBoard* status=nullptr;
+        bool isNegative=false;
+        float distance=100.0f;
     public:
         CheckDistance(BlackBoard* status,bool isNegative,float distance):status(status),isNegative(isNegative),distance(distance){
         }
@@ -90,11 +91,32 @@ class CheckDistance:public Node{
         }
         
 };
-
-
-class WalkToPlayerTask: public Node{
+class ActionNode:public Node{
     private:
-        BlackBoard* status;
+        int cd=5;
+        time_t timestamp=0;
+    public:
+        bool CheckTime(){
+            time_t t=time(0);
+            time_t delta=t-timestamp;
+            std::cout<<delta<<std::endl;
+            if(delta>cd){
+                return true;
+            }else{
+                return false;
+            }
+        }
+        void SetCDTime(int i){
+            cd=i;
+        }
+        void RegisterTime(){
+            timestamp=time(0);
+        }
+};
+
+class WalkToPlayerTask: public ActionNode{
+    private:
+        BlackBoard* status=nullptr;
     public:
         WalkToPlayerTask(BlackBoard* status):status(status){
             
@@ -102,7 +124,7 @@ class WalkToPlayerTask: public Node{
         virtual bool run() override{
 
             if(status->distanceToPlayer>4){
-                std::cout<<"Walking"<<std::endl;
+            //    std::cout<<"Walking"<<std::endl;
             	constexpr float EnemySpeed = 2.0f;
 		        glm::vec3 diff = status->player->transform->position - status-> enemy->transform->position;
 		        glm::vec3 emove = glm::normalize(diff) * EnemySpeed ;
@@ -111,56 +133,84 @@ class WalkToPlayerTask: public Node{
                 float angle = std::atan2(diff.y, diff.x);
                 status->control.rotate=	angle;
             }else{
-                std::cout<<"Already There"<<std::endl;
+            //    std::cout<<"Already There"<<std::endl;
             }
             return true;
         }
 };
-class AttackTask:public Node{
+class AttackTask:public ActionNode{
     private:
-        BlackBoard* status;
+        BlackBoard* status=nullptr;
 
     public:
         AttackTask(BlackBoard* status):status(status){
 
         }
         virtual bool run()override{
-            std::cout<<"AttackAction"<<std::endl;
-            status->control.attack=1;
-            return true;
+            if(CheckTime()){
+                std::cout<<"AttackAction"<<status->control.attack<<std::endl;
+            //    int temp=0;
+            //    std::cin>>temp;
+                status->control.attack=1;
+                RegisterTime();
+                return true;
+            }else{
+                return false;
+            }
+
         }
 };
-class ParryTask:public Node{
+class ParryTask:public ActionNode{
     private:
-        BlackBoard* status;
+        BlackBoard* status=nullptr;
     public:
         ParryTask(BlackBoard* status):status(status){
 
         }
         virtual bool run()override{
-            std::cout<<"ParryAction"<<std::endl;
-            status->control.parry=1;
-            return true;
+            if(CheckTime()){
+                std::cout<<"ParryAction"<<std::endl;
+                status->control.parry=1;
+                RegisterTime();
+                return true;
+            }else{
+                return false;
+            }
+
         }
 };
-class AttackInterrupt{
+class AttackInterrupt:public Sequence{
     private:
-        BlackBoard* status;
+        BlackBoard* status=nullptr;
     public:
+        AttackInterrupt(BlackBoard* status):status(status){
+
+        }
+
         bool IsActivated(){
-           // if(status->enemy.)
-            return true;
+            if(status->enemy->gameplay_tags=="attack"){
+                std::cout<<"Interrupt Activated!"<<std::endl;
+                this->run();
+                return true;
+            }else{
+                return false;
+            }
         }
 };
 class BehaviorTree{
     private:
-        BlackBoard* status;
-        Node* root;
-        PlayMode::Pawn *enemy;
-     //   AttackInterrupt* input;
+        BlackBoard* status=nullptr;
+        Node* root=nullptr;
+        PlayMode::Pawn *enemy=nullptr;
+        AttackInterrupt* attack_ipt=nullptr;
     public:
         BehaviorTree(){
 
+        }
+        void InitInterrupt(){
+            attack_ipt=new AttackInterrupt(status);
+            ParryTask* parryTask=new ParryTask(status);
+            attack_ipt->addChild(parryTask);
         }
         void Init(){
             std::cout<<"AI Initialize Start"<<std::endl;
@@ -199,10 +249,16 @@ class BehaviorTree{
         }
 
         void tick(){
+            if(attack_ipt!=nullptr){
+                if(attack_ipt->IsActivated()){
+                   // attack_ipt->run();
+                    return;
+                }
+            }
             if(root!=nullptr){
-                std::cout<<"AI Thinking Start----------"<<std::endl;
+            //    std::cout<<"AI Thinking Start----------"<<std::endl;
                 root->run();
-                std::cout<<"AI Thinking End---------"<<std::endl;
+            //    std::cout<<"AI Thinking End---------"<<std::endl;
             }
         }
         PlayMode::Control& GetControl(){
