@@ -15,6 +15,9 @@
 #include <random>
 #include "BehaviorTree.hpp"
 
+#include "load_save_png.hpp"
+#include "data_path.hpp"
+
 #define M_PI_2f 1.57079632679489661923f
 GLuint phonebank_meshes_for_lit_color_texture_program = 0;
 Load< MeshBuffer > phonebank_meshes(LoadTagDefault, []() -> MeshBuffer const * {
@@ -722,9 +725,6 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	glBindBuffer(GL_ARRAY_BUFFER, hp_buffer);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(Vert) * attribs.size(), attribs.data(), GL_STREAM_DRAW);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	if (vao == 0){
-		std::cout << " vao = 0 " << std::endl;
-	}
 	glUseProgram(lit_color_texture_program->program);
 	glUniformMatrix4fv(lit_color_texture_program->OBJECT_TO_CLIP_mat4, 1, GL_FALSE, glm::value_ptr(glm::mat4(1.0f)));
 	glBindTexture(GL_TEXTURE_2D, tex);
@@ -745,16 +745,14 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	// do this later
 	// for now: drawing HP bar on top of the screen
 
-	// SDL_Texture* texture = nullptr;
-	// SDL_Renderer *renderer = NULL;
-	// // call to SDL_CreateRenderer taken from initial post:
-	// // https://stackoverflow.com/questions/38813605/sdl2-program-only-works-if-renderer-is-created-with-sdl-renderer-software
-	// renderer = SDL_CreateRenderer(window, -1, 0);
-	// IMG_Init(IMG_INIT_PNG);
-	// texture = IMG_LoadTexture(renderer, data_path("dist/graphics/healthbar.png"));
-	// // grass_image = IMG_LoadTexture(renderer, "res/grass.bmp");
-	// SDL_RenderCopy(renderer, texture, NULL, NULL);
-	// SDL_RenderPresent(renderer);
+	static std::vector< glm::u8vec4 > hp_bar_data;
+	static glm::uvec2 hp_bar_size;
+	if (hp_bar_data.empty()){
+		load_png(data_path("graphics/healthbar.png"), &hp_bar_size, &hp_bar_data, OriginLocation::LowerLeftOrigin);
+	}else{
+		std::cout << hp_bar_size.x << " " << hp_bar_size.y << std::endl;
+	}
+
 
 
 }

@@ -15,20 +15,6 @@
 
 class BehaviorTree;//Forward Declaration
 
-class HpBar{
-public:
-	int max_hp, current_hp;
-	
-	HpBar(int init_hp){
-		max_hp = init_hp;
-		current_hp = init_hp;
-	};
-
-	// enemy_draw(){
-
-	// }
-
-};
 
 struct Vert {
 		Vert(glm::vec3 const &position_, glm::vec2 const &tex_coord_) : position(position_), tex_coord(tex_coord_) { }
@@ -51,6 +37,8 @@ struct PlayMode : Mode {
 	//----- game state -----
 
 	
+
+	
 	
 
 	//input tracking:
@@ -68,6 +56,21 @@ struct PlayMode : Mode {
 	// 	glm::vec2 tex_coord;
 	// };
 
+	class HpBar{
+	public:
+		int max_hp, current_hp;
+		
+		HpBar(int init_hp){
+			max_hp = init_hp;
+			current_hp = init_hp;
+		};
+
+		// enemy_draw(){
+
+		// }
+
+	};
+	
 	struct Control {
 		glm::vec3 move = glm::vec3(0.0f); // displacement in world (should be scaled by elapsed)
 		float rotate = 0.0f; // angle in world, normal direction, ignore for player 
@@ -107,7 +110,7 @@ struct PlayMode : Mode {
 		Scene::Transform *sword_transform = nullptr;
 
 		Control pawn_control;
-		// HpBar hpbar(10);
+		
 		// Hp_Bar hp_bar;
 		// MyStruct myInstance(int 42);
 
@@ -118,6 +121,12 @@ struct PlayMode : Mode {
 
 	struct Enemy : Pawn {
 		BehaviorTree* bt;
+		HpBar hpbar(int hp = 10);
+
+
+		// Enemy() {
+		// 	hpbar = HpBar(10);
+		// }
 	} enemy;
 
 	struct Player : Pawn {
