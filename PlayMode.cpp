@@ -650,28 +650,20 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	std::vector< glm::u8vec4 > tex_data;
 
 	// fill with 
-	std::cout << __LINE__ << std::endl;
 	for (int i=0; i<25; i++){
 		tex_data.push_back(glm::u8vec4(0xff, 0x00, 0x00, 0x7f));
 	}
 
 	static GLuint tex = 0;
 	if (tex == 0) {
-		std::cout << __LINE__ << std::endl;
 		glGenTextures(1, &tex);
-		std::cout << __LINE__ << std::endl;
 		glBindTexture(GL_TEXTURE_2D, tex);
-
-		std::cout << __LINE__ << std::endl;
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 5, 5, 0, GL_RGBA, GL_UNSIGNED_BYTE, tex_data.data());
-		std::cout << __LINE__ << std::endl;
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glBindTexture(GL_TEXTURE_2D, 0);
-		std::cout << __LINE__ << std::endl;
 	}
 
 	static GLuint hp_buffer = 0;
@@ -713,18 +705,13 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 		);
 		glEnableVertexAttribArray(lit_color_texture_program->TexCoord_vec2);
 
-
-		std::cout << __LINE__ << std::endl;
 	}
-	std::cout << __LINE__ << std::endl;
 
 	glUseProgram(lit_color_texture_program->program);
 
-
 	glm::vec2 player_o2wc = object_to_window_coordinate(player.transform, player.camera, drawable_size);
-	std::cout << "player_o2wc = " << player_o2wc.x <<  ", " << player_o2wc.y << std::endl;
-	float player_window_x = ((player_o2wc.x / 1280.0) * 2.0) - 1.0;
-	float player_window_y = ((player_o2wc.y / 720.0) * 2.0) - 1.0;
+	float player_window_x = ((player_o2wc.x / (drawable_size.x/2.0f)) * 2.0f) - 1.0f;
+	float player_window_y = ((player_o2wc.y / (drawable_size.y/2.0f)) * 2.0f) - 1.0f;
 	float block_size = 0.2f;
 
 	std::vector< Vert > attribs;
@@ -732,46 +719,34 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	attribs.emplace_back(glm::vec3( player_window_x - block_size,  player_window_y + block_size, 0.0f), glm::vec2(0.0f, 1.0f));
 	attribs.emplace_back(glm::vec3( player_window_x + block_size, player_window_y - block_size, 0.0f), glm::vec2(1.0f, 0.0f));
 	attribs.emplace_back(glm::vec3( player_window_x + block_size, player_window_y + block_size, 0.0f), glm::vec2(1.0f, 1.0f));
-	GL_ERRORS();
 
 	glBindBuffer(GL_ARRAY_BUFFER, hp_buffer);
-	GL_ERRORS();
 	glBufferData(GL_ARRAY_BUFFER, sizeof(Vert) * attribs.size(), attribs.data(), GL_STREAM_DRAW);
-	GL_ERRORS();
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	GL_ERRORS();
-	std::cout << __LINE__ << std::endl;
 	if (vao == 0){
 		std::cout << " vao = 0 " << std::endl;
 	}
-	//as per Scene::draw -
 	glUseProgram(lit_color_texture_program->program);
-	GL_ERRORS();
 	glUniformMatrix4fv(lit_color_texture_program->OBJECT_TO_CLIP_mat4, 1, GL_FALSE, glm::value_ptr(glm::mat4(1.0f)));
-	GL_ERRORS();
-
 	glBindTexture(GL_TEXTURE_2D, tex);
-	GL_ERRORS();
 	glDisable(GL_DEPTH_TEST);
-	GL_ERRORS();
 	glEnable(GL_BLEND);
-	GL_ERRORS();
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	GL_ERRORS();
-
 	glBindVertexArray(vao);
-	GL_ERRORS();
-
-	// it was gl_triangle_strip before, changed it to this as per scene_drawables
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, attribs.size());
-	GL_ERRORS();
-
 	// glBindVertexArray(0);
 	glDisable(GL_BLEND);
-
-
 	// glBindTexture(GL_TEXTURE_2D, 0);
-	std::cout << __LINE__ << std::endl;
 	GL_ERRORS();
 	// STUFF I ADDED ENDS HERE
+
+
+	// DRAWING THE HP BAR FROM FILE
+	// reference: https://gamedev.stackexchange.com/questions/59078/sdl-function-for-loading-pngs
+	// do this later
+	// for now: drawing HP bar on top of the screen
+
+	// std::vector< glm::u8vec4 > hp_bar_data;
+
+
 }
