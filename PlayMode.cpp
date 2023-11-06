@@ -82,12 +82,22 @@ Load< Sound::Sample > footstep_wconv1(LoadTagDefault, []() -> Sound::Sample cons
 
 // this method taken from my game 2 code:
 // https://github.com/arililoia-cmu/15-466-f23-base2/blob/8697e4fed38995ac9b5949fd30c0f75dabe02444/PlayMode.cpp
-glm::vec2 PlayMode::object_to_window_coordinate(Scene::Transform *object, Scene::Camera *camera){
+glm::vec2 PlayMode::object_to_window_coordinate(Scene::Transform *object, Scene::Camera *camera, glm::uvec2 const &drawable_size){
 
-	glm::vec4 object_position = glm::vec4(object->position.x, object->position.y, object->position.z, 1.0f);
+	std::cout << "object_to_window_coordinate: " << std::endl;
+	std::cout << "drawable_size.x,y :" << drawable_size.x << " " << drawable_size.y << std::endl;
+	
+
+	// glm::vec4 object_position = glm::vec4(object->position.x, object->position.y, object->position.z, 1.0f);
+	glm::vec4 object_position = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+
+	std::cout << "object_position: " << object_position.x << " " << object_position.y << " " << object_position.z << std::endl;
+
 	glm::mat4x3 object_to_world = object->make_local_to_world();
 	// object to world 3x4 x 4x1 coordinates = 3x1 world coordinates
 	glm::vec3 op_world = object_to_world * object_position;
+
+	std::cout << "op_world: " << op_world.x << " " << op_world.y << " " << op_world.z << std::endl;
 
 	// make a 4 vector out of op_world
 	glm::vec4 op_world_vec4 = glm::vec4(op_world.x, op_world.y, op_world.z, 1.0f);
@@ -103,8 +113,10 @@ glm::vec2 PlayMode::object_to_window_coordinate(Scene::Transform *object, Scene:
 	// taken from this stackexchange post
 	// https://stackoverflow.com/questions/8491247/c-opengl-convert-world-coords-to-screen2d-coords
 	// TODO: get window width
-	float ws_x_real = ((ws_x+1.0f)/2.0f)*1280;
-	float ws_y_real = 720 - (((ws_y+1.0f)/2.0f)*720);
+	// float ws_x_real = ((ws_x+1.0f)/2.0f) * drawable_size.x;
+	// float ws_y_real = drawable_size.y - (((ws_y+1.0f)/2.0f)*drawable_size.y);
+	float ws_x_real = ((ws_x+1.0f)/2.0f) * 1280.0f;
+	float ws_y_real = 720.0f - (((ws_y+1.0f)/2.0f)*720.0f);
 
 	return glm::vec2(ws_x_real, ws_y_real);
 
@@ -585,132 +597,6 @@ void PlayMode::update(float elapsed) {
 void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	//update camera aspect ratio for drawable:
 	player.camera->aspect = float(drawable_size.x) / float(drawable_size.y);
-	
-	// STUFF ADDED STARTS HERE
-	std::vector< glm::u8vec4 > tex_data;
-
-	std::cout << __LINE__ << std::endl;
-	for (int i=0; i<20; i++){
-		tex_data.push_back(glm::u8vec4(0x00, 0x00, 0x00, 0xff));
-	}
-
-	static GLuint tex = 0;
-	if (tex == 0) {
-		std::cout << __LINE__ << std::endl;
-		glGenTextures(1, &tex);
-		std::cout << __LINE__ << std::endl;
-		glBindTexture(GL_TEXTURE_2D, tex);
-
-		std::cout << __LINE__ << std::endl;
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 20, 20, 0, GL_RGBA, GL_UNSIGNED_BYTE, tex_data.data());
-		std::cout << __LINE__ << std::endl;
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glBindTexture(GL_TEXTURE_2D, 0);
-		std::cout << __LINE__ << std::endl;
-	}
-
-	static GLuint hp_buffer = 0;
-	if (hp_buffer == 0){
-		glGenBuffers(1, &hp_buffer);
-	}
-	struct Vert {
-		Vert(glm::vec3 const &position_, glm::vec2 const &tex_coord_) : position(position_), tex_coord(tex_coord_) { }
-		glm::vec3 position;
-		glm::vec2 tex_coord;
-	};
-
-	static GLuint vao = 0;
-	if (vao == 0) {
-		//based on PPU466.cpp
-
-		glGenVertexArrays(1, &vao);
-		glBindVertexArray(vao);
-
-		glVertexAttribPointer(
-			lit_color_texture_program->Position_vec4, //attribute
-			3, //size
-			GL_FLOAT, //type
-			GL_FALSE, //normalized
-			sizeof(Vert), //stride
-			(GLbyte *)0 + offsetof(Vert, position) //offset
-		);
-		glEnableVertexAttribArray(lit_color_texture_program->Position_vec4);
-
-		glVertexAttribPointer(
-			lit_color_texture_program->TexCoord_vec2, //attribute
-			2, //size
-			GL_FLOAT, //type
-			GL_FALSE, //normalized
-			sizeof(Vert), //stride
-			(GLbyte *)0 + offsetof(Vert, tex_coord) //offset
-		);
-		glEnableVertexAttribArray(lit_color_texture_program->TexCoord_vec2);
-
-
-		std::cout << __LINE__ << std::endl;
-	}
-	std::cout << __LINE__ << std::endl;
-
-	glUseProgram(lit_color_texture_program->program);
-
-
-	glm::vec2 player_o2wc = object_to_window_coordinate(player.transform, player.camera);
-	std::cout << "player_o2wc = " << player_o2wc.x <<  ", " << player_o2wc.y << std::endl;
-	float player_window_x = ((player_o2wc.x / 1280.0) * 2.0) - 1.0;
-	float player_window_y = ((player_o2wc.y / 720.0) * 2.0) - 1.0;
-	float block_size = 0.2f;
-
-	std::vector< Vert > attribs;
-	attribs.emplace_back(glm::vec3( player_window_x - block_size, player_window_y - block_size, 0.0f), glm::vec2(0.0f, 0.0f));
-	attribs.emplace_back(glm::vec3( player_window_x - block_size,  player_window_y + block_size, 0.0f), glm::vec2(0.0f, 1.0f));
-	attribs.emplace_back(glm::vec3( player_window_x + block_size, player_window_y - block_size, 0.0f), glm::vec2(1.0f, 0.0f));
-	attribs.emplace_back(glm::vec3( player_window_x + block_size, player_window_y + block_size, 0.0f), glm::vec2(1.0f, 1.0f));
-	GL_ERRORS();
-
-	glBindBuffer(GL_ARRAY_BUFFER, hp_buffer);
-	GL_ERRORS();
-	glBufferData(GL_ARRAY_BUFFER, sizeof(Vert) * attribs.size(), attribs.data(), GL_STREAM_DRAW);
-	GL_ERRORS();
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	GL_ERRORS();
-	std::cout << __LINE__ << std::endl;
-	if (vao == 0){
-		std::cout << " vao = 0 " << std::endl;
-	}
-	//as per Scene::draw -
-	glUseProgram(lit_color_texture_program->program);
-	GL_ERRORS();
-	glUniformMatrix4fv(lit_color_texture_program->OBJECT_TO_CLIP_mat4, 1, GL_FALSE, glm::value_ptr(glm::mat4(1.0f)));
-	GL_ERRORS();
-
-	glBindTexture(GL_TEXTURE_2D, tex);
-	GL_ERRORS();
-	glDisable(GL_DEPTH_TEST);
-	GL_ERRORS();
-	glEnable(GL_BLEND);
-	GL_ERRORS();
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	GL_ERRORS();
-
-	glBindVertexArray(vao);
-	GL_ERRORS();
-
-	// it was gl_triangle_strip before, changed it to this as per scene_drawables
-	glDrawArrays(GL_TRIANGLES, 0, attribs.size());
-	GL_ERRORS();
-
-	// glBindVertexArray(0);
-	glDisable(GL_BLEND);
-
-
-	// glBindTexture(GL_TEXTURE_2D, 0);
-	std::cout << __LINE__ << std::endl;
-	// STUFF I ADDED ENDS HERE
-	GL_ERRORS();
 
 	//set up light type and position for lit_color_texture_program:
 	// TODO: consider using the Light(s) in the scene to do this
@@ -763,4 +649,134 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 			glm::u8vec4(0xff, 0xff, 0xff, 0x00));
 	}
 	GL_ERRORS();
+
+
+	// STUFF ADDED STARTS HERE
+	std::vector< glm::u8vec4 > tex_data;
+
+	// fill with 
+	std::cout << __LINE__ << std::endl;
+	for (int i=0; i<25; i++){
+		tex_data.push_back(glm::u8vec4(0xff, 0x00, 0x00, 0x7f));
+	}
+
+	static GLuint tex = 0;
+	if (tex == 0) {
+		std::cout << __LINE__ << std::endl;
+		glGenTextures(1, &tex);
+		std::cout << __LINE__ << std::endl;
+		glBindTexture(GL_TEXTURE_2D, tex);
+
+		std::cout << __LINE__ << std::endl;
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 5, 5, 0, GL_RGBA, GL_UNSIGNED_BYTE, tex_data.data());
+		std::cout << __LINE__ << std::endl;
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glBindTexture(GL_TEXTURE_2D, 0);
+		std::cout << __LINE__ << std::endl;
+	}
+
+	static GLuint hp_buffer = 0;
+	if (hp_buffer == 0){
+		glGenBuffers(1, &hp_buffer);
+	}
+	struct Vert {
+		Vert(glm::vec3 const &position_, glm::vec2 const &tex_coord_) : position(position_), tex_coord(tex_coord_) { }
+		glm::vec3 position;
+		glm::vec2 tex_coord;
+	};
+
+	static GLuint vao = 0;
+	if (vao == 0) {
+		//based on PPU466.cpp
+
+		glGenVertexArrays(1, &vao);
+		glBindVertexArray(vao);
+
+		glBindBuffer(GL_ARRAY_BUFFER, hp_buffer);
+
+		glVertexAttribPointer(
+			lit_color_texture_program->Position_vec4, //attribute
+			3, //size
+			GL_FLOAT, //type
+			GL_FALSE, //normalized
+			sizeof(Vert), //stride
+			(GLbyte *)0 + offsetof(Vert, position) //offset
+		);
+		glEnableVertexAttribArray(lit_color_texture_program->Position_vec4);
+
+		glVertexAttribPointer(
+			lit_color_texture_program->TexCoord_vec2, //attribute
+			2, //size
+			GL_FLOAT, //type
+			GL_FALSE, //normalized
+			sizeof(Vert), //stride
+			(GLbyte *)0 + offsetof(Vert, tex_coord) //offset
+		);
+		glEnableVertexAttribArray(lit_color_texture_program->TexCoord_vec2);
+
+
+		std::cout << __LINE__ << std::endl;
+	}
+	std::cout << __LINE__ << std::endl;
+
+	glUseProgram(lit_color_texture_program->program);
+
+
+	glm::vec2 player_o2wc = object_to_window_coordinate(player.transform, player.camera, drawable_size);
+	std::cout << "player_o2wc = " << player_o2wc.x <<  ", " << player_o2wc.y << std::endl;
+	float player_window_x = ((player_o2wc.x / 1280.0) * 2.0) - 1.0;
+	float player_window_y = ((player_o2wc.y / 720.0) * 2.0) - 1.0;
+	float block_size = 0.2f;
+
+	std::vector< Vert > attribs;
+	attribs.emplace_back(glm::vec3( player_window_x - block_size, player_window_y - block_size, 0.0f), glm::vec2(0.0f, 0.0f));
+	attribs.emplace_back(glm::vec3( player_window_x - block_size,  player_window_y + block_size, 0.0f), glm::vec2(0.0f, 1.0f));
+	attribs.emplace_back(glm::vec3( player_window_x + block_size, player_window_y - block_size, 0.0f), glm::vec2(1.0f, 0.0f));
+	attribs.emplace_back(glm::vec3( player_window_x + block_size, player_window_y + block_size, 0.0f), glm::vec2(1.0f, 1.0f));
+	GL_ERRORS();
+
+	glBindBuffer(GL_ARRAY_BUFFER, hp_buffer);
+	GL_ERRORS();
+	glBufferData(GL_ARRAY_BUFFER, sizeof(Vert) * attribs.size(), attribs.data(), GL_STREAM_DRAW);
+	GL_ERRORS();
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	GL_ERRORS();
+	std::cout << __LINE__ << std::endl;
+	if (vao == 0){
+		std::cout << " vao = 0 " << std::endl;
+	}
+	//as per Scene::draw -
+	glUseProgram(lit_color_texture_program->program);
+	GL_ERRORS();
+	glUniformMatrix4fv(lit_color_texture_program->OBJECT_TO_CLIP_mat4, 1, GL_FALSE, glm::value_ptr(glm::mat4(1.0f)));
+	GL_ERRORS();
+
+	glBindTexture(GL_TEXTURE_2D, tex);
+	GL_ERRORS();
+	glDisable(GL_DEPTH_TEST);
+	GL_ERRORS();
+	glEnable(GL_BLEND);
+	GL_ERRORS();
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	GL_ERRORS();
+
+	glBindVertexArray(vao);
+	GL_ERRORS();
+
+	// it was gl_triangle_strip before, changed it to this as per scene_drawables
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, attribs.size());
+	GL_ERRORS();
+
+	// glBindVertexArray(0);
+	glDisable(GL_BLEND);
+
+
+	// glBindTexture(GL_TEXTURE_2D, 0);
+	std::cout << __LINE__ << std::endl;
+	GL_ERRORS();
+	// STUFF I ADDED ENDS HERE
 }
