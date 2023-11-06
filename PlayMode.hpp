@@ -11,8 +11,19 @@
 #include <vector>
 #include <deque>
 #include <ctime>
+#include <iostream>
 
 class BehaviorTree;//Forward Declaration
+
+class HpBar{
+public:
+	int current_hp;
+	HpBar(int init_hp){
+		current_hp = init_hp;
+	};
+
+};
+
 struct PlayMode : Mode {
 	PlayMode();
 	virtual ~PlayMode();
@@ -25,6 +36,9 @@ struct PlayMode : Mode {
 	virtual glm::vec2 object_to_window_coordinate(Scene::Transform *object, Scene::Camera *camera, glm::uvec2 const &drawable_size);
 
 	//----- game state -----
+
+	
+	
 
 	//input tracking:
 	struct Button {
@@ -48,6 +62,15 @@ struct PlayMode : Mode {
 		float swingTime = 0.0f;
 	}; 
 
+	// struct MyStruct {
+	// 	// Member variables
+	// 	int data;
+	// 	// Constructor
+	// 	MyStruct(int value) : data(value) {}
+
+	// };
+
+
 	//player info:
 	struct Pawn {
 		WalkPoint at;
@@ -65,7 +88,12 @@ struct PlayMode : Mode {
 		Scene::Transform *sword_transform = nullptr;
 
 		Control pawn_control;
+		// HpBar hpbar(10);
+		// Hp_Bar hp_bar;
+		// MyStruct myInstance(int 42);
+
 	};
+
 	void walk_pawn(PlayMode::Pawn &pawn, float elapsed);
 
 
@@ -79,6 +107,7 @@ struct PlayMode : Mode {
 		Scene::Transform *camera_transform = nullptr;
 		//camera is attatched to camera_transform and will be pitched by mouse up/down motion:
 		Scene::Camera *camera = nullptr;
+
 	} player;	
 	
 	Collisions collEng;

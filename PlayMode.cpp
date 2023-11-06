@@ -112,14 +112,9 @@ glm::vec2 PlayMode::object_to_window_coordinate(Scene::Transform *object, Scene:
 	// The next step is to transform from this [-1, 1] space to window-relative coordinate
 	// taken from this stackexchange post
 	// https://stackoverflow.com/questions/8491247/c-opengl-convert-world-coords-to-screen2d-coords
-	// TODO: get window width
-	// float ws_x_real = ((ws_x+1.0f)/2.0f) * drawable_size.x;
-	// float ws_y_real = drawable_size.y - (((ws_y+1.0f)/2.0f)*drawable_size.y);
-	float ws_x_real = ((ws_x+1.0f)/2.0f) * 1280.0f;
-	float ws_y_real = 720.0f - (((ws_y+1.0f)/2.0f)*720.0f);
-
+	float ws_x_real = ((ws_x+1.0f)/2.0f) * (drawable_size.x / 2.0f);
+	float ws_y_real = (drawable_size.y / 2.0f) - (((ws_y+1.0f)/2.0f)*(drawable_size.y / 2.0f));
 	return glm::vec2(ws_x_real, ws_y_real);
-
 }
 
 PlayMode::PlayMode() : scene(*phonebank_scene) {
