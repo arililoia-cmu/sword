@@ -652,18 +652,19 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 
 
 	// STUFF ADDED STARTS HERE
-	std::vector< glm::u8vec4 > tex_data;
+	std::vector< glm::u8vec4 > enemy_hp_tex_data;
+	static GLuint enemy_hp_tex = 0;
+	static GLuint enemy_hp_buffer = 0;
+	static GLuint enemy_vao = 0;
 
-	// fill with 
 	for (int i=0; i<25; i++){
-		tex_data.push_back(glm::u8vec4(0xff, 0x00, 0x00, 0x7f));
+		enemy_hp_tex_data.push_back(glm::u8vec4(0xff, 0x00, 0x00, 0x7f));
 	}
 
-	static GLuint tex = 0;
-	if (tex == 0) {
-		glGenTextures(1, &tex);
-		glBindTexture(GL_TEXTURE_2D, tex);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 5, 5, 0, GL_RGBA, GL_UNSIGNED_BYTE, tex_data.data());
+	if (enemy_hp_tex == 0) {
+		glGenTextures(1, &enemy_hp_tex);
+		glBindTexture(GL_TEXTURE_2D, enemy_hp_tex);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 5, 5, 0, GL_RGBA, GL_UNSIGNED_BYTE, enemy_hp_tex_data.data());
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -671,19 +672,17 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 
-	static GLuint hp_buffer = 0;
-	if (hp_buffer == 0){
-		glGenBuffers(1, &hp_buffer);
+	if (enemy_hp_buffer == 0){
+		glGenBuffers(1, &enemy_hp_buffer);
 	}
 
-	static GLuint vao = 0;
-	if (vao == 0) {
+	if (enemy_vao == 0) {
 		//based on PPU466.cpp
 
-		glGenVertexArrays(1, &vao);
-		glBindVertexArray(vao);
+		glGenVertexArrays(1, &enemy_vao);
+		glBindVertexArray(enemy_vao);
 
-		glBindBuffer(GL_ARRAY_BUFFER, hp_buffer);
+		glBindBuffer(GL_ARRAY_BUFFER, enemy_hp_buffer);
 
 		glVertexAttribPointer(
 			lit_color_texture_program->Position_vec4, //attribute
@@ -709,6 +708,7 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 
 	glUseProgram(lit_color_texture_program->program);
 
+
 	glm::vec2 enemy_o2wc = object_to_window_coordinate(enemy.body_transform, player.camera, drawable_size);
 	float enemy_window_x = ((enemy_o2wc.x / (drawable_size.x/2.0f)) * 2.0f) - 1.0f;
 	float enemy_window_y = ((enemy_o2wc.y / (drawable_size.y/2.0f)) * 2.0f) - 1.0f;
@@ -722,16 +722,16 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	attribs.emplace_back(glm::vec3( enemy_window_x + block_size*sqrm, enemy_window_y - block_size, 0.0f), glm::vec2(1.0f, 0.0f));
 	attribs.emplace_back(glm::vec3( enemy_window_x + block_size*sqrm, enemy_window_y + block_size, 0.0f), glm::vec2(1.0f, 1.0f));
 
-	glBindBuffer(GL_ARRAY_BUFFER, hp_buffer);
+	glBindBuffer(GL_ARRAY_BUFFER, enemy_hp_buffer);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(Vert) * attribs.size(), attribs.data(), GL_STREAM_DRAW);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glUseProgram(lit_color_texture_program->program);
 	glUniformMatrix4fv(lit_color_texture_program->OBJECT_TO_CLIP_mat4, 1, GL_FALSE, glm::value_ptr(glm::mat4(1.0f)));
-	glBindTexture(GL_TEXTURE_2D, tex);
+	glBindTexture(GL_TEXTURE_2D, enemy_hp_tex);
 	glDisable(GL_DEPTH_TEST);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glBindVertexArray(vao);
+	glBindVertexArray(enemy_vao);
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, attribs.size());
 	// glBindVertexArray(0);
 	glDisable(GL_BLEND);
@@ -745,13 +745,32 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	// do this later
 	// for now: drawing HP bar on top of the screen
 
-	static std::vector< glm::u8vec4 > hp_bar_data;
-	static glm::uvec2 hp_bar_size;
-	if (hp_bar_data.empty()){
-		load_png(data_path("graphics/healthbar.png"), &hp_bar_size, &hp_bar_data, OriginLocation::LowerLeftOrigin);
-	}else{
-		std::cout << hp_bar_size.x << " " << hp_bar_size.y << std::endl;
-	}
+	// static std::vector< glm::u8vec4 > hpbar_data;
+	// static glm::uvec2 hpbar_size;
+	// std::vector< glm::u8vec4 > hpbar_tex_data;
+	// if (hpbar_data.empty()){
+	// 	load_png(data_path("graphics/healthbar.png"), &hpbar_size, &hpbar_data, OriginLocation::LowerLeftOrigin);
+	// 	int hpbar_numpixels = hpbar_size.x * hpbar_size.y;
+	// 	for (int i=0; i<hpbar_size.y; i++){
+	// 		for (int j=0; j<hpbar_size.x; j++){
+	// 			hpbar_tex_data.push_back(hpbar_data.at((i*hpbar_size.x)+j));
+	// 		}
+	// 	}
+	// }else{
+	// 	std::cout << hp_bar_size.x << " " << hp_bar_size.y << std::endl;
+	// }
+
+	// static GLuint hpbar_tex = 0;
+	// if (hpbar_tex == 0) {
+	// 	glGenTextures(1, &hpbar_tex);
+	// 	glBindTexture(GL_TEXTURE_2D, hpbar_tex);
+	// 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, hpbar_size.x, hpbar_size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, hpbar_data.data());
+	// 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	// 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	// 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	// 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	// 	glBindTexture(GL_TEXTURE_2D, 0);
+	// }
 
 
 
