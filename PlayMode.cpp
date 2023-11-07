@@ -442,6 +442,10 @@ void PlayMode::walk_pawn(PlayMode::Pawn &pawn, float elapsed) {
 			} 
 		} else if (stance == 2) {
 
+			if(stance==2){
+				pawn.gameplay_tags="";//clear gameplay tag for AI
+			//	std::cout<<"ddddddddddddddddddddddddddddddddddddd"<<std::endl;
+			}
 			const float dur = 0.4f;
 			const float delay = 0.4f;
 			float dt = pawn.pawn_control.swingHit;
@@ -468,6 +472,10 @@ void PlayMode::walk_pawn(PlayMode::Pawn &pawn, float elapsed) {
 				}
 			}
 		} else if (stance == 4 || stance == 5){ // parry
+			if(stance==5){
+				pawn.gameplay_tags="";//clear gameplay tag for AI
+			//	std::cout<<"eeeaaa"<<std::endl;
+			}
 			const float dur = 0.25f; //total time of down parry, total parry time is thrice due to holding 
 			float rt = (st < dur) ? st / dur : 1.0f;
 			float adt_time = 1 - (1-rt)*(1-rt)*(1-rt) * (2 - (1-rt)*(1-rt)*(1-rt)); // Time scaling, imitates acceleration

@@ -166,7 +166,7 @@ class ParryTask:public ActionNode{
         BlackBoard* status=nullptr;
     public:
         ParryTask(BlackBoard* status):status(status){
-            SetCDTime(3);
+            SetCDTime(0);
         }
         virtual bool run()override{
             if(CheckTime()){
