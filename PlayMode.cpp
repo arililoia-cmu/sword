@@ -708,7 +708,7 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 
 	glUseProgram(lit_color_texture_program->program);
 
-
+	// step 2: figure out where in the window to draw the thing
 	glm::vec2 enemy_o2wc = object_to_window_coordinate(enemy.body_transform, player.camera, drawable_size);
 	float enemy_window_x = ((enemy_o2wc.x / (drawable_size.x/2.0f)) * 2.0f) - 1.0f;
 	float enemy_window_y = ((enemy_o2wc.y / (drawable_size.y/2.0f)) * 2.0f) - 1.0f;
@@ -745,32 +745,113 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	// do this later
 	// for now: drawing HP bar on top of the screen
 
-	// static std::vector< glm::u8vec4 > hpbar_data;
-	// static glm::uvec2 hpbar_size;
-	// std::vector< glm::u8vec4 > hpbar_tex_data;
-	// if (hpbar_data.empty()){
-	// 	load_png(data_path("graphics/healthbar.png"), &hpbar_size, &hpbar_data, OriginLocation::LowerLeftOrigin);
-	// 	int hpbar_numpixels = hpbar_size.x * hpbar_size.y;
-	// 	for (int i=0; i<hpbar_size.y; i++){
-	// 		for (int j=0; j<hpbar_size.x; j++){
-	// 			hpbar_tex_data.push_back(hpbar_data.at((i*hpbar_size.x)+j));
-	// 		}
-	// 	}
-	// }else{
-	// 	std::cout << hp_bar_size.x << " " << hp_bar_size.y << std::endl;
-	// }
+	static std::vector< glm::u8vec4 > hpbar_data;
+	static glm::uvec2 hpbar_size;
+	static std::vector< glm::u8vec4 > hpbar_tex_data;
 
-	// static GLuint hpbar_tex = 0;
-	// if (hpbar_tex == 0) {
-	// 	glGenTextures(1, &hpbar_tex);
-	// 	glBindTexture(GL_TEXTURE_2D, hpbar_tex);
-	// 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, hpbar_size.x, hpbar_size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, hpbar_data.data());
-	// 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	// 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	// 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	// 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	// 	glBindTexture(GL_TEXTURE_2D, 0);
-	// }
+	// static GLuint enemy_hp_tex = 0;
+	static GLuint hpbar_tex = 0;
+	// static GLuint enemy_hp_buffer = 0;
+	static GLuint hpbar_buffer = 0;
+	// static GLuint enemy_vao = 0;
+	static GLuint hpbar_vao = 0;
+
+	if (hpbar_data.empty()){
+		load_png(data_path("graphics/healthbar2.png"), &hpbar_size, &hpbar_data, OriginLocation::LowerLeftOrigin);
+		for (int i=0; i<hpbar_size.y; i++){
+			for (int j=0; j<hpbar_size.x; j++){
+				// hpbar_tex_data.push_back(hpbar_data.at((i*hpbar_size.x)+j));
+				
+				// hpbar_tex_data.push_back(glm::vec4(
+				// 	hpbar_tex_data.at((i*hpbar_size.x)+j)[0],
+				// 	hpbar_tex_data.at((i*hpbar_size.x)+j)[1],
+				// 	hpbar_tex_data.at((i*hpbar_size.x)+j)[2],
+				// 	0.5f
+				// ));
+				hpbar_tex_data.push_back(glm::u8vec4(0xff, 0x00, 0x00, 0x7f));
+
+			}
+		}
+	}else{
+		std::cout << hpbar_size.x << " " << hpbar_size.y << std::endl;
+	}
+
+	if (hpbar_tex == 0) {
+		glGenTextures(1, &hpbar_tex);
+		glBindTexture(GL_TEXTURE_2D, hpbar_tex);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, hpbar_size.x, hpbar_size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, hpbar_tex_data.data());
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glBindTexture(GL_TEXTURE_2D, 0);
+	}
+
+	if (hpbar_buffer == 0){
+		glGenBuffers(1, &hpbar_buffer);
+	}
+
+	if (hpbar_vao == 0) {
+		//based on PPU466.cpp
+
+		glGenVertexArrays(1, &hpbar_vao);
+		glBindVertexArray(hpbar_vao);
+
+		glBindBuffer(GL_ARRAY_BUFFER, hpbar_buffer);
+		// glVertexAttrib4f(lit_color_texture_program->Color_vec4, 1.0f, 1.0f, 1.0f, 1.0f);
+		glVertexAttribPointer(
+			lit_color_texture_program->Position_vec4, //attribute
+			3, //size
+			GL_FLOAT, //type
+			GL_FALSE, //normalized
+			sizeof(Vert), //stride
+			(GLbyte *)0 + offsetof(Vert, position) //offset
+		);
+		glEnableVertexAttribArray(lit_color_texture_program->Position_vec4);
+
+		glVertexAttribPointer(
+			lit_color_texture_program->TexCoord_vec2, //attribute
+			2, //size
+			GL_FLOAT, //type
+			GL_FALSE, //normalized
+			sizeof(Vert), //stride
+			(GLbyte *)0 + offsetof(Vert, tex_coord) //offset
+		);
+		glEnableVertexAttribArray(lit_color_texture_program->TexCoord_vec2);
+
+	}
+
+	glUseProgram(lit_color_texture_program->program);
+
+	// step 2: where to draw the hp bar
+	static glm::vec2 hpbar_bottom_left = glm::vec2(-0.9, 0.6);
+	static glm::vec2 hpbar_top_right = glm::vec2(0.9, 0.9);
+
+	std::vector< Vert > hpbar_attribs;
+	hpbar_attribs.emplace_back(glm::vec3( hpbar_bottom_left.x, hpbar_bottom_left.y, 0.0f), glm::vec2(0.0f, 0.0f)); // 1
+	hpbar_attribs.emplace_back(glm::vec3( hpbar_top_right.x, hpbar_bottom_left.y, 0.0f), glm::vec2(1.0f, 1.0f)); // 4 
+	hpbar_attribs.emplace_back(glm::vec3( hpbar_bottom_left.x,  hpbar_top_right.y, 0.0f), glm::vec2(0.0f, 1.0f)); // 2
+	hpbar_attribs.emplace_back(glm::vec3( hpbar_top_right.x, hpbar_top_right.y, 0.0f), glm::vec2(1.0f, 0.0f)); // 3
+	
+
+	glBindBuffer(GL_ARRAY_BUFFER, hpbar_buffer);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(Vert) * hpbar_attribs.size(), hpbar_attribs.data(), GL_STREAM_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	
+	glUseProgram(lit_color_texture_program->program);
+	glVertexAttrib4f(lit_color_texture_program->Color_vec4, 1.0f, 1.0f, 1.0f, 1.0f);
+	glUniformMatrix4fv(lit_color_texture_program->OBJECT_TO_CLIP_mat4, 1, GL_FALSE, glm::value_ptr(glm::mat4(1.0f)));
+	glBindTexture(GL_TEXTURE_2D, hpbar_tex);
+	glDisable(GL_DEPTH_TEST);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glBindVertexArray(hpbar_vao);
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, hpbar_attribs.size());
+	// glBindVertexArray(0);
+	glDisable(GL_BLEND);
+	// glBindTexture(GL_TEXTURE_2D, 0);
+	GL_ERRORS();
+
 
 
 
