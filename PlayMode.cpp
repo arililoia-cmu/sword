@@ -827,11 +827,15 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	static glm::vec2 hpbar_bottom_left = glm::vec2(-0.9, 0.6);
 	static glm::vec2 hpbar_top_right = glm::vec2(0.9, 0.9);
 
-	std::vector< Vert > hpbar_attribs;
-	hpbar_attribs.emplace_back(glm::vec3( hpbar_bottom_left.x, hpbar_bottom_left.y, 0.0f), glm::vec2(0.0f, 0.0f)); // 1
-	hpbar_attribs.emplace_back(glm::vec3( hpbar_top_right.x, hpbar_bottom_left.y, 0.0f), glm::vec2(1.0f, 1.0f)); // 4 
-	hpbar_attribs.emplace_back(glm::vec3( hpbar_bottom_left.x,  hpbar_top_right.y, 0.0f), glm::vec2(0.0f, 1.0f)); // 2
-	hpbar_attribs.emplace_back(glm::vec3( hpbar_top_right.x, hpbar_top_right.y, 0.0f), glm::vec2(1.0f, 0.0f)); // 3
+	static std::vector< Vert > hpbar_attribs;
+	if (hpbar_attribs.size() == 0){
+		// 1423 works
+		hpbar_attribs.emplace_back(glm::vec3( hpbar_bottom_left.x, hpbar_bottom_left.y, 0.0f), glm::vec2(0.0f, 0.0f)); // 1
+		hpbar_attribs.emplace_back(glm::vec3( hpbar_top_right.x, hpbar_bottom_left.y, 0.0f), glm::vec2(1.0f, 1.0f)); // 4 
+		hpbar_attribs.emplace_back(glm::vec3( hpbar_bottom_left.x,  hpbar_top_right.y, 0.0f), glm::vec2(0.0f, 1.0f)); // 2
+		hpbar_attribs.emplace_back(glm::vec3( hpbar_top_right.x, hpbar_top_right.y, 0.0f), glm::vec2(1.0f, 0.0f)); // 3
+	}
+	
 	
 
 	glBindBuffer(GL_ARRAY_BUFFER, hpbar_buffer);
