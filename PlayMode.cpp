@@ -433,7 +433,10 @@ void PlayMode::walk_pawn(PlayMode::Pawn &pawn, float elapsed) {
 
 
 			} else {
-
+			if(stance==3){
+				pawn.gameplay_tags="";//clear gameplay tag for AI
+			//	std::cout<<"ddddddddddddddddddddddddddddddddddddd"<<std::endl;
+			}
 				st -= elapsed;
 				if (st < 0.0f){
 					if (stance != 0){ stance_changed_in_attack = true; }
