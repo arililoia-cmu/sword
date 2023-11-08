@@ -18,7 +18,6 @@ class BehaviorTree;//Forward Declaration
 class HpBar{
 	public:
 		int max_hp, current_hp;
-		
 		// HpBar(int init_hp){
 		// 	max_hp = init_hp;
 		// 	current_hp = init_hp;
@@ -35,7 +34,7 @@ class HpBar{
 		}
 
 		float get_percent_hp_left(){
-			return (current_hp / max_hp);
+			return ((float)current_hp / (float)max_hp);
 		}
 
 		void change_hp_by(int to_change){
@@ -50,6 +49,16 @@ class HpBar{
 			}
 		}
 
+		glm::u8vec4 get_health_color(float hp_bar_transparency){
+			glm::u8vec4 health_color = glm::u8vec4(
+				0xff * (1.0f - get_percent_hp_left()),
+				0xff * get_percent_hp_left(),
+				0x00, 0xff * hp_bar_transparency
+			);
+			return health_color;
+		}
+
+	
 		// enemy_draw(){
 
 		// }
@@ -179,4 +188,5 @@ struct PlayMode : Mode {
 	bool change_player_hp = false;
 	int hp_bar_empty_x = -1;
 	int hp_bar_full_x = 0;
+
 };

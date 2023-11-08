@@ -155,7 +155,7 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 	player.transform->position = walkmesh->to_world_point(player.at);
 	player.is_player = true;
 	player.hp = new HpBar();
-	player.hp->Init(20);
+	player.hp->Init(1000);
 
 	//same for enemy
 	scene.transforms.emplace_back();
@@ -247,7 +247,8 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 				if ((elapsed / CLOCKS_PER_SEC) > min_enemy_sword_clang_interval){
 					w_conv2_sound = Sound::play(*w_conv2, 1.0f, 0.0f);
 					previous_enemy_sword_clang_time = clock();
-
+					player.hp->change_hp_by(-1);
+					change_player_hp = true;
 				}
 			}
 		};
@@ -760,9 +761,7 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	static GLuint hpbar_tex = 0;
 	static GLuint hpbar_buffer = 0;
 	static GLuint hpbar_vao = 0;
-	static glm::u8vec4 player_health_color = glm::u8vec4(0x00, 0xff, 0x00, hp_bar_transparency);
-	
-	
+
 	if (hpbar_data.empty()){
 		load_png(data_path("graphics/healthbar_base.png"), &hpbar_size, &hpbar_data, OriginLocation::UpperLeftOrigin);
 		for (int i=hpbar_size.y-1; i>=0; i--){
@@ -783,25 +782,60 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 						}else{
 							hp_bar_full_x = j;
 						}
+						hpbar_tex_data.push_back(glm::u8vec4(0x00, 0xff, 0x00, 0xff*hp_bar_transparency));
 
+				}else{
+					hpbar_tex_data.push_back(pixel_at);
 				}
-				hpbar_tex_data.push_back(pixel_at);
-			}
-		}
-	}
-	
-	if (change_player_hp == true){
-		for (int i=hpbar_size.y-1; i>=0; i--){
-			for (int j=0; j<hpbar_size.x; j++){
-
 				
 			}
 		}
-		change_player_hp = false;
 	}
-	std::cout << "hp_bar_empty_x: " << hp_bar_empty_x << " hp_bar_full_x " << hp_bar_full_x << std::endl;
 
-	if (hpbar_tex == 0) {
+	// todo : figure out a way to do this that doesn't involve a double for loop
+	// and clearing the enture tex data array
+	// maybe figure out the bijection 
+
+	player.hp->change_hp_by(-1);
+
+	change_player_hp = true;
+	if (change_player_hp == true){
+
+		hpbar_tex_data.clear();
+		
+		int health_border = hp_bar_empty_x + 
+			std::floor((hp_bar_full_x - hp_bar_empty_x)*player.hp->get_percent_hp_left());
+
+		glm::u8vec4 health_color = player.hp->get_health_color(hp_bar_transparency);
+
+		glm::u8vec4 empty_color = glm::u8vec4(0x00f, 0x00f, 0x00f, 0xff*hp_bar_transparency);
+		
+		for (int i=hpbar_size.y-1; i>=0; i--){
+			for (int j=0; j<hpbar_size.x; j++){
+				glm::u8vec4 pixel_at = glm::u8vec4(
+					hpbar_data.at((i*hpbar_size.x)+j)[0],
+					hpbar_data.at((i*hpbar_size.x)+j)[1],
+					hpbar_data.at((i*hpbar_size.x)+j)[2],
+					hpbar_data.at((i*hpbar_size.x)+j)[3] * hp_bar_transparency
+				);
+
+				if (((int)pixel_at[0] == 0) && ((int)pixel_at[1] == 0) 
+					&& ((int)pixel_at[2] == 0) && ((int)pixel_at[3] == 127)){
+						if (j > health_border){
+							hpbar_tex_data.push_back(empty_color);
+						}else{
+							hpbar_tex_data.push_back(health_color);
+						}
+				}else{
+					hpbar_tex_data.push_back(pixel_at);
+				}
+							
+			}
+		}
+	}
+
+
+	if (hpbar_tex == 0 || change_player_hp) {
 		glGenTextures(1, &hpbar_tex);
 		glBindTexture(GL_TEXTURE_2D, hpbar_tex);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, hpbar_size.x, hpbar_size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, hpbar_tex_data.data());
@@ -812,18 +846,17 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 
-	if (hpbar_buffer == 0){
+	if (hpbar_buffer == 0 || change_player_hp){
 		glGenBuffers(1, &hpbar_buffer);
 	}
 
-	if (hpbar_vao == 0) {
+	if (hpbar_vao == 0 || change_player_hp) {
 		//based on PPU466.cpp
 
 		glGenVertexArrays(1, &hpbar_vao);
 		glBindVertexArray(hpbar_vao);
 
 		glBindBuffer(GL_ARRAY_BUFFER, hpbar_buffer);
-		// glVertexAttrib4f(lit_color_texture_program->Color_vec4, 1.0f, 1.0f, 1.0f, 1.0f);
 		glVertexAttribPointer(
 			texture_program->Position_vec4, //attribute
 			3, //size
@@ -853,7 +886,7 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	static glm::vec2 hpbar_top_right = glm::vec2(0.9, 0.9);
 
 	static std::vector< Vert > hpbar_attribs;
-	if (hpbar_attribs.size() == 0){
+	if (hpbar_attribs.size() == 0 || change_player_hp){
 		hpbar_attribs.emplace_back(glm::vec3( hpbar_bottom_left.x, hpbar_bottom_left.y, 0.0f), glm::vec2(0.0f, 0.0f)); // 1
 		hpbar_attribs.emplace_back(glm::vec3( hpbar_bottom_left.x,  hpbar_top_right.y, 0.0f), glm::vec2(0.0f, 1.0f)); // 2
 		hpbar_attribs.emplace_back(glm::vec3( hpbar_top_right.x, hpbar_bottom_left.y, 0.0f), glm::vec2(1.0f, 0.0f)); // 4 
@@ -877,7 +910,7 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	glUseProgram(0);
 	GL_ERRORS();
 
-
+	change_player_hp = false;
 
 
 }
