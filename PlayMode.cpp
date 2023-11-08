@@ -164,6 +164,9 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 
 	enemy.bt=new BehaviorTree();
 	enemy.bt->Init();//AI Initialize
+	int enemy_hp_start = 10;
+	enemy.hp = new HpBar();
+	enemy.hp->Init(enemy_hp_start);
 	enemy.bt->SetEnemy(&enemy);
 	enemy.bt->SetPlayer(&player);
 	//setup camera
@@ -243,6 +246,7 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 				if ((elapsed / CLOCKS_PER_SEC) > min_enemy_sword_clang_interval){
 					w_conv2_sound = Sound::play(*w_conv2, 1.0f, 0.0f);
 					previous_enemy_sword_clang_time = clock();
+
 				}
 			}
 		};
@@ -597,6 +601,7 @@ void PlayMode::update(float elapsed) {
 
 void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	//update camera aspect ratio for drawable:
+	std::cout << "enemy.hpbar.current_hp: " << enemy.hp->current_hp << std::endl;
 	player.camera->aspect = float(drawable_size.x) / float(drawable_size.y);
 
 	//set up light type and position for lit_color_texture_program:
@@ -753,18 +758,22 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 
 	// static GLuint enemy_hp_tex = 0;
 	static GLuint hpbar_tex = 0;
-	// static GLuint enemy_hp_buffer = 0;
 	static GLuint hpbar_buffer = 0;
-	// static GLuint enemy_vao = 0;
 	static GLuint hpbar_vao = 0;
+
 	if (hpbar_data.empty()){
-		load_png(data_path("graphics/test_image.png"), &hpbar_size, &hpbar_data, OriginLocation::UpperLeftOrigin);
+		load_png(data_path("graphics/healthbar_base.png"), &hpbar_size, &hpbar_data, OriginLocation::UpperLeftOrigin);
 		for (int i=hpbar_size.y-1; i>=0; i--){
 			for (int j=0; j<hpbar_size.x; j++){
-				hpbar_tex_data.push_back(hpbar_data.at((i*hpbar_size.x)+j));
+				// hpbar_tex_data.push_back(hpbar_data.at((i*hpbar_size.x)+j));
+				hpbar_tex_data.push_back(glm::u8vec4(
+					hpbar_data.at((i*hpbar_size.x)+j)[0],
+					hpbar_data.at((i*hpbar_size.x)+j)[1],
+					hpbar_data.at((i*hpbar_size.x)+j)[2],
+					hpbar_data.at((i*hpbar_size.x)+j)[3] * hp_bar_transparency			
+				));
 			}
 		}
-
 	}
 
 	if (hpbar_tex == 0) {

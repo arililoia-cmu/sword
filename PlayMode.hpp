@@ -15,6 +15,44 @@
 
 class BehaviorTree;//Forward Declaration
 
+class HpBar{
+	public:
+		int max_hp, current_hp;
+		
+		// HpBar(int init_hp){
+		// 	max_hp = init_hp;
+		// 	current_hp = init_hp;
+		// };
+		HpBar(){}
+
+		// going after naming convention in behaviortree
+		void Init(int init_hp){
+			std::cout << "hpbar initialize start" << std::endl;
+			max_hp = init_hp;
+			std::cout << "max hp set" << std::endl;
+			current_hp = init_hp;
+			std::cout << "current hp set" << std::endl;
+		}
+
+		void change_hp_by(int to_change){
+			if (current_hp + to_change > max_hp){
+				current_hp = max_hp;
+			}
+			else if (current_hp + to_change < 0){
+				current_hp = 0;
+			}
+			else{
+				current_hp += to_change;
+			}
+		}
+
+		// enemy_draw(){
+
+		// }
+
+};
+	
+
 
 struct Vert {
 		Vert(glm::vec3 const &position_, glm::vec2 const &tex_coord_) : position(position_), tex_coord(tex_coord_) { }
@@ -56,20 +94,32 @@ struct PlayMode : Mode {
 	// 	glm::vec2 tex_coord;
 	// };
 
-	class HpBar{
-	public:
-		int max_hp, current_hp;
+	// class HpBar{
+	// public:
+	// 	int max_hp, current_hp;
 		
-		HpBar(int init_hp){
-			max_hp = init_hp;
-			current_hp = init_hp;
-		};
+	// 	HpBar(int init_hp){
+	// 		max_hp = init_hp;
+	// 		current_hp = init_hp;
+	// 	};
 
-		// enemy_draw(){
+	// 	change_hp_by(int to_change){
+	// 		if (current_hp + to_change > max_hp){
+	// 			current_hp = max_hp;
+	// 		}
+	// 		else if (current_hp + to_change < 0){
+	// 			current_hp = 0;
+	// 		}
+	// 		else{
+	// 			current_hp += to_change;
+	// 		}
+	// 	}
 
-		// }
+	// 	// enemy_draw(){
 
-	};
+	// 	// }
+
+	// };
 	
 	struct Control {
 		glm::vec3 move = glm::vec3(0.0f); // displacement in world (should be scaled by elapsed)
@@ -121,7 +171,8 @@ struct PlayMode : Mode {
 
 	struct Enemy : Pawn {
 		BehaviorTree* bt;
-		HpBar hpbar(int hp = 10);
+		// int init_hp = 10;
+		HpBar* hp;
 
 
 		// Enemy() {
@@ -157,4 +208,9 @@ struct PlayMode : Mode {
 	std::shared_ptr< Sound::PlayingSample > fast_downswing_sound;
 	std::shared_ptr< Sound::PlayingSample > footstep_wconv1_sound;
 	// sound stuff ends here:
+
+	// random graphics stuff for the hp_bar:
+	float hp_bar_transparency = 0.5f; 
+	// value between 0 and 1 to set the transparency
+	// of the HP bar on the screen
 };
