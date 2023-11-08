@@ -756,13 +756,11 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	static GLuint hpbar_buffer = 0;
 	// static GLuint enemy_vao = 0;
 	static GLuint hpbar_vao = 0;
-	static int num_aggressed = 0;
 	if (hpbar_data.empty()){
 		load_png(data_path("graphics/test_image.png"), &hpbar_size, &hpbar_data, OriginLocation::UpperLeftOrigin);
 		for (int i=hpbar_size.y-1; i>=0; i--){
 			for (int j=0; j<hpbar_size.x; j++){
 				hpbar_tex_data.push_back(hpbar_data.at((i*hpbar_size.x)+j));
-				num_aggressed++;
 			}
 		}
 
