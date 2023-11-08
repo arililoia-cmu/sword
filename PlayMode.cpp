@@ -718,6 +718,7 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	float sqrm = ((float)drawable_size.y / (float)drawable_size.x);
 
 	std::vector< Vert > attribs;
+	// TODO: do to this whatever I did with the hp bar
 	attribs.emplace_back(glm::vec3( enemy_window_x - block_size*sqrm, enemy_window_y - block_size, 0.0f), glm::vec2(0.0f, 0.0f));
 	attribs.emplace_back(glm::vec3( enemy_window_x - block_size*sqrm,  enemy_window_y + block_size, 0.0f), glm::vec2(0.0f, 1.0f));
 	attribs.emplace_back(glm::vec3( enemy_window_x + block_size*sqrm, enemy_window_y - block_size, 0.0f), glm::vec2(1.0f, 0.0f));
@@ -819,15 +820,12 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 
 	static std::vector< Vert > hpbar_attribs;
 	if (hpbar_attribs.size() == 0){
-		// 1423 works
 		hpbar_attribs.emplace_back(glm::vec3( hpbar_bottom_left.x, hpbar_bottom_left.y, 0.0f), glm::vec2(0.0f, 0.0f)); // 1
-		hpbar_attribs.emplace_back(glm::vec3( hpbar_top_right.x, hpbar_bottom_left.y, 0.0f), glm::vec2(1.0f, 1.0f)); // 4 
 		hpbar_attribs.emplace_back(glm::vec3( hpbar_bottom_left.x,  hpbar_top_right.y, 0.0f), glm::vec2(0.0f, 1.0f)); // 2
-		hpbar_attribs.emplace_back(glm::vec3( hpbar_top_right.x, hpbar_top_right.y, 0.0f), glm::vec2(1.0f, 0.0f)); // 3
+		hpbar_attribs.emplace_back(glm::vec3( hpbar_top_right.x, hpbar_bottom_left.y, 0.0f), glm::vec2(1.0f, 0.0f)); // 4 
+		hpbar_attribs.emplace_back(glm::vec3( hpbar_top_right.x, hpbar_top_right.y, 0.0f), glm::vec2(1.0f, 1.0f)); // 3
 	}
 	
-	
-
 	glBindBuffer(GL_ARRAY_BUFFER, hpbar_buffer);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(Vert) * hpbar_attribs.size(), hpbar_attribs.data(), GL_STREAM_DRAW);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
