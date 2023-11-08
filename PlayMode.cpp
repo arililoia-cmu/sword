@@ -1,6 +1,7 @@
 #include "PlayMode.hpp"
 
 #include "LitColorTextureProgram.hpp"
+#include "TextureProgram.hpp"
 
 #include "DrawLines.hpp"
 #include "Mesh.hpp"
@@ -600,11 +601,11 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 
 	//set up light type and position for lit_color_texture_program:
 	// TODO: consider using the Light(s) in the scene to do this
-	
+	glUseProgram(lit_color_texture_program->program);
 	glUniform1i(lit_color_texture_program->LIGHT_TYPE_int, 1);
 	glUniform3fv(lit_color_texture_program->LIGHT_DIRECTION_vec3, 1, glm::value_ptr(glm::vec3(0.0f, 0.0f,-1.0f)));
 	glUniform3fv(lit_color_texture_program->LIGHT_ENERGY_vec3, 1, glm::value_ptr(glm::vec3(1.0f, 1.0f, 0.95f)));
-	glUseProgram(0);
+	// glUseProgram(0);
 
 	glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
 	glClearDepth(1.0f); //1.0 is actually the default value to clear the depth buffer to, but FYI you can change it.
@@ -769,6 +770,7 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 				// 	0.5f
 				// ));
 				hpbar_tex_data.push_back(glm::u8vec4(0xff, 0x00, 0x00, 0x7f));
+				
 
 			}
 		}
@@ -800,28 +802,28 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 		glBindBuffer(GL_ARRAY_BUFFER, hpbar_buffer);
 		// glVertexAttrib4f(lit_color_texture_program->Color_vec4, 1.0f, 1.0f, 1.0f, 1.0f);
 		glVertexAttribPointer(
-			lit_color_texture_program->Position_vec4, //attribute
+			texture_program->Position_vec4, //attribute
 			3, //size
 			GL_FLOAT, //type
 			GL_FALSE, //normalized
 			sizeof(Vert), //stride
 			(GLbyte *)0 + offsetof(Vert, position) //offset
 		);
-		glEnableVertexAttribArray(lit_color_texture_program->Position_vec4);
+		glEnableVertexAttribArray(texture_program->Position_vec4);
 
 		glVertexAttribPointer(
-			lit_color_texture_program->TexCoord_vec2, //attribute
+			texture_program->TexCoord_vec2, //attribute
 			2, //size
 			GL_FLOAT, //type
 			GL_FALSE, //normalized
 			sizeof(Vert), //stride
 			(GLbyte *)0 + offsetof(Vert, tex_coord) //offset
 		);
-		glEnableVertexAttribArray(lit_color_texture_program->TexCoord_vec2);
+		glEnableVertexAttribArray(texture_program->TexCoord_vec2);
 
 	}
 
-	glUseProgram(lit_color_texture_program->program);
+	glUseProgram(texture_program->program);
 
 	// step 2: where to draw the hp bar
 	static glm::vec2 hpbar_bottom_left = glm::vec2(-0.9, 0.6);
@@ -842,9 +844,9 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	glBufferData(GL_ARRAY_BUFFER, sizeof(Vert) * hpbar_attribs.size(), hpbar_attribs.data(), GL_STREAM_DRAW);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	
-	glUseProgram(lit_color_texture_program->program);
-	glVertexAttrib4f(lit_color_texture_program->Color_vec4, 1.0f, 1.0f, 1.0f, 1.0f);
-	glUniformMatrix4fv(lit_color_texture_program->OBJECT_TO_CLIP_mat4, 1, GL_FALSE, glm::value_ptr(glm::mat4(1.0f)));
+	glUseProgram(texture_program->program);
+	// glVertexAttrib4f(texture_program->Color_vec4, 1.0f, 1.0f, 1.0f, 1.0f);
+	glUniformMatrix4fv(texture_program->OBJECT_TO_CLIP_mat4, 1, GL_FALSE, glm::value_ptr(glm::mat4(1.0f)));
 	glBindTexture(GL_TEXTURE_2D, hpbar_tex);
 	glDisable(GL_DEPTH_TEST);
 	glEnable(GL_BLEND);
@@ -853,7 +855,8 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, hpbar_attribs.size());
 	// glBindVertexArray(0);
 	glDisable(GL_BLEND);
-	// glBindTexture(GL_TEXTURE_2D, 0);
+	glBindTexture(GL_TEXTURE_2D, 0);
+	glUseProgram(0);
 	GL_ERRORS();
 
 
