@@ -756,26 +756,16 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	static GLuint hpbar_buffer = 0;
 	// static GLuint enemy_vao = 0;
 	static GLuint hpbar_vao = 0;
-
+	static int num_aggressed = 0;
 	if (hpbar_data.empty()){
-		load_png(data_path("graphics/healthbar2.png"), &hpbar_size, &hpbar_data, OriginLocation::LowerLeftOrigin);
-		for (int i=0; i<hpbar_size.y; i++){
+		load_png(data_path("graphics/test_image.png"), &hpbar_size, &hpbar_data, OriginLocation::UpperLeftOrigin);
+		for (int i=hpbar_size.y-1; i>=0; i--){
 			for (int j=0; j<hpbar_size.x; j++){
-				// hpbar_tex_data.push_back(hpbar_data.at((i*hpbar_size.x)+j));
-				
-				// hpbar_tex_data.push_back(glm::vec4(
-				// 	hpbar_tex_data.at((i*hpbar_size.x)+j)[0],
-				// 	hpbar_tex_data.at((i*hpbar_size.x)+j)[1],
-				// 	hpbar_tex_data.at((i*hpbar_size.x)+j)[2],
-				// 	0.5f
-				// ));
-				hpbar_tex_data.push_back(glm::u8vec4(0xff, 0x00, 0x00, 0x7f));
-				
-
+				hpbar_tex_data.push_back(hpbar_data.at((i*hpbar_size.x)+j));
+				num_aggressed++;
 			}
 		}
-	}else{
-		std::cout << hpbar_size.x << " " << hpbar_size.y << std::endl;
+
 	}
 
 	if (hpbar_tex == 0) {
@@ -845,7 +835,6 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	
 	glUseProgram(texture_program->program);
-	// glVertexAttrib4f(texture_program->Color_vec4, 1.0f, 1.0f, 1.0f, 1.0f);
 	glUniformMatrix4fv(texture_program->OBJECT_TO_CLIP_mat4, 1, GL_FALSE, glm::value_ptr(glm::mat4(1.0f)));
 	glBindTexture(GL_TEXTURE_2D, hpbar_tex);
 	glDisable(GL_DEPTH_TEST);
@@ -853,7 +842,6 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glBindVertexArray(hpbar_vao);
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, hpbar_attribs.size());
-	// glBindVertexArray(0);
 	glDisable(GL_BLEND);
 	glBindTexture(GL_TEXTURE_2D, 0);
 	glUseProgram(0);
