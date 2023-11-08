@@ -154,6 +154,8 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 	player.body_transform->parent = player.transform;
 	player.transform->position = walkmesh->to_world_point(player.at);
 	player.is_player = true;
+	player.hp = new HpBar();
+	player.hp->Init(20);
 
 	//same for enemy
 	scene.transforms.emplace_back();
@@ -164,9 +166,8 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 
 	enemy.bt=new BehaviorTree();
 	enemy.bt->Init();//AI Initialize
-	int enemy_hp_start = 10;
 	enemy.hp = new HpBar();
-	enemy.hp->Init(enemy_hp_start);
+	enemy.hp->Init(10);
 	enemy.bt->SetEnemy(&enemy);
 	enemy.bt->SetPlayer(&player);
 	//setup camera
@@ -756,25 +757,49 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	static glm::uvec2 hpbar_size;
 	static std::vector< glm::u8vec4 > hpbar_tex_data;
 
-	// static GLuint enemy_hp_tex = 0;
 	static GLuint hpbar_tex = 0;
 	static GLuint hpbar_buffer = 0;
 	static GLuint hpbar_vao = 0;
-
+	static glm::u8vec4 player_health_color = glm::u8vec4(0x00, 0xff, 0x00, hp_bar_transparency);
+	
+	
 	if (hpbar_data.empty()){
 		load_png(data_path("graphics/healthbar_base.png"), &hpbar_size, &hpbar_data, OriginLocation::UpperLeftOrigin);
 		for (int i=hpbar_size.y-1; i>=0; i--){
 			for (int j=0; j<hpbar_size.x; j++){
-				// hpbar_tex_data.push_back(hpbar_data.at((i*hpbar_size.x)+j));
-				hpbar_tex_data.push_back(glm::u8vec4(
+
+				glm::u8vec4 pixel_at = glm::u8vec4(
 					hpbar_data.at((i*hpbar_size.x)+j)[0],
 					hpbar_data.at((i*hpbar_size.x)+j)[1],
 					hpbar_data.at((i*hpbar_size.x)+j)[2],
-					hpbar_data.at((i*hpbar_size.x)+j)[3] * hp_bar_transparency			
-				));
+					hpbar_data.at((i*hpbar_size.x)+j)[3] * hp_bar_transparency
+				);
+				// get where the hp bar "fillup" region starts and ends
+				// only need to do this if we haven't read in the texture yet
+				if (((int)pixel_at[0] == 0) && ((int)pixel_at[1] == 0) 
+					&& ((int)pixel_at[2] == 0) && ((int)pixel_at[3] == 127)){
+						if (hp_bar_empty_x == -1){
+							hp_bar_empty_x = j;
+						}else{
+							hp_bar_full_x = j;
+						}
+
+				}
+				hpbar_tex_data.push_back(pixel_at);
 			}
 		}
 	}
+	
+	if (change_player_hp == true){
+		for (int i=hpbar_size.y-1; i>=0; i--){
+			for (int j=0; j<hpbar_size.x; j++){
+
+				
+			}
+		}
+		change_player_hp = false;
+	}
+	std::cout << "hp_bar_empty_x: " << hp_bar_empty_x << " hp_bar_full_x " << hp_bar_full_x << std::endl;
 
 	if (hpbar_tex == 0) {
 		glGenTextures(1, &hpbar_tex);

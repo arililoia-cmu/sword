@@ -34,6 +34,10 @@ class HpBar{
 			std::cout << "current hp set" << std::endl;
 		}
 
+		float get_percent_hp_left(){
+			return (current_hp / max_hp);
+		}
+
 		void change_hp_by(int to_change){
 			if (current_hp + to_change > max_hp){
 				current_hp = max_hp;
@@ -94,33 +98,6 @@ struct PlayMode : Mode {
 	// 	glm::vec2 tex_coord;
 	// };
 
-	// class HpBar{
-	// public:
-	// 	int max_hp, current_hp;
-		
-	// 	HpBar(int init_hp){
-	// 		max_hp = init_hp;
-	// 		current_hp = init_hp;
-	// 	};
-
-	// 	change_hp_by(int to_change){
-	// 		if (current_hp + to_change > max_hp){
-	// 			current_hp = max_hp;
-	// 		}
-	// 		else if (current_hp + to_change < 0){
-	// 			current_hp = 0;
-	// 		}
-	// 		else{
-	// 			current_hp += to_change;
-	// 		}
-	// 	}
-
-	// 	// enemy_draw(){
-
-	// 	// }
-
-	// };
-	
 	struct Control {
 		glm::vec3 move = glm::vec3(0.0f); // displacement in world (should be scaled by elapsed)
 		float rotate = 0.0f; // angle in world, normal direction, ignore for player 
@@ -133,15 +110,6 @@ struct PlayMode : Mode {
 		float swingHit = 0.0f; // logged on block
 		float swingTime = 0.0f;
 	}; 
-
-	// struct MyStruct {
-	// 	// Member variables
-	// 	int data;
-	// 	// Constructor
-	// 	MyStruct(int value) : data(value) {}
-
-	// };
-
 
 	//player info:
 	struct Pawn {
@@ -160,6 +128,7 @@ struct PlayMode : Mode {
 		Scene::Transform *sword_transform = nullptr;
 
 		Control pawn_control;
+		HpBar* hp;
 		
 		// Hp_Bar hp_bar;
 		// MyStruct myInstance(int 42);
@@ -171,13 +140,7 @@ struct PlayMode : Mode {
 
 	struct Enemy : Pawn {
 		BehaviorTree* bt;
-		// int init_hp = 10;
-		HpBar* hp;
-
-
-		// Enemy() {
-		// 	hpbar = HpBar(10);
-		// }
+		// HpBar* hp;
 	} enemy;
 
 	struct Player : Pawn {
@@ -213,4 +176,7 @@ struct PlayMode : Mode {
 	float hp_bar_transparency = 0.5f; 
 	// value between 0 and 1 to set the transparency
 	// of the HP bar on the screen
+	bool change_player_hp = false;
+	int hp_bar_empty_x = -1;
+	int hp_bar_full_x = 0;
 };
