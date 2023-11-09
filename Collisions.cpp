@@ -45,8 +45,16 @@ bool GJK(Collider& a, Collider& b)
 
 	d = glm::vec3(0.0f) - simplex[0];
 
+	const int max_iterations = 100;
+	int iterations = 0;
+
 	while(true)
 	{
+		if(iterations >= max_iterations)
+		{
+			return false;
+		}
+		iterations++;
 		da = awtl * glm::vec4(d, 0.0f);
 		db = bwtl * glm::vec4(-d, 0.0f);
 		
