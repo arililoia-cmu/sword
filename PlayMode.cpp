@@ -363,9 +363,10 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 					clock_t current_time = clock();
 					float elapsed = (float)(current_time - previous_enemy_sword_clang_time);
 
-				if ((elapsed / CLOCKS_PER_SEC) > min_enemy_sword_clang_interval){
-					w_conv2_sound = Sound::play(*w_conv2, 1.0f, 0.0f);
-					previous_enemy_sword_clang_time = clock();
+					if ((elapsed / CLOCKS_PER_SEC) > min_enemy_sword_clang_interval){
+						w_conv2_sound = Sound::play(*w_conv2, 1.0f, 0.0f);
+						previous_enemy_sword_clang_time = clock();
+					}
 				}
 			}
 		};
