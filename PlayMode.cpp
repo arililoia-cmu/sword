@@ -343,8 +343,8 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 					}
 				};
 
-			collEng.registerCollider(enemyList[i].sword_transform, enemySwordCollMesh, enemySwordCollMesh->containingRadius, enemyISwordHit);
-			collEng.registerCollider(enemyList[i].body_transform, enemyCollMesh, enemyCollMesh->containingRadius, enemyIHit);
+			collEng.registerCollider(enemyList[i].sword_transform, enemySwordCollMesh, enemySwordCollMesh->containingRadius, enemyISwordHit, CollisionEngine::Layer::ENEMY_SWORD_LAYER);
+			collEng.registerCollider(enemyList[i].body_transform, enemyCollMesh, enemyCollMesh->containingRadius, enemyIHit, CollisionEngine::Layer::ENEMY_BODY_LAYER);
 	}
 	
 	auto playerSwordHit = [this](Scene::Transform* t) -> void
@@ -476,10 +476,10 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 			
 	// 	};
 	
-	collEng.registerCollider(player.sword_transform, playerSwordCollMesh, playerSwordCollMesh->containingRadius, playerSwordHit);
-	collEng.registerCollider(enemy.sword_transform, enemySwordCollMesh, enemySwordCollMesh->containingRadius, enemySwordHit);
-	collEng.registerCollider(enemy.body_transform, enemyCollMesh, enemyCollMesh->containingRadius, enemyHit);
-	collEng.registerCollider(player.body_transform, playerCollMesh, playerCollMesh->containingRadius, playerHit);
+	collEng.registerCollider(player.sword_transform, playerSwordCollMesh, playerSwordCollMesh->containingRadius, playerSwordHit, CollisionEngine::Layer::PLAYER_SWORD_LAYER);
+	collEng.registerCollider(enemy.sword_transform, enemySwordCollMesh, enemySwordCollMesh->containingRadius, enemySwordHit, CollisionEngine::Layer::ENEMY_SWORD_LAYER);
+	collEng.registerCollider(enemy.body_transform, enemyCollMesh, enemyCollMesh->containingRadius, enemyHit, CollisionEngine::Layer::ENEMY_BODY_LAYER);
+	collEng.registerCollider(player.body_transform, playerCollMesh, playerCollMesh->containingRadius, playerHit, CollisionEngine::Layer::PLAYER_BODY_LAYER);
 	
 	//collEng.registerCollider(groundTransform, groundCollMesh, groundCollMesh->containingRadius, groundHit);
 	std::cout<<"end of loading scene"<<std::endl;

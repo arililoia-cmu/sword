@@ -53,6 +53,24 @@ struct CollisionEngine
 public:
 	// A simple ID for managing registering and unregistering colliders
 	typedef uint64_t ID;
+
+	enum Layer
+	{
+		PLAYER_SWORD_LAYER = 0,
+		PLAYER_BODY_LAYER,
+		ENEMY_SWORD_LAYER,
+		ENEMY_BODY_LAYER,
+		LAYER_COUNT
+	};
+
+	bool LayerMatrix[LAYER_COUNT][LAYER_COUNT] =
+	{
+		// Player sword layer interacts with:
+		{false, false, true, true},
+		{false, false, true, true},
+		{true, true, false, false},
+		{true, true, false, false}
+	};
 	
 	CollisionEngine();
 	
@@ -64,7 +82,7 @@ public:
 
 	// Also note that this does not forward the arguments, so it can be slower than optimal, but I'll fix
 	// it if it's a problem
-	ID registerCollider(Scene::Transform* t, CollideMesh const* m, float br, std::function<void(Scene::Transform*)> c);
+	ID registerCollider(Scene::Transform* t, CollideMesh const* m, float br, std::function<void(Scene::Transform*)> c, Layer l);
 
 	// Deregister a collider so the engine can forget about it
 	void unregisterCollider(ID id);
@@ -76,8 +94,8 @@ public:
 private:
 	ID nextID;
 	
-	std::vector<Collider> colliders;
-	std::unordered_map<ID, size_t> fromID;
+	std::array<std::vector<Collider>, LAYER_COUNT> colliders;
+	std::unordered_map<ID, std::pair<Layer, size_t>> fromID;
 };
 
 #endif

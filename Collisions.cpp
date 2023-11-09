@@ -244,17 +244,18 @@ glm::vec3 Collider::farthest(glm::vec3& d)
 
 CollisionEngine::CollisionEngine() : nextID(0), colliders(), fromID() {}
 
-CollisionEngine::ID CollisionEngine::registerCollider(Scene::Transform* t, CollideMesh const* m, float br, std::function<void(Scene::Transform*)> c)
+CollisionEngine::ID CollisionEngine::registerCollider(Scene::Transform* t, CollideMesh const* m, float br, std::function<void(Scene::Transform*)> c, CollisionEngine::Layer l)
 {
-	colliders.emplace_back(t, m, br, c);
+	colliders[l].emplace_back(t, m, br, c);
 
-	fromID.emplace(nextID, colliders.size());
+	fromID.emplace(nextID, std::make_pair(l, colliders[l].size()));
 	
 	return nextID++;
 }
 
 void CollisionEngine::unregisterCollider(CollisionEngine::ID id)
 {
+	// TODO: Implement
 	fromID.erase(id);
 }
 
@@ -262,10 +263,13 @@ void CollisionEngine::update(float elapsed)
 {
 	struct CollisionOccurence
 	{
-		CollisionOccurence(size_t i, size_t j) : a(i), b(j) {};
-		
+		CollisionOccurence(size_t i, size_t j, Layer il, Layer jl) : a(i), b(j), al(il), bl(jl) {};
+
 		size_t a;
 		size_t b;
+
+		Layer al;
+		Layer bl;
 	};
 
 	std::vector<CollisionOccurence> collisionOccurences;
@@ -274,20 +278,35 @@ void CollisionEngine::update(float elapsed)
 	// more amenable to parallelization in the future. Note that this also does
 	// a little bit to prevent segfaults (ie, if we delete the transform when handling a collision,
 	// then that's ok because it's not like we need to derefence it after that)
-	for(size_t i = 0; i < colliders.size() - 1; i++)
+
+	for(size_t i = 0; i < colliders.size(); i++)
 	{
-		for(size_t j = i + 1; j < colliders.size(); j++)
-		{		
-			if(GJK(colliders[i], colliders[j]))
+		for(size_t j = i; j < colliders.size(); j++)
+		{
+			if(LayerMatrix[i][j])
 			{
-				collisionOccurences.emplace_back(i, j);
+				for(size_t a = 0; a < colliders[i].size(); a++)
+				{
+					for(size_t b = 0; b < colliders[j].size(); b++)
+					{
+						if(i == j && a == b)
+						{
+							continue;
+						}
+
+						if(GJK(colliders[i][a], colliders[j][b]))
+						{
+							collisionOccurences.emplace_back(a, b, (Layer)i, (Layer)j);
+						}
+					}
+				}
 			}
 		}
 	}
 
 	for(auto& c : collisionOccurences)
 	{
-		colliders[c.a].callback(colliders[c.b].transform);
-		colliders[c.b].callback(colliders[c.a].transform);
+		colliders[c.al][c.a].callback(colliders[c.bl][c.b].transform);
+		colliders[c.bl][c.b].callback(colliders[c.al][c.a].transform);
 	}
 }
