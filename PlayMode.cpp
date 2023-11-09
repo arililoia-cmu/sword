@@ -65,7 +65,7 @@ Load< Scene > phonebank_scene(LoadTagDefault, []() -> Scene const * {
 		drawable.pipeline.start = mesh.start;
 		drawable.pipeline.count = mesh.count;
 
-		if (transform->name == "Plane" || transform->name == "Cube"){
+		if (transform->name == "Plane"){
 			drawable.pipeline.textures[0].texture = *grass_tex;
 		}
 
