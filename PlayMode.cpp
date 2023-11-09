@@ -183,19 +183,10 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 			player.at = walkmesh->nearest_walk_point(player.body_transform->position + glm::vec3(0.0f, 0.0001f, 0.0f));
 			float height = glm::length(player.body_transform->position - walkmesh->to_world_point(player.at));
 			player.body_transform->position = glm::vec3(0.0f, 0.0f, height);
-		} else if (transform.name == "Enemy_Body"){
-			enemy.body_transform = &transform;
-			enemy.at = walkmesh->nearest_walk_point(enemy.body_transform->position + glm::vec3(0.0f, 0.0001f, 0.0f));
-			float height = glm::length(enemy.body_transform->position - walkmesh->to_world_point(enemy.at));
-			enemy.body_transform->position = glm::vec3(0.0f, 0.0f, height);
 		} else if (transform.name == "Player_Sword"){
 			player.sword_transform = &transform;
 		} else if (transform.name == "Player_Wrist"){
 			player.wrist_transform = &transform;
-		} else if (transform.name == "Enemy_Sword"){
-			enemy.sword_transform = &transform;
-		} else if (transform.name == "Enemy_Wrist"){
-			enemy.wrist_transform = &transform;
 		} else if (transform.name == "Plane")
 		{
 			groundTransform = &transform;
@@ -207,7 +198,7 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 			if(transform.name=="Enemy_Body"+snum){
 				enemyList[i].body_transform = &transform;
 				enemyList[i].at = walkmesh->nearest_walk_point(enemyList[i].body_transform->position + glm::vec3(0.0f, 0.0001f, 0.0f));
-				float height = glm::length(enemy.body_transform->position - walkmesh->to_world_point(enemyList[i].at));
+				float height = glm::length(enemyList[i].body_transform->position - walkmesh->to_world_point(enemyList[i].at));
 				enemyList[i].body_transform->position = glm::vec3(0.0f, 0.0f, height);
 			}
 			if(transform.name=="Enemy_Sword"+snum){
@@ -247,10 +238,6 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 
 	//same for enemy
 	scene.transforms.emplace_back();
-	enemy.transform = &scene.transforms.back();
-	enemy.body_transform->parent = enemy.transform;
-	enemy.transform->position = walkmesh->to_world_point(enemy.at);
-	enemy.default_rotation = glm::angleAxis(glm::radians(180.0f), glm::vec3(0.0f, 0.0f, 1.0f)); //dictates enemy's original rotation wrt +x
 	for(int i=0;i<5;++i){
 			//same for enemy
 	 	scene.transforms.emplace_back();
@@ -261,18 +248,11 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 		enemyList[i].default_rotation = glm::angleAxis(glm::radians(180.0f), glm::vec3(0.0f, 0.0f, 1.0f)); //dictates enemy's original rotation wrt +x
 	}
 
-	enemy.bt=new BehaviorTree();
-	enemy.bt->Init();//AI Initialize
-	enemy.hp = new HpBar();
-	enemy.hp->Init(1000);
-	enemy.bt->SetEnemy(&enemy);
-	enemy.bt->SetPlayer(&player);
-
 	for(int i=0;i<5;++i){
 		enemyList[i].bt=new BehaviorTree();
 		enemyList[i].bt->Init();//AI Initialize
 		enemyList[i].hp = new HpBar();
-		enemyList[i].hp->Init(10);
+		enemyList[i].hp->Init(1000);
 		enemyList[i].bt->SetEnemy(&enemyList[i]);
 		enemyList[i].bt->SetPlayer(&player);
 	}
@@ -302,9 +282,6 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 	player.arm_transform->parent = player.body_transform;
 	player.wrist_transform->parent = player.arm_transform;
 	scene.transforms.emplace_back();
-	enemy.arm_transform = &scene.transforms.back();
-	enemy.arm_transform->parent = enemy.body_transform;
-	enemy.wrist_transform->parent = enemy.arm_transform;
 
 	for(int i=0;i<5;++i)
 	{
@@ -345,7 +322,10 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 					if(t == player.sword_transform)
 					{
 						enemyList[i].hp->change_hp_by(-1);
-						// Unsure what to put here?
+						enemyList[i].hp->change_enemy_hp = true;
+						std::cout << "ENEMY " << i << " HIT WITH SWORD" << std::endl;
+						// exit(0);
+
 					}
 				};
 
@@ -355,31 +335,31 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 	
 	auto playerSwordHit = [this](Scene::Transform* t) -> void
 		{
-			if(t == enemy.sword_transform)
-			{
-				if(player.pawn_control.stance == 1)
-				{
-					player.pawn_control.stance = 2;
-					player.pawn_control.swingHit = player.pawn_control.swingTime;
-				}
-				// else if(player.pawn_control.stance == 4)
-				// {
-				// 	player.pawn_control.stance = 5;
-				// }
+			// if(t == enemy.sword_transform)
+			// {
+			// 	if(player.pawn_control.stance == 1)
+			// 	{
+			// 		player.pawn_control.stance = 2;
+			// 		player.pawn_control.swingHit = player.pawn_control.swingTime;
+			// 	}
+			// 	// else if(player.pawn_control.stance == 4)
+			// 	// {
+			// 	// 	player.pawn_control.stance = 5;
+			// 	// }
 
-				// sound stuff starts here:
-				clock_t current_time = clock();
-				float elapsed = (float)(current_time - previous_player_sword_clang_time);
+			// 	// sound stuff starts here:
+			// 	clock_t current_time = clock();
+			// 	float elapsed = (float)(current_time - previous_player_sword_clang_time);
 
-				if ((elapsed / CLOCKS_PER_SEC) > min_player_sword_clang_interval){
-					w_conv1_sound = Sound::play(*w_conv1, 1.0f, 0.0f);
-					previous_player_sword_clang_time = clock();
-				}
-				// sound stuff ends here
+			// 	if ((elapsed / CLOCKS_PER_SEC) > min_player_sword_clang_interval){
+			// 		w_conv1_sound = Sound::play(*w_conv1, 1.0f, 0.0f);
+			// 		previous_player_sword_clang_time = clock();
+			// 	}
+			// 	// sound stuff ends here
 
-			}
-			else
-			{
+			// }
+			// else
+			// {
 				for(int i = 0; i < 5; i++)
 				{
 					if(t == enemyList[i].sword_transform)
@@ -403,71 +383,17 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 						return;
 					}
 				}
-			}
-			// else if(t == enemy.body_transform)
-			// {
-			// 	if(player.pawn_control.stance == 1)
-			// 	{
-			// 		player.pawn_control.stance = 2;
-			// 		player.pawn_control.swingHit = player.pawn_control.swingTime;
-			// 	}
-				
-			// 	// HERE WE HAVE HIT ENEMY WITH PLAYER SWORD (PROBABLY BEST TO ACTUALLY DECREASE ENEMY HP IN ITS HANDLE RATHER THAN SWORD HANDLE)
-			// }
 
-			// else if(t == groundTransform)
-			// {
-			// 	if(player.pawn_control.stance == 1)
-			// 	{
-			// 		player.pawn_control.stance = 2;
-			// 		player.pawn_control.swingHit = player.pawn_control.swingTime;
-			// 	}
-			// }
-		};
-
-	auto enemySwordHit = [this](Scene::Transform* t) -> void
-		{
-			if(t == player.sword_transform)
-			{
-				if(player.pawn_control.stance == 4)
-				{
-					if(enemy.pawn_control.stance == 1)
-					{
-						enemy.pawn_control.stance = 2;
-						enemy.pawn_control.swingHit = enemy.pawn_control.swingTime;
-					}
-					// else if(enemy.pawn_control.stance == 4)
-					// {
-					// 	enemy.pawn_control.stance = 5;
-					// }
-
-					clock_t current_time = clock();
-					float elapsed = (float)(current_time - previous_enemy_sword_clang_time);
-
-					if ((elapsed / CLOCKS_PER_SEC) > min_enemy_sword_clang_interval){
-						w_conv2_sound = Sound::play(*w_conv2, 1.0f, 0.0f);
-						previous_enemy_sword_clang_time = clock();
-					}
-				}
-			}
-		};
-
-	auto enemyHit = [this](Scene::Transform* t) -> void
-		{
-			if (t == player.sword_transform)
-			{
-                enemy.hp->change_hp_by(-1);
-                change_enemy_hp = true;
-
-            }
 		};
 
 	auto playerHit = [this](Scene::Transform* t) -> void
-		{
-			if(t == enemy.sword_transform)
-			{
-				player.hp->change_hp_by(-1);
-				change_player_hp = true;
+		{	
+			
+			for(int i = 0; i < 5; i++){
+				if(t == enemyList[i].sword_transform){
+						player.hp->change_hp_by(-1);
+						change_player_hp = true;
+				}
 			}
 			
 		};
@@ -478,11 +404,8 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 	// 	};
 	
 	collEng.registerCollider(player.sword_transform, playerSwordCollMesh, playerSwordCollMesh->containingRadius, playerSwordHit, CollisionEngine::Layer::PLAYER_SWORD_LAYER);
-	collEng.registerCollider(enemy.sword_transform, enemySwordCollMesh, enemySwordCollMesh->containingRadius, enemySwordHit, CollisionEngine::Layer::ENEMY_SWORD_LAYER);
-	collEng.registerCollider(enemy.body_transform, enemyCollMesh, enemyCollMesh->containingRadius, enemyHit, CollisionEngine::Layer::ENEMY_BODY_LAYER);
 	collEng.registerCollider(player.body_transform, playerCollMesh, playerCollMesh->containingRadius, playerHit, CollisionEngine::Layer::PLAYER_BODY_LAYER);
 	
-	//collEng.registerCollider(groundTransform, groundCollMesh, groundCollMesh->containingRadius, groundHit);
 	std::cout<<"end of loading scene"<<std::endl;
 }
 
@@ -945,23 +868,6 @@ void PlayMode::update(float elapsed)
 
 		processPawnControl(player, elapsed);
 
-		{
-			enemy.bt->tick();// AI Thinking
-
-			PlayMode::Control& enemy_control=enemy.bt->GetControl();
-			//simple enemy that walks toward player
-			enemy.pawn_control.move = enemy_control.move;
-			enemy_control.move=glm::vec3(0,0,0);//like a consumer pattern
-		//and locks on player
-			enemy.pawn_control.rotate = enemy_control.rotate;
-
-
-			enemy.pawn_control.attack = enemy_control.attack; // mainAction.pressed; // For demonstration purposes bound to player attack
-			enemy.pawn_control.parry = enemy_control.parry; //secondAction.pressed; 
-			enemy_control.attack=0;
-			enemy_control.parry=0;
-			processPawnControl(enemy, elapsed);	
-		}
 		for(int i=0;i<5;++i){
 			enemyList[i].bt->tick();// AI Thinking
 			PlayMode::Control& enemy_control=enemyList[i].bt->GetControl();
@@ -1113,12 +1019,13 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	}
 
 	for (int e=0; e<5; e++){
+		
 		if (enemyList[e].hp->change_enemy_hp == true){
-			
+			std::cout << "enemy " << e << " hp changed" << std::endl;
 			int health_border = int(enemyList[e].hp->empty_x + 
 				std::floor((enemyList[e].hp->full_x - enemyList[e].hp->empty_x)*enemyList[e].hp->get_percent_hp_left()));
 
-			glm::u8vec4 health_color = enemy.hp->get_health_color(hp_bar_transparency);
+			glm::u8vec4 health_color = enemyList[e].hp->get_health_color(hp_bar_transparency);
 			
 			for (size_t i=0; i<enemyList[e].hp->fillin_indices.size(); i++){
 				if ((enemyList[e].hp->fillin_indices[i] % (int)enemyList[e].hp->hp_size.x) > health_border){
@@ -1128,6 +1035,8 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 				}
 
 			}
+		}else{
+			std::cout << "enemy " << e << " hp not changed" << std::endl;
 		}
 
 	}
@@ -1135,11 +1044,12 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 
 	for (int e=0; e<5; e++){
 		if (enemyList[e].hp->change_enemy_hp){
+			std::cout << "enemy " << e << " hp changed" << std::endl;
 			
 			int health_border = int(enemyList[e].hp->empty_x + 
-				std::floor((enemyList[e].hp->full_x - enemyList[e].hp->empty_x)*enemy.hp->get_percent_hp_left()));
+				std::floor((enemyList[e].hp->full_x - enemyList[e].hp->empty_x)*enemyList[e].hp->get_percent_hp_left()));
 
-			glm::u8vec4 health_color = enemy.hp->get_health_color(hp_bar_transparency);
+			glm::u8vec4 health_color = enemyList[e].hp->get_health_color(hp_bar_transparency);
 			
 			for (size_t i=0; i<enemyList[e].hp->fillin_indices.size(); i++){
 				if ((enemyList[e].hp->fillin_indices[i] % (int)enemyList[e].hp->hp_size.x) > health_border){
@@ -1149,11 +1059,14 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 				}
 
 			}
+		}else{
+			// std::cout << "enemy " << e << " hp not changed" << std::endl;
 		}
 	}
 
 	for (int e=0; e<5; e++){
 		if (enemyList[e].hp->hp_tex == 0 || enemyList[e].hp->change_enemy_hp) {
+			std::cout << "enemy " << e << " hp changed" << std::endl;
 			glGenTextures(1, &enemyList[e].hp->hp_tex);
 			glBindTexture(GL_TEXTURE_2D, enemyList[e].hp->hp_tex);
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, enemyList[e].hp->hp_size.x, enemyList[e].hp->hp_size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, enemyList[e].hp->tex_data.data());
@@ -1162,18 +1075,22 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 			glBindTexture(GL_TEXTURE_2D, 0);
+		}else{
+			std::cout << "enemy " << e << " hp not changed" << std::endl;
 		}
 	}
 	
 
 	for (int e=0; e<5; e++){
 		if (enemyList[e].hp->hp_buffer == 0 || enemyList[e].hp->change_enemy_hp){
+			std::cout << "enemy " << e << " hp changed" << std::endl;
 			glGenBuffers(1, &enemyList[e].hp->hp_buffer);
 		}
 	}
 	
 	for (int e=0; e<5; e++){
 		if (enemyList[e].hp->vao == 0 || enemyList[e].hp->change_enemy_hp) {
+			std::cout << "enemy " << e << " hp changed" << std::endl;
 			//based on PPU466.cpp
 
 			glGenVertexArrays(1, &enemyList[e].hp->vao);
@@ -1390,7 +1307,8 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	GL_ERRORS();
 
 	change_player_hp = false;
-	change_enemy_hp = false;
-
+	for (int e=0; e<5; e++){
+		enemyList[e].hp->change_enemy_hp = false;
+	}
 
 }
