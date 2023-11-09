@@ -158,9 +158,11 @@ struct PlayMode : Mode {
 		//camera is attatched to camera_transform and will be pitched by mouse up/down motion:
 		Scene::Camera *camera = nullptr;
 
-	} player;	
+	} player;
+
+	Scene::Transform* groundTransform;
 	
-	Collisions collEng;
+	CollisionEngine collEng;
 
 	// sound stuff starts here:
 	// set previous clang time to something ridiculous

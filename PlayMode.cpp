@@ -82,12 +82,14 @@ Load< WalkMeshes > phonebank_walkmeshes(LoadTagDefault, []() -> WalkMeshes const
 CollideMesh const* playerSwordCollMesh = nullptr;
 CollideMesh const* enemySwordCollMesh = nullptr;
 CollideMesh const* enemyCollMesh = nullptr;
-Load<CollideMeshes> SWORD_COLLIDE_MESHES(LoadTagDefault, []() -> CollideMeshes const*
+CollideMesh const* groundCollMesh = nullptr;
+Load<CollideMeshes> COLLIDE_MESHES(LoadTagDefault, []() -> CollideMeshes const*
 	{
 		CollideMeshes* ret = new CollideMeshes(data_path("sword.c"));
 		playerSwordCollMesh = &ret->lookup("PlayerSwordCollMesh");
 		enemySwordCollMesh = &ret->lookup("EnemySwordCollMesh");
 		enemyCollMesh = &ret->lookup("EnemyCollMesh");
+		groundCollMesh = &ret->lookup("GroundCollMesh");
 		return ret;
 	});
 
@@ -175,6 +177,26 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 			enemy.sword_transform = &transform;
 		} else if (transform.name == "Enemy_Wrist"){
 			enemy.wrist_transform = &transform;
+		} else if (transform.name == "Plane")
+		{
+			groundTransform = &transform;
+		}
+		for(int i=0;i<5;++i){
+			char num[1]={'\0'};
+			num[0]='0'+(char)i;
+			std::string snum(num);
+			if(transform.name=="Enemy_Body"+snum){
+				enemyList[i].body_transform = &transform;
+				enemyList[i].at = walkmesh->nearest_walk_point(enemyList[i].body_transform->position + glm::vec3(0.0f, 0.0001f, 0.0f));
+				float height = glm::length(enemy.body_transform->position - walkmesh->to_world_point(enemyList[i].at));
+				enemyList[i].body_transform->position = glm::vec3(0.0f, 0.0f, height);
+			}
+			if(transform.name=="Enemy_Sword"+snum){
+				enemyList[i].sword_transform = &transform;
+			}
+			if(transform.name=="Enemy_Wrist"+snum){
+				enemyList[i].wrist_transform = &transform;
+			}
 		}
 		for(int i=0;i<5;++i){
 			char num[1]={'\0'};
@@ -271,7 +293,7 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 				// sound stuff ends here
 
 			}
-			else if(t == enemy.transform)
+			else if(t == enemy.body_transform)
 			{
 				if(player.pawn_control.stance == 1)
 				{
@@ -280,6 +302,15 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 				}
 
 				// HERE WE HAVE HIT ENEMY WITH PLAYER SWORD (PROBABLY BEST TO ACTUALLY DECREASE ENEMY HP IN ITS HANDLE RATHER THAN SWORD HANDLE)
+			}
+
+			else if(t == groundTransform)
+			{
+				if(player.pawn_control.stance == 1)
+				{
+					player.pawn_control.stance = 2;
+					player.pawn_control.swingHit = player.pawn_control.swingTime;
+				}
 			}
 		};
 
@@ -314,16 +345,21 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 		{
 			
 		};
+
+	// auto groundHit = [](Scene::Transform* t) -> void
+	// 	{
+			
+	// 	};
 	
-	// Create and add colliders
-	AABB first(glm::vec3(0.0f), glm::vec3(0.0f));
-	AABB second(glm::vec3(0.0f), glm::vec3(0.0f));
-	collEng.cs.emplace_back(player.sword_transform, playerSwordCollMesh,  first, playerSwordHit);
-	collEng.cs.emplace_back(enemy.sword_transform, enemySwordCollMesh, second, enemySwordHit);
-	collEng.cs.emplace_back(enemy.transform, enemyCollMesh, second, enemyHit);
+	collEng.registerCollider(player.sword_transform, playerSwordCollMesh, playerSwordCollMesh->containingRadius, playerSwordHit);
+	collEng.registerCollider(enemy.sword_transform, enemySwordCollMesh, enemySwordCollMesh->containingRadius, enemySwordHit);
+	collEng.registerCollider(enemy.body_transform, enemyCollMesh, enemyCollMesh->containingRadius, enemyHit);
+	//collEng.registerCollider(groundTransform, groundCollMesh, groundCollMesh->containingRadius, groundHit);
 }
 
-PlayMode::~PlayMode() {
+PlayMode::~PlayMode()
+{
+	
 }
 
 bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size) {
@@ -431,15 +467,16 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 	return false;
 }
 
-void PlayMode::walk_pawn(PlayMode::Pawn &pawn, float elapsed) {
-
+void PlayMode::walk_pawn(PlayMode::Pawn &pawn, float elapsed)
+{
 	glm::vec3 remain = pawn.pawn_control.move;
 	
 	///std::cout << remain.x << "," << remain.y << "," << remain.z << "\n";
 
 	//using a for() instead of a while() here so that if walkpoint gets stuck I
 	// some awkward case, code will not infinite loop:
-	for (uint32_t iter = 0; iter < 10; ++iter) {
+	for(uint32_t iter = 0; iter < 10; ++iter)
+	{
 		if (remain == glm::vec3(0.0f)) break;
 		WalkPoint end;
 		float time;
@@ -631,18 +668,17 @@ void PlayMode::walk_pawn(PlayMode::Pawn &pawn, float elapsed) {
 	}
 }
 
-void PlayMode::update(float elapsed) {
-
-
+void PlayMode::update(float elapsed)
+{
 	//player walking:
 	{
 		//combine inputs into a move:
 		constexpr float PlayerSpeed = 5.0f;
 		glm::vec2 move = glm::vec2(0.0f);
-		if (left.pressed && !right.pressed) move.x =-1.0f;
-		if (!left.pressed && right.pressed) move.x = 1.0f;
-		if (down.pressed && !up.pressed) move.y =-1.0f;
-		if (!down.pressed && up.pressed) move.y = 1.0f;
+		if(left.pressed && !right.pressed) move.x =-1.0f;
+		if(!left.pressed && right.pressed) move.x = 1.0f;
+		if(down.pressed && !up.pressed) move.y =-1.0f;
+		if(!down.pressed && up.pressed) move.y = 1.0f;
 
 		if ((left.pressed != right.pressed) || (down.pressed != up.pressed)){
 			clock_t current_time = clock();
@@ -693,7 +729,7 @@ void PlayMode::update(float elapsed) {
 	}
 
 	// VERY TEMPORARY
-	collEng.broadPhase(collEng.cs);
+	collEng.update(elapsed);
 
 	//reset button press counters:
 	left.downs = 0;

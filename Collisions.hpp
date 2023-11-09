@@ -9,24 +9,14 @@
 
 #include <vector>
 
-struct AABB
-{
-	glm::vec3 min;
-	glm::vec3 max;
-	AABB(glm::vec3 input1,glm::vec3 input2){
-		min=input1;
-		max=input2;
-	}
-};
-
 struct CollideMesh
 {
 	// Same as walk mesh will keep track of triangles, vertices:
 	std::vector<glm::vec3> vertices;
-	std::vector<glm::vec3> normals; // normals for interpolated 'up' direction
-	std::vector<glm::uvec3> triangles; // CCW-oriented
 
-	CollideMesh(std::vector<glm::vec3> const& vertices_, std::vector<glm::vec3> const& normals_, std::vector<glm::uvec3> const& triangles_);
+	float containingRadius;
+
+	CollideMesh(std::vector<glm::vec3> const& vertices_, float cr);
 };
 
 struct CollideMeshes
@@ -44,7 +34,7 @@ struct CollideMeshes
 // MUST BE CONVEX
 struct Collider
 {
-	Collider(Scene::Transform* t, CollideMesh const* m, AABB ab, std::function<void(Scene::Transform*)> c) : transform(t), mesh(m), aabb(ab), callback(c) {};
+	Collider(Scene::Transform* t, CollideMesh const* m, float br, std::function<void(Scene::Transform*)> c) : transform(t), mesh(m), broadRadius(br), callback(c) {};
 	
 	// Finds the farthest point in the direction d
 	// (This obviously is only guaranteed to be useful if we're convex)
@@ -53,18 +43,41 @@ struct Collider
 
 	Scene::Transform* transform;
 	CollideMesh const* mesh;
-	AABB aabb;
+	float broadRadius;
 
 	std::function<void(Scene::Transform*)> callback;
 };
 
-struct Collisions
+struct CollisionEngine
 {
-	// set up this way so if we need to multithread to achieve performance it is not as hard, but for
-	// simplicity right now putting it all in one phase
-	void broadPhase(std::vector<Collider>& colliders);
+public:
+	// A simple ID for managing registering and unregistering colliders
+	typedef uint64_t ID;
+	
+	CollisionEngine();
+	
+	// Register a collider so the engine can check for its collisions
+	// Requires a radius (for broad phase testing / acceleration structures)
+	// A transform so we know where the collider is
+	// A actual collider we can do full testing against
+	// And some meta information in the form of layers that describes what this collider should be tested against
 
-	std::vector<Collider> cs;
+	// Also note that this does not forward the arguments, so it can be slower than optimal, but I'll fix
+	// it if it's a problem
+	ID registerCollider(Scene::Transform* t, CollideMesh const* m, float br, std::function<void(Scene::Transform*)> c);
+
+	// Deregister a collider so the engine can forget about it
+	void unregisterCollider(ID id);
+	
+	// Checks for collisions and sends out collision events
+	// Makes a list and then sends out events
+	void update(float elapsed);
+	
+private:
+	ID nextID;
+	
+	std::vector<Collider> colliders;
+	std::unordered_map<ID, size_t> fromID;
 };
 
 #endif

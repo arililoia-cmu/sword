@@ -89,36 +89,38 @@ bool GJK(Collider& a, Collider& b)
 		}
 		else
 		{
-			// This is the actual tetra case, where we except we can contain the origin
+			// This is the actual tetra case, where we can contain the origin
 
 			glm::vec3 AD = simplex[3] - simplex[0];
 			glm::vec3 AC = simplex[3] - simplex[1];
 			glm::vec3 AB = simplex[3] - simplex[2];
 			glm::vec3 AO = simplex[3] - glm::vec3(0.0f);
 
-			glm::vec3 triACD = glm::cross(AD, glm::cross(AC, glm::vec3(0.0f)));
-			glm::vec3 triABC = glm::cross(AC, glm::cross(AB, glm::vec3(0.0f)));
-			glm::vec3 triABD = glm::cross(AB, glm::cross(AD, glm::vec3(0.0f)));
+			glm::vec3 triABC = glm::cross(AB, AC);
+			if(glm::dot(triABC, AD) > 0) { triABC = -triABC; }
 
-			if(glm::dot(triACD, AO) > 0)
+			glm::vec3 triABD = glm::cross(AB, AD);
+			if(glm::dot(triABD, AC) > 0) { triABD = -triABD; }
+
+			glm::vec3 triACD = glm::cross(AC, AD);
+			if(glm::dot(triACD, AB) > 0) { triACD = -triACD; }
+
+			if(glm::dot(triACD, AO) < 0)
 			{
 				simplex[2] = simplex[3];
-				simpType = 2;
 				d = glm::normalize(triACD);
 			}
-			else if(glm::dot(triABD, AO) > 0)
+			else if(glm::dot(triABD, AO) < 0)
 			{
 				simplex[1] = simplex[2];
 				simplex[2] = simplex[3];
-				simpType = 2;
 				d = glm::normalize(triABD);
 			}
-			else if(glm::dot(triABC, AO) > 0)
+			else if(glm::dot(triABC, AO) < 0)
 			{
 				simplex[0] = simplex[1];
 				simplex[1] = simplex[2];
 				simplex[2] = simplex[3];
-				simpType = 2;
 				d = glm::normalize(triABC);
 			}
 			else
@@ -129,77 +131,61 @@ bool GJK(Collider& a, Collider& b)
 	}
 }
 
-CollideMesh::CollideMesh(std::vector<glm::vec3> const& vertices_, std::vector<glm::vec3> const& normals_, std::vector<glm::uvec3> const& triangles_)
-	: vertices(vertices_), normals(normals_), triangles(triangles_) {}
+CollideMesh::CollideMesh(std::vector<glm::vec3> const& vertices_,  float cr)
+	: vertices(vertices_), containingRadius(cr) {}
 
 CollideMeshes::CollideMeshes(std::string const& filename)
 {
 	std::ifstream file(filename, std::ios::binary);
 
-	std::vector< glm::vec3 > vertices;
+	std::vector<glm::vec3> vertices;
 	read_chunk(file, "p...", &vertices);
 
-	std::vector< glm::vec3 > normals;
-	read_chunk(file, "n...", &normals);
-
-	std::vector< glm::uvec3 > triangles;
-	read_chunk(file, "tri0", &triangles);
-
-	std::vector< char > names;
+	std::vector<char> names;
 	read_chunk(file, "str0", &names);
 
-	struct IndexEntry {
+	// TODO: SEE THE BELOW TODO ABOUT MAKING THE SCRIPT WORK
+	// std::vector<float> containingRads;
+	// read_chunk(file, "rad0", &containingRads);
+
+	struct IndexEntry
+	{
 		uint32_t name_begin, name_end;
 		uint32_t vertex_begin, vertex_end;
-		uint32_t triangle_begin, triangle_end;
+		//uint32_t containingRadsAt;
 	};
 
-	std::vector< IndexEntry > index;
+	std::vector<IndexEntry> index;
 	read_chunk(file, "idxA", &index);
 
-	if (file.peek() != EOF) {
+	if(file.peek() != EOF)
+	{
 		std::cerr << "WARNING: trailing data in collidemesh file '" << filename << "'" << std::endl;
 	}
 
 	//-----------------
 
-	if (vertices.size() != normals.size()) {
-		throw std::runtime_error("Mis-matched position and normal sizes in '" + filename + "'");
-	}
-
-	for (auto const &e : index) {
-		if (!(e.name_begin <= e.name_end && e.name_end <= names.size())) {
+	for(auto const& e : index)
+	{
+		if(!(e.name_begin <= e.name_end && e.name_end <= names.size()))
+		{
 			throw std::runtime_error("Invalid name indices in index of '" + filename + "'");
 		}
-		if (!(e.vertex_begin <= e.vertex_end && e.vertex_end <= vertices.size())) {
+		if(!(e.vertex_begin <= e.vertex_end && e.vertex_end <= vertices.size()))
+		{
 			throw std::runtime_error("Invalid vertex indices in index of '" + filename + "'");
 		}
-		if (!(e.triangle_begin <= e.triangle_end && e.triangle_end <= triangles.size())) {
-			throw std::runtime_error("Invalid triangle indices in index of '" + filename + "'");
-		}
-
-		//copy vertices/normals:
-		std::vector< glm::vec3 > wm_vertices(vertices.begin() + e.vertex_begin, vertices.begin() + e.vertex_end);
-		std::vector< glm::vec3 > wm_normals(normals.begin() + e.vertex_begin, normals.begin() + e.vertex_end);
-
-		//remap triangles:
-		std::vector< glm::uvec3 > wm_triangles; wm_triangles.reserve(e.triangle_end - e.triangle_begin);
-		for (uint32_t ti = e.triangle_begin; ti != e.triangle_end; ++ti) {
-			if (!( (e.vertex_begin <= triangles[ti].x && triangles[ti].x < e.vertex_end)
-			    && (e.vertex_begin <= triangles[ti].y && triangles[ti].y < e.vertex_end)
-			    && (e.vertex_begin <= triangles[ti].z && triangles[ti].z < e.vertex_end) )) {
-				throw std::runtime_error("Invalid triangle in '" + filename + "'");
-			}
-			wm_triangles.emplace_back(
-				triangles[ti].x - e.vertex_begin,
-				triangles[ti].y - e.vertex_begin,
-				triangles[ti].z - e.vertex_begin
-			);
-		}
 		
+		//copy vertices/normals:
+		std::vector<glm::vec3> wm_vertices(vertices.begin() + e.vertex_begin, vertices.begin() + e.vertex_end);		
 		std::string name(names.begin() + e.name_begin, names.begin() + e.name_end);
 
-		auto ret = meshes.emplace(name, CollideMesh(wm_vertices, wm_normals, wm_triangles));
+		// TODO: I HAVEN'T ACTUALLY MODIFIED THE SCRIPT FOR GENERATING THE SCENE TO ACTUALLY CALCULATE THE CONTAINING RADIUS
+		// SO I AM DOING IT HERE
+		// IN A WAY THAT IS EASY TO CHANGE INTO WORKING WHEN WE HAVE THE SCRIPT WORKING
+
+		// auto ret = meshes.emplace(name, CollideMesh(wm_vertices, wm_normals, wm_triangles, containingRads[e.containingRadsAt]));
+		auto ret = meshes.emplace(name, CollideMesh(wm_vertices, std::numeric_limits<float>().infinity()));
 		if (!ret.second) {
 			throw std::runtime_error("CollideMesh with duplicated name '" + name + "' in '" + filename + "'");
 		}
@@ -216,8 +202,6 @@ CollideMesh const& CollideMeshes::lookup(std::string const& name) const
 	}
 	return f->second;
 }
-
-
 
 glm::vec3 Collider::farthest(glm::vec3& d)
 {
@@ -237,33 +221,56 @@ glm::vec3 Collider::farthest(glm::vec3& d)
 	return farthestSoFarPoint;
 }
 
-void Collisions::broadPhase(std::vector<Collider>& colliders)
+////////////////////////////////////
+// CollisionEngine Implementation //
+////////////////////////////////////
+
+CollisionEngine::CollisionEngine() : nextID(0), colliders(), fromID() {}
+
+CollisionEngine::ID CollisionEngine::registerCollider(Scene::Transform* t, CollideMesh const* m, float br, std::function<void(Scene::Transform*)> c)
 {
+	colliders.emplace_back(t, m, br, c);
+
+	fromID.emplace(nextID, colliders.size());
+	
+	return nextID++;
+}
+
+void CollisionEngine::unregisterCollider(CollisionEngine::ID id)
+{
+	fromID.erase(id);
+}
+
+void CollisionEngine::update(float elapsed)
+{
+	struct CollisionOccurence
+	{
+		CollisionOccurence(size_t i, size_t j) : a(i), b(j) {};
+		
+		size_t a;
+		size_t b;
+	};
+
+	std::vector<CollisionOccurence> collisionOccurences;
+
+	// We split up checking for collisions and sending them out so that it's
+	// more amenable to parallelization in the future. Note that this also does
+	// a little bit to prevent segfaults (ie, if we delete the transform when handling a collision,
+	// then that's ok because it's not like we need to derefence it after that)
 	for(size_t i = 0; i < colliders.size() - 1; i++)
 	{
 		for(size_t j = i + 1; j < colliders.size(); j++)
 		{
 			if(GJK(colliders[i], colliders[j]))
 			{
-				colliders[i].callback(colliders[j].transform);
-				colliders[j].callback(colliders[i].transform);
-				//std::cout << "collider [" << i << "] hit collider [" << j << "]" << std::endl;
+				collisionOccurences.emplace_back(i, j);
 			}
-			// AABB& ciaabb = colliders[i].aabb;
-			// AABB& cjaabb = colliders[j].aabb;
-
-			// bool aabbIntersect = !(ciaabb.min[0] > cjaabb.max[0]
-			// 					   || cjaabb.min[0] > ciaabb.max[0]
-			// 					   || ciaabb.min[1] > cjaabb.max[1]
-			// 					   || cjaabb.min[1] > ciaabb.max[1]
-			// 					   || ciaabb.min[2] > cjaabb.max[2]
-			// 					   || cjaabb.min[2] > ciaabb.max[2]);
-
-			// // If wanting to split to multiple phases, we'd pass off this work to be done, maybe batched
-			// if(aabbIntersect)
-			// {
-				
-			// }
 		}
+	}
+
+	for(auto& c : collisionOccurences)
+	{
+		colliders[c.a].callback(colliders[c.b].transform);
+		colliders[c.b].callback(colliders[c.a].transform);
 	}
 }
