@@ -95,9 +95,6 @@ positions = b''
 #strings contains the mesh names:
 strings = b''
 
-#containingRads contains the radius that encloses all the vertices in the mesh from the center
-# containingRads = b''
-
 #index gives offsets into the data (and names) for each mesh:
 index = b''
 
@@ -128,12 +125,19 @@ for obj in bpy.data.objects:
         bpy.ops.object.convert(target='MESH')
         
         vertex_begin = position_count
+
+        farthestSoFar = 0.0
         
         for vertex in mesh.vertices:
                 positions += struct.pack('fff', *vertex.co)
+                myDistance = vertex.co[0] ** 2 + vertex.co[1] ** 2 + vertex.co[2] ** 2
+                if myDistance > farthestSoFar:
+                        farthestSoFar = myDistance
                 position_count += 1
 
         vertex_end = position_count
+
+        contRad = farthestSoFar ** 0.5
 
         #record mesh name, vertex range
         name_begin = len(strings)
@@ -141,7 +145,7 @@ for obj in bpy.data.objects:
         name_end = len(strings)
         index += struct.pack('II', name_begin, name_end)
         index += struct.pack('II', vertex_begin, vertex_end)
-        # index += struct.pack('II', containingRadsAt)
+        index += struct.pack('f', contRad)
 
 
 #check that we wrote as much data as anticipated:
@@ -158,7 +162,6 @@ def write_chunk(magic, data):
 #first chunk: the positions
 write_chunk(b'p...', positions)
 write_chunk(b'str0', strings)
-# write_chunk(b'rad0', containingRads)
 write_chunk(b'idxA', index)
 wrote = blob.tell()
 blob.close()
@@ -166,5 +169,4 @@ blob.close()
 print("Wrote " + str(wrote) + " bytes [== " +
         str(len(positions)+8) + " bytes of positions + " +
         str(len(strings)+8) + " bytes of strings + " +
-        # str(len(containingRads)+8) + " bytes of containingRads + " +
         str(len(index)+8) + " bytes of index] to '" + outfile + "'")

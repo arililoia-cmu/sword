@@ -1,5 +1,6 @@
 #include "Collisions.hpp"
 
+#include "glm/geometric.hpp"
 #include "read_write_chunk.hpp"
 
 #include <limits>
@@ -22,7 +23,14 @@ bool GJK(Collider& a, Collider& b)
 	glm::mat4x3 altw = a.transform->make_local_to_world();
 	glm::mat4x3 bltw = b.transform->make_local_to_world();
 
-	glm::vec3 d = glm::normalize(bltw * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f) - altw * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+	glm::vec3 d = bltw * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f) - altw * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+
+	if(glm::length(d) > (a.broadRadius + b.broadRadius))
+	{
+		return false;
+	}
+
+	glm::normalize(d);
 	
 	glm::mat4x3 awtl = a.transform->make_world_to_local();
 	glm::mat4x3 bwtl = b.transform->make_world_to_local();
@@ -152,7 +160,7 @@ CollideMeshes::CollideMeshes(std::string const& filename)
 	{
 		uint32_t name_begin, name_end;
 		uint32_t vertex_begin, vertex_end;
-		//uint32_t containingRadsAt;
+		float containingRad;
 	};
 
 	std::vector<IndexEntry> index;
@@ -185,11 +193,12 @@ CollideMeshes::CollideMeshes(std::string const& filename)
 		// IN A WAY THAT IS EASY TO CHANGE INTO WORKING WHEN WE HAVE THE SCRIPT WORKING
 
 		// auto ret = meshes.emplace(name, CollideMesh(wm_vertices, wm_normals, wm_triangles, containingRads[e.containingRadsAt]));
-		auto ret = meshes.emplace(name, CollideMesh(wm_vertices, std::numeric_limits<float>().infinity()));
+		auto ret = meshes.emplace(name, CollideMesh(wm_vertices, e.containingRad));
 		if (!ret.second) {
 			throw std::runtime_error("CollideMesh with duplicated name '" + name + "' in '" + filename + "'");
 		}
 
+		std::cout << "Collide Mesh Name: " << name << " radius: " << e.containingRad << std::endl;
 	}
 }
 
@@ -260,7 +269,7 @@ void CollisionEngine::update(float elapsed)
 	for(size_t i = 0; i < colliders.size() - 1; i++)
 	{
 		for(size_t j = i + 1; j < colliders.size(); j++)
-		{
+		{		
 			if(GJK(colliders[i], colliders[j]))
 			{
 				collisionOccurences.emplace_back(i, j);
