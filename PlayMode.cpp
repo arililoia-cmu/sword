@@ -53,11 +53,13 @@ Load< WalkMeshes > phonebank_walkmeshes(LoadTagDefault, []() -> WalkMeshes const
 
 CollideMesh const* playerSwordCollMesh = nullptr;
 CollideMesh const* enemySwordCollMesh = nullptr;
+CollideMesh const* enemyCollMesh = nullptr;
 Load<CollideMeshes> SWORD_COLLIDE_MESHES(LoadTagDefault, []() -> CollideMeshes const*
 	{
 		CollideMeshes* ret = new CollideMeshes(data_path("sword.c"));
 		playerSwordCollMesh = &ret->lookup("PlayerSwordCollMesh");
 		enemySwordCollMesh = &ret->lookup("EnemySwordCollMesh");
+		enemyCollMesh = &ret->lookup("EnemyCollMesh");
 		return ret;
 	});
 
@@ -224,7 +226,16 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 				// sound stuff ends here
 
 			}
+			else if(t == enemy.transform)
+			{
+				if(player.pawn_control.stance == 1)
+				{
+					player.pawn_control.stance = 2;
+					player.pawn_control.swingHit = player.pawn_control.swingTime;
+				}
 
+				// HERE WE HAVE HIT ENEMY WITH PLAYER SWORD (PROBABLY BEST TO ACTUALLY DECREASE ENEMY HP IN ITS HANDLE RATHER THAN SWORD HANDLE)
+			}
 		};
 
 	auto enemySwordHit = [this](Scene::Transform* t) -> void
@@ -253,12 +264,18 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 				}
 			}
 		};
+
+	auto enemyHit = [](Scene::Transform* t) -> void
+		{
+			
+		};
 	
 	// Create and add colliders
 	AABB first(glm::vec3(0.0f), glm::vec3(0.0f));
 	AABB second(glm::vec3(0.0f), glm::vec3(0.0f));
 	collEng.cs.emplace_back(player.sword_transform, playerSwordCollMesh,  first, playerSwordHit);
 	collEng.cs.emplace_back(enemy.sword_transform, enemySwordCollMesh, second, enemySwordHit);
+	collEng.cs.emplace_back(enemy.transform, enemyCollMesh, second, enemyHit);
 }
 
 PlayMode::~PlayMode() {
