@@ -16,7 +16,6 @@
 // Breaking concave meshes into convex meshes is hard and I'm not gonna do it
 // here, we can do that in blender or something.
 
-
 // I used https://www.youtube.com/watch?v=ajv46BSqcK4 to help visualize this algorithm
 bool GJK(Collider& a, Collider& b)
 {
