@@ -1,18 +1,23 @@
 #include "PlayMode.hpp"
 
 #include "LitColorTextureProgram.hpp"
+#include "TextureProgram.hpp"
 
 #include "DrawLines.hpp"
 #include "Mesh.hpp"
 #include "Load.hpp"
 #include "gl_errors.hpp"
 #include "data_path.hpp"
+#include <SDL.h>
 
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/quaternion.hpp>
 
 #include <random>
 #include "BehaviorTree.hpp"
+
+#include "load_save_png.hpp"
+#include "data_path.hpp"
 
 #define M_PI_2f 1.57079632679489661923f
 GLuint phonebank_meshes_for_lit_color_texture_program = 0;
@@ -80,6 +85,44 @@ Load< Sound::Sample > footstep_wconv1(LoadTagDefault, []() -> Sound::Sample cons
 });
 // sound stuff ends here
 
+// this method taken from my game 2 code:
+// https://github.com/arililoia-cmu/15-466-f23-base2/blob/8697e4fed38995ac9b5949fd30c0f75dabe02444/PlayMode.cpp
+glm::vec2 PlayMode::object_to_window_coordinate(Scene::Transform *object, Scene::Camera *camera, glm::uvec2 const &drawable_size){
+
+	std::cout << "object_to_window_coordinate: " << std::endl;
+	std::cout << "drawable_size.x,y :" << drawable_size.x << " " << drawable_size.y << std::endl;
+	
+
+	// glm::vec4 object_position = glm::vec4(object->position.x, object->position.y, object->position.z, 1.0f);
+	glm::vec4 object_position = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+
+	std::cout << "object_position: " << object_position.x << " " << object_position.y << " " << object_position.z << std::endl;
+
+	glm::mat4x3 object_to_world = object->make_local_to_world();
+	// object to world 3x4 x 4x1 coordinates = 3x1 world coordinates
+	glm::vec3 op_world = object_to_world * object_position;
+
+	std::cout << "op_world: " << op_world.x << " " << op_world.y << " " << op_world.z << std::endl;
+
+	// make a 4 vector out of op_world
+	glm::vec4 op_world_vec4 = glm::vec4(op_world.x, op_world.y, op_world.z, 1.0f);
+
+	assert(camera->transform);
+	glm::mat4 world_to_clip = camera->make_projection() * glm::mat4(camera->transform->make_world_to_local());
+	glm::vec4 op_clip = world_to_clip * op_world_vec4;
+
+	float ws_x = op_clip.x / op_clip.w;
+	float ws_y = op_clip.y / op_clip.w;
+
+	// The next step is to transform from this [-1, 1] space to window-relative coordinate
+	// taken from this stackexchange post
+	// https://stackoverflow.com/questions/8491247/c-opengl-convert-world-coords-to-screen2d-coords
+	float ws_x_real = ((ws_x+1.0f)/2.0f) * (drawable_size.x / 2.0f);
+	float ws_y_real = (drawable_size.y / 2.0f) - (((ws_y+1.0f)/2.0f)*(drawable_size.y / 2.0f));
+	float ws_y_real2 = abs((drawable_size.y / 2.0f) - ws_y_real);
+	return glm::vec2(ws_x_real, ws_y_real2);
+}
+
 PlayMode::PlayMode() : scene(*phonebank_scene) {
 	//create a player transform:
 
@@ -111,6 +154,8 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 	player.body_transform->parent = player.transform;
 	player.transform->position = walkmesh->to_world_point(player.at);
 	player.is_player = true;
+	player.hp = new HpBar();
+	player.hp->Init(1000);
 
 	//same for enemy
 	scene.transforms.emplace_back();
@@ -121,6 +166,8 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 
 	enemy.bt=new BehaviorTree();
 	enemy.bt->Init();//AI Initialize
+	enemy.hp = new HpBar();
+	enemy.hp->Init(10);
 	enemy.bt->SetEnemy(&enemy);
 	enemy.bt->SetPlayer(&player);
 	//setup camera
@@ -200,6 +247,9 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 				if ((elapsed / CLOCKS_PER_SEC) > min_enemy_sword_clang_interval){
 					w_conv2_sound = Sound::play(*w_conv2, 1.0f, 0.0f);
 					previous_enemy_sword_clang_time = clock();
+					// UNCOMMENT ME TO SEE HOW HP BAR DECREASES
+					// player.hp->change_hp_by(-1);
+					// change_player_hp = true;
 				}
 			}
 		};
@@ -520,6 +570,8 @@ void PlayMode::walk_pawn(PlayMode::Pawn &pawn, float elapsed) {
 }
 
 void PlayMode::update(float elapsed) {
+
+
 	//player walking:
 	{
 		//combine inputs into a move:
@@ -590,6 +642,7 @@ void PlayMode::update(float elapsed) {
 
 void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	//update camera aspect ratio for drawable:
+	std::cout << "enemy.hpbar.current_hp: " << enemy.hp->current_hp << std::endl;
 	player.camera->aspect = float(drawable_size.x) / float(drawable_size.y);
 
 	//set up light type and position for lit_color_texture_program:
@@ -598,7 +651,7 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	glUniform1i(lit_color_texture_program->LIGHT_TYPE_int, 1);
 	glUniform3fv(lit_color_texture_program->LIGHT_DIRECTION_vec3, 1, glm::value_ptr(glm::vec3(0.0f, 0.0f,-1.0f)));
 	glUniform3fv(lit_color_texture_program->LIGHT_ENERGY_vec3, 1, glm::value_ptr(glm::vec3(1.0f, 1.0f, 0.95f)));
-	glUseProgram(0);
+	// glUseProgram(0);
 
 	glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
 	glClearDepth(1.0f); //1.0 is actually the default value to clear the depth buffer to, but FYI you can change it.
@@ -643,4 +696,257 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 			glm::u8vec4(0xff, 0xff, 0xff, 0x00));
 	}
 	GL_ERRORS();
+
+
+	// STUFF ADDED STARTS HERE
+	std::vector< glm::u8vec4 > enemy_hp_tex_data;
+	static GLuint enemy_hp_tex = 0;
+	static GLuint enemy_hp_buffer = 0;
+	static GLuint enemy_vao = 0;
+
+	for (int i=0; i<25; i++){
+		enemy_hp_tex_data.push_back(glm::u8vec4(0xff, 0x00, 0x00, 0x7f));
+	}
+
+	if (enemy_hp_tex == 0) {
+		glGenTextures(1, &enemy_hp_tex);
+		glBindTexture(GL_TEXTURE_2D, enemy_hp_tex);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 5, 5, 0, GL_RGBA, GL_UNSIGNED_BYTE, enemy_hp_tex_data.data());
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glBindTexture(GL_TEXTURE_2D, 0);
+	}
+
+	if (enemy_hp_buffer == 0){
+		glGenBuffers(1, &enemy_hp_buffer);
+	}
+
+	if (enemy_vao == 0) {
+		//based on PPU466.cpp
+
+		glGenVertexArrays(1, &enemy_vao);
+		glBindVertexArray(enemy_vao);
+
+		glBindBuffer(GL_ARRAY_BUFFER, enemy_hp_buffer);
+
+		glVertexAttribPointer(
+			lit_color_texture_program->Position_vec4, //attribute
+			3, //size
+			GL_FLOAT, //type
+			GL_FALSE, //normalized
+			sizeof(Vert), //stride
+			(GLbyte *)0 + offsetof(Vert, position) //offset
+		);
+		glEnableVertexAttribArray(lit_color_texture_program->Position_vec4);
+
+		glVertexAttribPointer(
+			lit_color_texture_program->TexCoord_vec2, //attribute
+			2, //size
+			GL_FLOAT, //type
+			GL_FALSE, //normalized
+			sizeof(Vert), //stride
+			(GLbyte *)0 + offsetof(Vert, tex_coord) //offset
+		);
+		glEnableVertexAttribArray(lit_color_texture_program->TexCoord_vec2);
+
+	}
+
+	glUseProgram(lit_color_texture_program->program);
+
+	// step 2: figure out where in the window to draw the thing
+	glm::vec2 enemy_o2wc = object_to_window_coordinate(enemy.body_transform, player.camera, drawable_size);
+	float enemy_window_x = ((enemy_o2wc.x / (drawable_size.x/2.0f)) * 2.0f) - 1.0f;
+	float enemy_window_y = ((enemy_o2wc.y / (drawable_size.y/2.0f)) * 2.0f) - 1.0f;
+	float block_size = 0.1f;
+	// sqrm = square making ratio
+	float sqrm = ((float)drawable_size.y / (float)drawable_size.x);
+
+	std::vector< Vert > attribs;
+	// TODO: do to this whatever I did with the hp bar
+	attribs.emplace_back(glm::vec3( enemy_window_x - block_size*sqrm, enemy_window_y - block_size, 0.0f), glm::vec2(0.0f, 0.0f));
+	attribs.emplace_back(glm::vec3( enemy_window_x - block_size*sqrm,  enemy_window_y + block_size, 0.0f), glm::vec2(0.0f, 1.0f));
+	attribs.emplace_back(glm::vec3( enemy_window_x + block_size*sqrm, enemy_window_y - block_size, 0.0f), glm::vec2(1.0f, 0.0f));
+	attribs.emplace_back(glm::vec3( enemy_window_x + block_size*sqrm, enemy_window_y + block_size, 0.0f), glm::vec2(1.0f, 1.0f));
+
+	glBindBuffer(GL_ARRAY_BUFFER, enemy_hp_buffer);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(Vert) * attribs.size(), attribs.data(), GL_STREAM_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glUseProgram(lit_color_texture_program->program);
+	glUniformMatrix4fv(lit_color_texture_program->OBJECT_TO_CLIP_mat4, 1, GL_FALSE, glm::value_ptr(glm::mat4(1.0f)));
+	glBindTexture(GL_TEXTURE_2D, enemy_hp_tex);
+	glDisable(GL_DEPTH_TEST);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glBindVertexArray(enemy_vao);
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, attribs.size());
+	// glBindVertexArray(0);
+	glDisable(GL_BLEND);
+	// glBindTexture(GL_TEXTURE_2D, 0);
+	GL_ERRORS();
+	// STUFF I ADDED ENDS HERE
+
+
+	// DRAWING THE HP BAR FROM FILE
+	// reference: https://gamedev.stackexchange.com/questions/59078/sdl-function-for-loading-pngs
+	// do this later
+	// for now: drawing HP bar on top of the screen
+
+	static std::vector< glm::u8vec4 > hpbar_data;
+	static glm::uvec2 hpbar_size;
+	static std::vector< glm::u8vec4 > hpbar_tex_data;
+
+	static GLuint hpbar_tex = 0;
+	static GLuint hpbar_buffer = 0;
+	static GLuint hpbar_vao = 0;
+
+	if (hpbar_data.empty()){
+		load_png(data_path("graphics/healthbar_base.png"), &hpbar_size, &hpbar_data, OriginLocation::UpperLeftOrigin);
+		for (int i=hpbar_size.y-1; i>=0; i--){
+			for (int j=0; j<hpbar_size.x; j++){
+
+				glm::u8vec4 pixel_at = glm::u8vec4(
+					hpbar_data.at((i*hpbar_size.x)+j)[0],
+					hpbar_data.at((i*hpbar_size.x)+j)[1],
+					hpbar_data.at((i*hpbar_size.x)+j)[2],
+					hpbar_data.at((i*hpbar_size.x)+j)[3] * hp_bar_transparency
+				);
+				// get where the hp bar "fillup" region starts and ends
+				// only need to do this if we haven't read in the texture yet
+				if (((int)pixel_at[0] == 0) && ((int)pixel_at[1] == 0) 
+					&& ((int)pixel_at[2] == 0) && ((int)pixel_at[3] == 127)){
+						if (hp_bar_empty_x == -1){
+							hp_bar_empty_x = j;
+						}else{
+							hp_bar_full_x = j;
+						}
+						hpbar_tex_data.push_back(glm::u8vec4(0x00, 0xff, 0x00, 0xff*hp_bar_transparency));
+
+				}else{
+					hpbar_tex_data.push_back(pixel_at);
+				}
+				
+			}
+		}
+	}
+
+	// todo : figure out a way to do this that doesn't involve a double for loop
+	// and clearing the enture tex data array
+	// maybe figure out the bijection 
+
+	if (change_player_hp == true){
+
+		hpbar_tex_data.clear();
+		
+		int health_border = hp_bar_empty_x + 
+			std::floor((hp_bar_full_x - hp_bar_empty_x)*player.hp->get_percent_hp_left());
+
+		glm::u8vec4 health_color = player.hp->get_health_color(hp_bar_transparency);
+
+		glm::u8vec4 empty_color = glm::u8vec4(0x00f, 0x00f, 0x00f, 0xff*hp_bar_transparency);
+		
+		for (int i=hpbar_size.y-1; i>=0; i--){
+			for (int j=0; j<hpbar_size.x; j++){
+				glm::u8vec4 pixel_at = glm::u8vec4(
+					hpbar_data.at((i*hpbar_size.x)+j)[0],
+					hpbar_data.at((i*hpbar_size.x)+j)[1],
+					hpbar_data.at((i*hpbar_size.x)+j)[2],
+					hpbar_data.at((i*hpbar_size.x)+j)[3] * hp_bar_transparency
+				);
+
+				if (((int)pixel_at[0] == 0) && ((int)pixel_at[1] == 0) 
+					&& ((int)pixel_at[2] == 0) && ((int)pixel_at[3] == 127)){
+						if (j > health_border){
+							hpbar_tex_data.push_back(empty_color);
+						}else{
+							hpbar_tex_data.push_back(health_color);
+						}
+				}else{
+					hpbar_tex_data.push_back(pixel_at);
+				}
+							
+			}
+		}
+	}
+
+
+	if (hpbar_tex == 0 || change_player_hp) {
+		glGenTextures(1, &hpbar_tex);
+		glBindTexture(GL_TEXTURE_2D, hpbar_tex);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, hpbar_size.x, hpbar_size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, hpbar_tex_data.data());
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glBindTexture(GL_TEXTURE_2D, 0);
+	}
+
+	if (hpbar_buffer == 0 || change_player_hp){
+		glGenBuffers(1, &hpbar_buffer);
+	}
+
+	if (hpbar_vao == 0 || change_player_hp) {
+		//based on PPU466.cpp
+
+		glGenVertexArrays(1, &hpbar_vao);
+		glBindVertexArray(hpbar_vao);
+
+		glBindBuffer(GL_ARRAY_BUFFER, hpbar_buffer);
+		glVertexAttribPointer(
+			texture_program->Position_vec4, //attribute
+			3, //size
+			GL_FLOAT, //type
+			GL_FALSE, //normalized
+			sizeof(Vert), //stride
+			(GLbyte *)0 + offsetof(Vert, position) //offset
+		);
+		glEnableVertexAttribArray(texture_program->Position_vec4);
+
+		glVertexAttribPointer(
+			texture_program->TexCoord_vec2, //attribute
+			2, //size
+			GL_FLOAT, //type
+			GL_FALSE, //normalized
+			sizeof(Vert), //stride
+			(GLbyte *)0 + offsetof(Vert, tex_coord) //offset
+		);
+		glEnableVertexAttribArray(texture_program->TexCoord_vec2);
+
+	}
+
+	glUseProgram(texture_program->program);
+
+	// step 2: where to draw the hp bar
+	static glm::vec2 hpbar_bottom_left = glm::vec2(-0.9, 0.6);
+	static glm::vec2 hpbar_top_right = glm::vec2(0.9, 0.9);
+
+	static std::vector< Vert > hpbar_attribs;
+	if (hpbar_attribs.size() == 0 || change_player_hp){
+		hpbar_attribs.emplace_back(glm::vec3( hpbar_bottom_left.x, hpbar_bottom_left.y, 0.0f), glm::vec2(0.0f, 0.0f)); // 1
+		hpbar_attribs.emplace_back(glm::vec3( hpbar_bottom_left.x,  hpbar_top_right.y, 0.0f), glm::vec2(0.0f, 1.0f)); // 2
+		hpbar_attribs.emplace_back(glm::vec3( hpbar_top_right.x, hpbar_bottom_left.y, 0.0f), glm::vec2(1.0f, 0.0f)); // 4 
+		hpbar_attribs.emplace_back(glm::vec3( hpbar_top_right.x, hpbar_top_right.y, 0.0f), glm::vec2(1.0f, 1.0f)); // 3
+	}
+	
+	glBindBuffer(GL_ARRAY_BUFFER, hpbar_buffer);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(Vert) * hpbar_attribs.size(), hpbar_attribs.data(), GL_STREAM_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	
+	glUseProgram(texture_program->program);
+	glUniformMatrix4fv(texture_program->OBJECT_TO_CLIP_mat4, 1, GL_FALSE, glm::value_ptr(glm::mat4(1.0f)));
+	glBindTexture(GL_TEXTURE_2D, hpbar_tex);
+	glDisable(GL_DEPTH_TEST);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glBindVertexArray(hpbar_vao);
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, hpbar_attribs.size());
+	glDisable(GL_BLEND);
+	glBindTexture(GL_TEXTURE_2D, 0);
+	glUseProgram(0);
+	GL_ERRORS();
+
+	change_player_hp = false;
+
+
 }
