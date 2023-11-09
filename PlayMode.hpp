@@ -16,7 +16,7 @@ class BehaviorTree;//Forward Declaration
 
 class HpBar{
 	public:
-		int max_hp, current_hp;
+		int max_hp=0, current_hp=0;
 		// HpBar(int init_hp){
 		// 	max_hp = init_hp;
 		// 	current_hp = init_hp;
@@ -29,7 +29,8 @@ class HpBar{
 			max_hp = init_hp;
 			std::cout << "max hp set" << std::endl;
 			current_hp = init_hp;
-			std::cout << "current hp set" << std::endl;
+			std::cout << "current hp set" <<init_hp<< std::endl;
+		//	std::cin>>current_hp;
 		}
 
 		float get_percent_hp_left(){
