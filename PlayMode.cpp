@@ -82,14 +82,14 @@ Load< WalkMeshes > phonebank_walkmeshes(LoadTagDefault, []() -> WalkMeshes const
 CollideMesh const* playerSwordCollMesh = nullptr;
 CollideMesh const* enemySwordCollMesh = nullptr;
 CollideMesh const* enemyCollMesh = nullptr;
-CollideMesh const* groundCollMesh = nullptr;
+//CollideMesh const* groundCollMesh = nullptr;
 Load<CollideMeshes> COLLIDE_MESHES(LoadTagDefault, []() -> CollideMeshes const*
 	{
 		CollideMeshes* ret = new CollideMeshes(data_path("sword.c"));
 		playerSwordCollMesh = &ret->lookup("PlayerSwordCollMesh");
 		enemySwordCollMesh = &ret->lookup("EnemySwordCollMesh");
 		enemyCollMesh = &ret->lookup("EnemyCollMesh");
-		groundCollMesh = &ret->lookup("GroundCollMesh");
+		//groundCollMesh = &ret->lookup("GroundCollMesh");
 		return ret;
 	});
 
@@ -670,6 +670,9 @@ void PlayMode::walk_pawn(PlayMode::Pawn &pawn, float elapsed)
 
 void PlayMode::update(float elapsed)
 {
+	// VERY TEMPORARY
+	collEng.update(elapsed);
+	
 	//player walking:
 	{
 		//combine inputs into a move:
@@ -729,7 +732,7 @@ void PlayMode::update(float elapsed)
 	}
 
 	// VERY TEMPORARY
-	collEng.update(elapsed);
+	//collEng.update(elapsed);
 
 	//reset button press counters:
 	left.downs = 0;
