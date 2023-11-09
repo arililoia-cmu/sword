@@ -17,10 +17,17 @@ class BehaviorTree;//Forward Declaration
 class HpBar{
 	public:
 		int max_hp=0, current_hp=0;
-		// HpBar(int init_hp){
-		// 	max_hp = init_hp;
-		// 	current_hp = init_hp;
-		// };
+		int empty_x = -1;
+		int full_x = 0;
+		std::vector<int> fillin_indices;
+		std::vector< glm::u8vec4 > tex_data;
+		GLuint hp_tex = 0;
+		GLuint hp_buffer = 0;
+	    GLuint vao = 0;
+		glm::uvec2 hp_size;
+	    std::vector< glm::u8vec4 > hp_data;
+		bool change_enemy_hp = false;
+
 		HpBar(){}
 
 		// going after naming convention in behaviortree
@@ -231,12 +238,12 @@ struct PlayMode : Mode {
 	int hp_bar_empty_x = -1;
 	int hp_bar_full_x = 0;
 	
-	int enemy_heart_empty_x = -1;
-	int enemy_heart_full_x = 0;
+	
 
 	glm::u8vec4 empty_color = glm::u8vec4(0x00f, 0x00f, 0x00f, 0xff*hp_bar_transparency);
 
+
 	std::vector<int> hpbar_fillin_indices;
-    std::vector<int> enemy_heart_fillin_indices;
+	
 
 };
