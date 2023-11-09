@@ -7,7 +7,6 @@
 #include "Collisions.hpp"
 #include "Sound.hpp"
 #include <glm/glm.hpp>
-
 #include <vector>
 #include <deque>
 #include <ctime>
@@ -151,7 +150,7 @@ struct PlayMode : Mode {
 		BehaviorTree* bt;
 		// HpBar* hp;
 	} enemy;
-
+	Enemy enemyList[5];
 	struct Player : Pawn {
 		
 		//camera_transform joins body_transform and camera->transform
