@@ -474,11 +474,12 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 
 	auto enemyHit = [this](Scene::Transform* t) -> void
 		{
-			if(t == player.sword_transform)
+			if (t == player.sword_transform)
 			{
-				enemy.hp->change_hp_by(-1);
-				// Unsure what to put here?
-			}
+                enemy.hp->change_hp_by(-1);
+                change_enemy_hp = true;
+
+            }
 		};
 
 	auto playerHit = [this](Scene::Transform* t) -> void
@@ -488,17 +489,7 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 				player.hp->change_hp_by(-1);
 				change_player_hp = true;
 			}
-			else
-			{
-				for(int i = 0; i < 5; i++)
-				{
-					if(t == enemyList[i].sword_transform)
-					{
-						player.hp->change_hp_by(-1);
-						change_player_hp = true;
-					}
-				}
-			}
+			
 		};
 
 	// auto groundHit = [](Scene::Transform* t) -> void
@@ -1253,7 +1244,7 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 
 
 	// STUFF ADDED STARTS HERE
-	std::vector< glm::u8vec4 > enemy_hp_tex_data;
+	static std::vector< glm::u8vec4 > enemy_hp_tex_data;
 	static GLuint enemy_hp_tex = 0;
 	static GLuint enemy_hp_buffer = 0;
 	static GLuint enemy_vao = 0;
