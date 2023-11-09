@@ -11,8 +11,69 @@
 #include <vector>
 #include <deque>
 #include <ctime>
+#include <iostream>
 
 class BehaviorTree;//Forward Declaration
+
+class HpBar{
+	public:
+		int max_hp, current_hp;
+		// HpBar(int init_hp){
+		// 	max_hp = init_hp;
+		// 	current_hp = init_hp;
+		// };
+		HpBar(){}
+
+		// going after naming convention in behaviortree
+		void Init(int init_hp){
+			std::cout << "hpbar initialize start" << std::endl;
+			max_hp = init_hp;
+			std::cout << "max hp set" << std::endl;
+			current_hp = init_hp;
+			std::cout << "current hp set" << std::endl;
+		}
+
+		float get_percent_hp_left(){
+			return ((float)current_hp / (float)max_hp);
+		}
+
+		void change_hp_by(int to_change){
+			if (current_hp + to_change > max_hp){
+				current_hp = max_hp;
+			}
+			else if (current_hp + to_change < 0){
+				current_hp = 0;
+			}
+			else{
+				current_hp += to_change;
+			}
+		}
+
+		glm::u8vec4 get_health_color(float hp_bar_transparency){
+			glm::u8vec4 health_color = glm::u8vec4(
+				0xff * (1.0f - get_percent_hp_left()),
+				0xff * get_percent_hp_left(),
+				0x00, 0xff * hp_bar_transparency
+			);
+			return health_color;
+		}
+
+	
+		// enemy_draw(){
+
+		// }
+
+};
+	
+
+
+struct Vert {
+		Vert(glm::vec3 const &position_, glm::vec2 const &tex_coord_) : position(position_), tex_coord(tex_coord_) { }
+		glm::vec3 position;
+		glm::vec2 tex_coord;
+	};
+
+
 struct PlayMode : Mode {
 	PlayMode();
 	virtual ~PlayMode();
@@ -22,7 +83,14 @@ struct PlayMode : Mode {
 	virtual void update(float elapsed) override;
 	virtual void draw(glm::uvec2 const &drawable_size) override;
 
+	virtual glm::vec2 object_to_window_coordinate(Scene::Transform *object, Scene::Camera *camera, glm::uvec2 const &drawable_size);
+
 	//----- game state -----
+
+	
+
+	
+	
 
 	//input tracking:
 	struct Button {
@@ -32,6 +100,12 @@ struct PlayMode : Mode {
 
 	//local copy of the game scene (so code can change it during gameplay):
 	Scene scene;
+
+	// struct Vert {
+	// 	Vert(glm::vec3 const &position_, glm::vec2 const &tex_coord_) : position(position_), tex_coord(tex_coord_) { }
+	// 	glm::vec3 position;
+	// 	glm::vec2 tex_coord;
+	// };
 
 	struct Control {
 		glm::vec3 move = glm::vec3(0.0f); // displacement in world (should be scaled by elapsed)
@@ -63,12 +137,19 @@ struct PlayMode : Mode {
 		Scene::Transform *sword_transform = nullptr;
 
 		Control pawn_control;
+		HpBar* hp;
+		
+		// Hp_Bar hp_bar;
+		// MyStruct myInstance(int 42);
+
 	};
+
 	void walk_pawn(PlayMode::Pawn &pawn, float elapsed);
 
 
 	struct Enemy : Pawn {
 		BehaviorTree* bt;
+		// HpBar* hp;
 	} enemy;
 
 	struct Player : Pawn {
@@ -77,6 +158,7 @@ struct PlayMode : Mode {
 		Scene::Transform *camera_transform = nullptr;
 		//camera is attatched to camera_transform and will be pitched by mouse up/down motion:
 		Scene::Camera *camera = nullptr;
+
 	} player;	
 	
 	Collisions collEng;
@@ -98,4 +180,13 @@ struct PlayMode : Mode {
 	std::shared_ptr< Sound::PlayingSample > fast_downswing_sound;
 	std::shared_ptr< Sound::PlayingSample > footstep_wconv1_sound;
 	// sound stuff ends here:
+
+	// random graphics stuff for the hp_bar:
+	float hp_bar_transparency = 0.5f; 
+	// value between 0 and 1 to set the transparency
+	// of the HP bar on the screen
+	bool change_player_hp = false;
+	int hp_bar_empty_x = -1;
+	int hp_bar_full_x = 0;
+
 };
