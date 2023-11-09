@@ -797,9 +797,6 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	// and clearing the enture tex data array
 	// maybe figure out the bijection 
 
-	player.hp->change_hp_by(-1);
-
-	change_player_hp = true;
 	if (change_player_hp == true){
 
 		hpbar_tex_data.clear();
