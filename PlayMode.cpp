@@ -1120,7 +1120,7 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 
         glm::u8vec4 health_color = enemy.hp->get_health_color(hp_bar_transparency);
         
-        for (int i=0; i<enemy_heart_fillin_indices.size(); i++){
+        for (size_t i=0; i<enemy_heart_fillin_indices.size(); i++){
             if ((enemy_heart_fillin_indices[i] % (int)enemy_hp_size.x) > health_border){
                 enemy_hp_tex_data[enemy_heart_fillin_indices[i]] = empty_color;
             }else{
@@ -1270,7 +1270,7 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 
         glm::u8vec4 health_color = player.hp->get_health_color(hp_bar_transparency);
         
-        for (int i=0; i<hpbar_fillin_indices.size(); i++){
+        for (size_t i=0; i<hpbar_fillin_indices.size(); i++){
             if ((hpbar_fillin_indices[i] % (int)hpbar_size.x) > health_border){
                 hpbar_tex_data[hpbar_fillin_indices[i]] = empty_color;
             }else{
