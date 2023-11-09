@@ -804,7 +804,7 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	if (hpbar_data.empty()){
 		load_png(data_path("graphics/healthbar_base.png"), &hpbar_size, &hpbar_data, OriginLocation::UpperLeftOrigin);
 		for (int i=hpbar_size.y-1; i>=0; i--){
-			for (int j=0; j<hpbar_size.x; j++){
+			for (int j=0; j< (int) hpbar_size.x; j++){
 
 				glm::u8vec4 pixel_at = glm::u8vec4(
 					hpbar_data.at((i*hpbar_size.x)+j)[0],
@@ -847,7 +847,7 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 		glm::u8vec4 empty_color = glm::u8vec4(0x00f, 0x00f, 0x00f, 0xff*hp_bar_transparency);
 		
 		for (int i=hpbar_size.y-1; i>=0; i--){
-			for (int j=0; j<hpbar_size.x; j++){
+			for (int j=0; j< (int) hpbar_size.x; j++){
 				glm::u8vec4 pixel_at = glm::u8vec4(
 					hpbar_data.at((i*hpbar_size.x)+j)[0],
 					hpbar_data.at((i*hpbar_size.x)+j)[1],
