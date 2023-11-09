@@ -254,8 +254,6 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 		enemyList[i].transform->position = walkmesh->to_world_point(enemyList[i].at);
 		enemyList[i].default_rotation = glm::angleAxis(glm::radians(180.0f), glm::vec3(0.0f, 0.0f, 1.0f)); //dictates enemy's original rotation wrt +x
 	}
-	
-
 
 	enemy.bt=new BehaviorTree();
 	enemy.bt->Init();//AI Initialize
@@ -441,8 +439,8 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 			down.pressed = true;
 			return true;
 		} else if (evt.key.keysym.sym == SDLK_SPACE) {
-			mainAction.downs += 1;
-			mainAction.pressed = true;
+			dodge.downs += 1;
+			dodge.pressed = true;
 			return true;
 		} else if (evt.key.keysym.sym == SDLK_e) {
 			secondAction.downs += 1;
@@ -463,7 +461,7 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 			down.pressed = false;
 			return true;
 		} else if (evt.key.keysym.sym == SDLK_SPACE) {
-			mainAction.pressed = false;
+			dodge.pressed = false;
 			return true;
 		} else if (evt.key.keysym.sym == SDLK_e) {
 			secondAction.pressed = false;
@@ -523,9 +521,219 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 	return false;
 }
 
-void PlayMode::walk_pawn(PlayMode::Pawn &pawn, float elapsed)
+void PlayMode::processPawnControl(PlayMode::Pawn& pawn, float elapsed)
+{	
+	// Control& control = pawn.pawn_control;
+
+	glm::vec3 movement = glm::vec3(0.0f);
+
+	{	
+		// this variable is so that we can play the appropriate sound 
+		// when the stance changes, and we don't need to worry about 
+		// coordinating timers for sounds with animations
+		bool stance_changed_in_attack = false;
+
+		uint8_t& stance = pawn.pawn_control.stance;
+		float& st = pawn.pawn_control.swingTime;
+		if (stance == 0){ // idle
+
+			movement = pawn.pawn_control.move * elapsed;
+			
+		//	std::cout<<"EEEEEEEEEEEEEEEEE"<<std::endl;
+			pawn.arm_transform->position = glm::vec3(0.0f, 0.0f, 0.5f);
+			pawn.arm_transform->rotation = glm::angleAxis(0.0f, glm::vec3(0.0f, 0.0f, 1.0f));
+			pawn.wrist_transform->rotation = glm::angleAxis(0.0f, glm::vec3(0.0f, 1.0f, 0.0f));
+			if (pawn.pawn_control.attack){
+				if (stance != 1){ stance_changed_in_attack = true; }
+				pawn.pawn_control.stanceInfo.attack.dir = pawn.pawn_control.move;
+				pawn.gameplay_tags="attack";
+				stance = 1;
+				pawn.pawn_control.attack=0;
+			} else if (pawn.pawn_control.parry){
+				if (stance != 4){ stance_changed_in_attack = true; }
+				pawn.gameplay_tags="parry";
+				stance = 4;
+				pawn.pawn_control.parry=0;
+			}
+			else if(pawn.pawn_control.dodge)
+			{
+				if(glm::length2(pawn.pawn_control.move) > 0.001f)
+				{
+					pawn.gameplay_tags = "dodge";
+					stance = 6;
+					pawn.pawn_control.stanceInfo.dodge.dir = glm::normalize(pawn.pawn_control.move);
+				}
+				
+				pawn.pawn_control.dodge = 0;
+			}
+		} else if (stance == 1 || stance == 3){ // fast downswing, fast upswing, slow upswing
+			const float dur = (stance < 3) ? 0.4f : 1.0f; //total time of downswing/upswing
+			float rt = st / dur;
+			float adt_time = 1 - (1-rt)*(1-rt)*(1-rt) * (2 - (1-rt)*(1-rt)*(1-rt)); // Time scaling, imitates acceleration
+
+			pawn.arm_transform->position = glm::vec3(0.0f, 0.0f, 0.5f - adt_time * 1.5f);
+			pawn.arm_transform->rotation = glm::angleAxis(M_PI_2f * adt_time / 2.0f, glm::normalize(glm::vec3(0.0f, 0.0f, 1.0f)));
+			pawn.wrist_transform->rotation = glm::angleAxis(M_PI_2f * -adt_time * 1.2f, glm::normalize(glm::vec3(0.0f, 1.0f, 0.0f)));
+
+			if (stance == 1)
+			{
+				static auto interpolate = [](float x) -> float
+					{
+						float b = 0.5f;
+						float a = 0.35f;
+						if(x <= a)
+						{
+							return b / a * x;
+						}
+						else
+						{
+							return 1.0f - (1.0f - b) * powf((1.0f - x) / (1.0f - a), (b * (1.0f - a)) / (a * (1.0f - b)));
+						}
+					};
+			
+				// 0 to 1
+				float before = interpolate(st / dur);
+				
+				st += elapsed;
+				if(st >= dur)
+				{
+					st = dur;
+				}
+
+				float after = interpolate(st / dur);
+				float amount = after - before;
+				movement = pawn.pawn_control.stanceInfo.attack.dir * amount * dur;
+
+				if(st == dur)
+				{
+					if (stance != 3){ stance_changed_in_attack = true; }
+					stance = 3;
+					st = 1.0f; 
+				}
+
+			} else {
+			if(stance==3){
+				pawn.gameplay_tags="";//clear gameplay tag for AI
+			//	std::cout<<"ddddddddddddddddddddddddddddddddddddd"<<std::endl;
+			}
+				st -= elapsed;
+				if (st < 0.0f){
+					if (stance != 0){ stance_changed_in_attack = true; }
+					stance = 0;
+				}
+			} 
+		} else if (stance == 2) {
+
+			if(stance==2){
+				pawn.gameplay_tags="";//clear gameplay tag for AI
+			//	std::cout<<"ddddddddddddddddddddddddddddddddddddd"<<std::endl;
+			}
+			const float dur = 0.4f;
+			const float delay = 0.4f;
+			float dt = pawn.pawn_control.swingHit;
+			float rt = (st + delay) / dur * (dt) / (dt + delay);
+
+			float adt_time = 1 - (1-rt)*(1-rt)*(1-rt) * (2 - (1-rt)*(1-rt)*(1-rt)); // Time scaling, imitates acceleration
+
+			pawn.arm_transform->position = glm::vec3(0.0f, 0.0f, 0.5f - adt_time * 0.8f);
+			pawn.arm_transform->rotation = glm::angleAxis(M_PI_2f * adt_time / 2.0f, glm::normalize(glm::vec3(0.0f, 0.0f, 1.0f)));
+			pawn.wrist_transform->rotation = glm::angleAxis(M_PI_2f * -adt_time * 1.2f, glm::normalize(glm::vec3(0.0f, 1.0f, 0.0f)));
+
+			st -= elapsed;
+			if (st < -delay){
+				stance = 0;
+				st = 0.0f;
+			}
+
+			{
+				clock_t current_time = clock();
+				elapsed = (float)(current_time - previous_sword_whoosh_time);
+				if ((elapsed / CLOCKS_PER_SEC) > min_sword_whoosh_interval){
+					fast_upswing_sound = Sound::play(*fast_upswing, 1.0f, 0.0f);
+					previous_sword_whoosh_time = clock();
+				}
+			}
+		} else if (stance == 4 || stance == 5){ // parry
+			if(stance==5){
+				pawn.gameplay_tags="";//clear gameplay tag for AI
+			//	std::cout<<"eeeaaa"<<std::endl;
+			}
+			const float dur = 0.4f; //total time of down parry, total parry time is thrice due to holding 
+			float rt = (st < dur) ? st / dur : 1.0f;
+			float adt_time = 1 - (1-rt)*(1-rt)*(1-rt) * (2 - (1-rt)*(1-rt)*(1-rt)); // Time scaling, imitates acceleration
+
+			pawn.arm_transform->position = glm::vec3(0.0f, 0.0f, 0.5f - adt_time / 4.0f);
+			pawn.arm_transform->rotation = glm::angleAxis(M_PI_2f * adt_time * 1.5f, glm::normalize(glm::vec3(0.0f, 0.0f, 1.0f)));
+			pawn.wrist_transform->rotation = glm::angleAxis(M_PI_2f * adt_time / 1.3f, glm::normalize(glm::vec3(0.0f, 1.0f, 0.0f)));
+
+			if (stance == 4){ 
+				st += elapsed;
+				// Hold parry stance for additional duration
+				if (st > 2 * dur){ 
+					if (stance != 5){ stance_changed_in_attack = true; }
+					stance = 5;
+				}
+			} else {
+				if (st > dur){
+					st = dur;
+				}
+				st -= elapsed;
+				if (st < 0.0f){
+					if (stance != 0){ stance_changed_in_attack = true; }
+					stance = 0;
+				}
+			}
+		}
+		else if(stance == 6) // DODGE ROLL (implemented as attack since it similarly precludes you from taking any action and modifies your transform)
+		{
+			const float dur = 0.20f;
+			const float distance = 3.0f;
+
+			static auto interpolate = [](float x) -> float
+				{
+					return 1.0f - 1.0f / (1.0f + pow((2.0f * x) / (1.0f - x), 3));
+				};
+			
+			// 0 to 1
+			float before = interpolate(st / dur);
+
+			st += elapsed;
+			if(st >= dur)
+			{
+				st = dur;
+			}
+
+			float after = interpolate(st / dur);
+				
+			float amount = after - before;
+
+			movement = pawn.pawn_control.stanceInfo.dodge.dir * distance * amount;
+
+			if(st == dur)
+			{
+				st = 0.0f;
+				stance = 0;
+			}
+		}
+
+		if (stance_changed_in_attack){
+			// fast downswing
+			if (stance == 1) {
+				fast_downswing_sound = Sound::play(*fast_downswing, 1.0f, 0.0f);
+			}
+			// fast upswing
+			if (stance == 2) {
+				fast_upswing_sound = Sound::play(*fast_upswing, 1.0f, 0.0f);
+			}
+		}
+	}
+
+	walk_pawn(pawn, movement);
+}
+
+void PlayMode::walk_pawn(PlayMode::Pawn &pawn, glm::vec3 movement)
 {
-	glm::vec3 remain = pawn.pawn_control.move;
+	glm::vec3 remain = movement;
 
 	///std::cout << remain.x << "," << remain.y << "," << remain.z << "\n";
 
@@ -594,136 +802,6 @@ void PlayMode::walk_pawn(PlayMode::Pawn &pawn, float elapsed)
 		);
 		pawn.transform->rotation = glm::normalize(adjust * pawn.transform->rotation);
 	}
-
-	// attacking
-	{	
-		// this variable is so that we can play the appropriate sound 
-		// when the stance changes, and we don't need to worry about 
-		// coordinating timers for sounds with animations
-		bool stance_changed_in_attack = false;
-
-		uint8_t& stance = pawn.pawn_control.stance;
-		float& st = pawn.pawn_control.swingTime;
-		if (stance == 0){ // idle
-		//	std::cout<<"EEEEEEEEEEEEEEEEE"<<std::endl;
-			pawn.arm_transform->position = glm::vec3(0.0f, 0.0f, 0.5f);
-			pawn.arm_transform->rotation = glm::angleAxis(0.0f, glm::vec3(0.0f, 0.0f, 1.0f));
-			pawn.wrist_transform->rotation = glm::angleAxis(0.0f, glm::vec3(0.0f, 1.0f, 0.0f));
-			if (pawn.pawn_control.attack){
-				if (stance != 1){ stance_changed_in_attack = true; }
-				pawn.gameplay_tags="attack";
-				stance = 1;
-				pawn.pawn_control.attack=0;
-			} else if (pawn.pawn_control.parry){
-				if (stance != 4){ stance_changed_in_attack = true; }
-				pawn.gameplay_tags="parry";
-				stance = 4;
-				pawn.pawn_control.parry=0;
-			}
-		} else if (stance == 1 || stance == 3){ // fast downswing, fast upswing, slow upswing
-			const float dur = (stance < 3) ? 0.4f : 1.0f; //total time of downswing/upswing
-			float rt = st / dur;
-			float adt_time = 1 - (1-rt)*(1-rt)*(1-rt) * (2 - (1-rt)*(1-rt)*(1-rt)); // Time scaling, imitates acceleration
-
-			pawn.arm_transform->position = glm::vec3(0.0f, 0.0f, 0.5f - adt_time * 1.5f);
-			pawn.arm_transform->rotation = glm::angleAxis(M_PI_2f * adt_time / 2.0f, glm::normalize(glm::vec3(0.0f, 0.0f, 1.0f)));
-			pawn.wrist_transform->rotation = glm::angleAxis(M_PI_2f * -adt_time * 1.2f, glm::normalize(glm::vec3(0.0f, 1.0f, 0.0f)));
-
-			if (stance == 1){ 
-				st += elapsed;
-				if (st > dur){
-					if (stance != 3){ stance_changed_in_attack = true; }
-					stance = 3;
-					st = 1.0f; 
-				}
-
-
-			} else {
-			if(stance==3){
-				pawn.gameplay_tags="";//clear gameplay tag for AI
-			//	std::cout<<"ddddddddddddddddddddddddddddddddddddd"<<std::endl;
-			}
-				st -= elapsed;
-				if (st < 0.0f){
-					if (stance != 0){ stance_changed_in_attack = true; }
-					stance = 0;
-				}
-			} 
-		} else if (stance == 2) {
-
-			if(stance==2){
-				pawn.gameplay_tags="";//clear gameplay tag for AI
-			//	std::cout<<"ddddddddddddddddddddddddddddddddddddd"<<std::endl;
-			}
-			const float dur = 0.4f;
-			const float delay = 0.4f;
-			float dt = pawn.pawn_control.swingHit;
-			float rt = (st + delay) / dur * (dt) / (dt + delay);
-
-			float adt_time = 1 - (1-rt)*(1-rt)*(1-rt) * (2 - (1-rt)*(1-rt)*(1-rt)); // Time scaling, imitates acceleration
-
-			pawn.arm_transform->position = glm::vec3(0.0f, 0.0f, 0.5f - adt_time * 0.8f);
-			pawn.arm_transform->rotation = glm::angleAxis(M_PI_2f * adt_time / 2.0f, glm::normalize(glm::vec3(0.0f, 0.0f, 1.0f)));
-			pawn.wrist_transform->rotation = glm::angleAxis(M_PI_2f * -adt_time * 1.2f, glm::normalize(glm::vec3(0.0f, 1.0f, 0.0f)));
-
-			st -= elapsed;
-			if (st < -delay){
-				stance = 0;
-				st = 0.0f;
-			}
-
-			{
-				clock_t current_time = clock();
-				elapsed = (float)(current_time - previous_sword_whoosh_time);
-				if ((elapsed / CLOCKS_PER_SEC) > min_sword_whoosh_interval){
-					fast_upswing_sound = Sound::play(*fast_upswing, 1.0f, 0.0f);
-					previous_sword_whoosh_time = clock();
-				}
-			}
-		} else if (stance == 4 || stance == 5){ // parry
-			if(stance==5){
-				pawn.gameplay_tags="";//clear gameplay tag for AI
-			//	std::cout<<"eeeaaa"<<std::endl;
-			}
-			const float dur = 0.25f; //total time of down parry, total parry time is thrice due to holding 
-			float rt = (st < dur) ? st / dur : 1.0f;
-			float adt_time = 1 - (1-rt)*(1-rt)*(1-rt) * (2 - (1-rt)*(1-rt)*(1-rt)); // Time scaling, imitates acceleration
-
-			pawn.arm_transform->position = glm::vec3(0.0f, 0.0f, 0.5f - adt_time / 4.0f);
-			pawn.arm_transform->rotation = glm::angleAxis(M_PI_2f * adt_time * 1.5f, glm::normalize(glm::vec3(0.0f, 0.0f, 1.0f)));
-			pawn.wrist_transform->rotation = glm::angleAxis(M_PI_2f * adt_time / 1.3f, glm::normalize(glm::vec3(0.0f, 1.0f, 0.0f)));
-
-			if (stance == 4){ 
-				st += elapsed;
-				// Hold parry stance for additional duration
-				if (st > 2 * dur){ 
-					if (stance != 5){ stance_changed_in_attack = true; }
-					stance = 5;
-				}
-			} else {
-				if (st > dur){
-					st = dur;
-				}
-				st -= elapsed;
-				if (st < 0.0f){
-					if (stance != 0){ stance_changed_in_attack = true; }
-					stance = 0;
-				}
-			}
-		}
-
-		if (stance_changed_in_attack){
-			// fast downswing
-			if (stance == 1) {
-				fast_downswing_sound = Sound::play(*fast_downswing, 1.0f, 0.0f);
-			}
-			// fast upswing
-			if (stance == 2) {
-				fast_upswing_sound = Sound::play(*fast_upswing, 1.0f, 0.0f);
-			}
-		}
-	}
-
 }
 
 void PlayMode::update(float elapsed)
@@ -741,7 +819,8 @@ void PlayMode::update(float elapsed)
 		if(down.pressed && !up.pressed) move.y =-1.0f;
 		if(!down.pressed && up.pressed) move.y = 1.0f;
 
-		if ((left.pressed != right.pressed) || (down.pressed != up.pressed)){
+		if((left.pressed != right.pressed) || (down.pressed != up.pressed))
+		{
 			clock_t current_time = clock();
 			float footstep_elapsed = (float)(current_time - previous_footstep_time);
 			if ((footstep_elapsed / CLOCKS_PER_SEC) > min_footstep_interval){
@@ -749,19 +828,20 @@ void PlayMode::update(float elapsed)
 				previous_footstep_time = clock();
 			}
 		}
-
+		
 		//make it so that moving diagonally doesn't go faster:
-		if (move != glm::vec2(0.0f)) move = glm::normalize(move) * PlayerSpeed * elapsed;
+		if (move != glm::vec2(0.0f)) move = glm::normalize(move) * PlayerSpeed;
 
 		//get move in world coordinate system:
 		glm::vec3 pmove = player.camera_transform->make_local_to_world() * glm::vec4(move.x, move.y, 0.0f, 0.0f);
+		
 		player.pawn_control.move = pmove;
-
+		
 		player.pawn_control.attack = mainAction.pressed; // Attack input control
 		player.pawn_control.parry = secondAction.pressed; // Attack input control
+		player.pawn_control.dodge = dodge.pressed;
 
-		walk_pawn(player, elapsed);	
-
+		processPawnControl(player, elapsed);
 
 		{
 			enemy.bt->tick();// AI Thinking
@@ -778,7 +858,7 @@ void PlayMode::update(float elapsed)
 			enemy.pawn_control.parry = enemy_control.parry; //secondAction.pressed; 
 			enemy_control.attack=0;
 			enemy_control.parry=0;
-			walk_pawn(enemy, elapsed);	
+			processPawnControl(enemy, elapsed);	
 		}
 		for(int i=0;i<5;++i){
 			enemyList[i].bt->tick();// AI Thinking
@@ -792,8 +872,8 @@ void PlayMode::update(float elapsed)
 			enemyList[i].pawn_control.parry = enemy_control.parry; //secondAction.pressed; 
 			enemy_control.attack=0;
 			enemy_control.parry=0;
-			std::cout<<"ddfsfwerwe"<<i<<std::endl;
-			walk_pawn(enemyList[i], elapsed);	
+			//std::cout<<"ddfsfwerwe"<<i<<std::endl;
+			processPawnControl(enemyList[i], elapsed);	
 
 		}
 		/*
@@ -814,6 +894,9 @@ void PlayMode::update(float elapsed)
 	right.downs = 0;
 	up.downs = 0;
 	down.downs = 0;
+	dodge.downs = 0;
+	mainAction.downs = 0;
+	secondAction.downs = 0;
 }
 
 

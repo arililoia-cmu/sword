@@ -91,19 +91,51 @@ struct PlayMode : Mode {
 	struct Button {
 		uint8_t downs = 0;
 		uint8_t pressed = 0;
-	} left, right, down, up, secondAction, mainAction;
+	} left, right, down, up, secondAction, mainAction, dodge;
 
 	//local copy of the game scene (so code can change it during gameplay):
 	Scene scene;
 
-	struct Control {
+	struct Control
+	{
+		// enum class STANCE
+		// {
+		// 	IDLE = 0,
+		// 	WALK,
+		// 	ATTACK_A_FORWARD,
+		// 	ATTACK_A_BOUNCE,
+		// 	ATTACK_A_BACKWARD,
+		// 	PARRY_FORWARD,
+		// 	PARRY_BACKWARD,
+		// 	DODGE
+		// };
+
+		//STANCE stance;
+
+		struct DodgeStanceInfo
+		{
+			glm::vec3 dir;
+		};
+		struct AttackStanceInfo
+		{
+			glm::vec3 dir;
+		};
+		
+		union StanceInfo
+		{
+			DodgeStanceInfo dodge;
+			AttackStanceInfo attack;
+		} stanceInfo;
+		
 		glm::vec3 move = glm::vec3(0.0f); // displacement in world (should be scaled by elapsed)
 		float rotate = 0.0f; // angle in world, normal direction, ignore for player 
 		uint8_t attack = 0;
 		uint8_t parry = 0;
+		uint8_t dodge = 0;
+		
 
 		uint8_t stance = 0; // state variable, 0 is idle, 1 is swing forward, 2 is swing backward (bounce), 3 is swing backward (normal), 
-		// 4 is down parry, 5 is up parry
+		// 4 is down parry, 5 is up parry, 6 is dodge
 
 		float swingHit = 0.0f; // logged on block
 		float swingTime = 0.0f;
@@ -133,7 +165,9 @@ struct PlayMode : Mode {
 
 	};
 
-	void walk_pawn(PlayMode::Pawn &pawn, float elapsed);
+	void walk_pawn(PlayMode::Pawn &pawn, glm::vec3 movement);
+
+	void processPawnControl(PlayMode::Pawn& pawn, float elapsed);
 
 
 	struct Enemy : Pawn {
