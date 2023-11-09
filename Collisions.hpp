@@ -54,7 +54,7 @@ public:
 	// A simple ID for managing registering and unregistering colliders
 	typedef uint64_t ID;
 
-	enum Layer
+	enum Layer : size_t
 	{
 		PLAYER_SWORD_LAYER = 0,
 		PLAYER_BODY_LAYER,
