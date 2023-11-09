@@ -225,7 +225,7 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 	enemy.bt=new BehaviorTree();
 	enemy.bt->Init();//AI Initialize
 	enemy.hp = new HpBar();
-	enemy.hp->Init(10);
+	enemy.hp->Init(1000);
 	enemy.bt->SetEnemy(&enemy);
 	enemy.bt->SetPlayer(&player);
 
@@ -299,7 +299,7 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 					player.pawn_control.stance = 2;
 					player.pawn_control.swingHit = player.pawn_control.swingTime;
 				}
-
+				
 				// HERE WE HAVE HIT ENEMY WITH PLAYER SWORD (PROBABLY BEST TO ACTUALLY DECREASE ENEMY HP IN ITS HANDLE RATHER THAN SWORD HANDLE)
 			}
 		};
@@ -324,9 +324,7 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 				if ((elapsed / CLOCKS_PER_SEC) > min_enemy_sword_clang_interval){
 					w_conv2_sound = Sound::play(*w_conv2, 1.0f, 0.0f);
 					previous_enemy_sword_clang_time = clock();
-					// UNCOMMENT ME TO SEE HOW HP BAR DECREASES
-					// player.hp->change_hp_by(-1);
-					// change_player_hp = true;
+
 				}
 			}
 		};
@@ -741,6 +739,8 @@ void PlayMode::update(float elapsed) {
 	down.downs = 0;
 }
 
+
+
 void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	//update camera aspect ratio for drawable:
 	std::cout << "enemy.hpbar.current_hp: " << enemy.hp->current_hp << std::endl;
@@ -804,15 +804,84 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	static GLuint enemy_hp_tex = 0;
 	static GLuint enemy_hp_buffer = 0;
 	static GLuint enemy_vao = 0;
+	static glm::uvec2 enemy_hp_size;
+	static std::vector< glm::u8vec4 >  enemy_hp_data;
 
-	for (int i=0; i<25; i++){
-		enemy_hp_tex_data.push_back(glm::u8vec4(0xff, 0x00, 0x00, 0x7f));
+	if (enemy_hp_data.empty()){
+		load_png(data_path("graphics/enemy-hp.png"), &enemy_hp_size, &enemy_hp_data, OriginLocation::UpperLeftOrigin);
+		for (int i=enemy_hp_size.y-1; i>=0; i--){
+			for (int j=0; j< (int) enemy_hp_size.x; j++){
+
+				glm::u8vec4 pixel_at = glm::u8vec4(
+					enemy_hp_data.at((i*enemy_hp_size.x)+j)[0],
+					enemy_hp_data.at((i*enemy_hp_size.x)+j)[1],
+					enemy_hp_data.at((i*enemy_hp_size.x)+j)[2],
+					enemy_hp_data.at((i*enemy_hp_size.x)+j)[3] * hp_bar_transparency
+				);
+				
+				// get where the hp bar "fillup" region starts and ends
+				// only need to do this if we haven't read in the texture yet
+				if (((int)pixel_at[0] == 0) && ((int)pixel_at[1] == 0) 
+					&& ((int)pixel_at[2] == 0) && ((int)pixel_at[3] == 127)){
+						if (enemy_heart_empty_x == -1 || 
+							(enemy_heart_empty_x > j) ){
+							enemy_heart_empty_x = j;
+							std::cout << "enemy_heart_empty_x: " << enemy_heart_empty_x << std::endl;
+						}else{
+							if ((j > enemy_heart_empty_x ) && (j > enemy_heart_full_x)){
+								enemy_heart_full_x = j;
+							}
+							
+						}
+						
+						enemy_hp_tex_data.push_back(glm::u8vec4(0x00, 0xff, 0x00, 0xff*hp_bar_transparency));
+
+				}else{
+					enemy_hp_tex_data.push_back(pixel_at);
+				}
+				
+			}
+		}
 	}
 
-	if (enemy_hp_tex == 0) {
+	if (change_enemy_hp == true){
+
+		enemy_hp_tex_data.clear();
+		
+		int health_border = int(enemy_heart_empty_x + 
+			std::floor((enemy_heart_full_x - enemy_heart_empty_x)*enemy.hp->get_percent_hp_left()));
+
+		glm::u8vec4 health_color = enemy.hp->get_health_color(hp_bar_transparency);
+	
+		for (int i=enemy_hp_size.y-1; i>=0; i--){
+			for (int j=0; j< (int) enemy_hp_size.x; j++){
+				glm::u8vec4 pixel_at = glm::u8vec4(
+					enemy_hp_data.at((i*enemy_hp_size.x)+j)[0],
+					enemy_hp_data.at((i*enemy_hp_size.x)+j)[1],
+					enemy_hp_data.at((i*enemy_hp_size.x)+j)[2],
+					enemy_hp_data.at((i*enemy_hp_size.x)+j)[3] * hp_bar_transparency
+				);
+
+				if (((int)pixel_at[0] == 0) && ((int)pixel_at[1] == 0) 
+					&& ((int)pixel_at[2] == 0) && ((int)pixel_at[3] == 127)){
+						if (j > health_border){
+							enemy_hp_tex_data.push_back(empty_color);
+						}else{
+							enemy_hp_tex_data.push_back(health_color);
+						}
+				}else{
+					enemy_hp_tex_data.push_back(pixel_at);
+				}
+							
+			}
+		}
+	}
+
+
+	if (enemy_hp_tex == 0 || change_enemy_hp) {
 		glGenTextures(1, &enemy_hp_tex);
 		glBindTexture(GL_TEXTURE_2D, enemy_hp_tex);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 5, 5, 0, GL_RGBA, GL_UNSIGNED_BYTE, enemy_hp_tex_data.data());
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, enemy_hp_size.x, enemy_hp_size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, enemy_hp_tex_data.data());
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -820,11 +889,12 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 
-	if (enemy_hp_buffer == 0){
+
+	if (enemy_hp_buffer == 0 || change_enemy_hp){
 		glGenBuffers(1, &enemy_hp_buffer);
 	}
 
-	if (enemy_vao == 0) {
+	if (enemy_vao == 0 || change_enemy_hp) {
 		//based on PPU466.cpp
 
 		glGenVertexArrays(1, &enemy_vao);
@@ -833,28 +903,28 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 		glBindBuffer(GL_ARRAY_BUFFER, enemy_hp_buffer);
 
 		glVertexAttribPointer(
-			lit_color_texture_program->Position_vec4, //attribute
+			texture_program->Position_vec4, //attribute
 			3, //size
 			GL_FLOAT, //type
 			GL_FALSE, //normalized
 			sizeof(Vert), //stride
 			(GLbyte *)0 + offsetof(Vert, position) //offset
 		);
-		glEnableVertexAttribArray(lit_color_texture_program->Position_vec4);
+		glEnableVertexAttribArray(texture_program->Position_vec4);
 
 		glVertexAttribPointer(
-			lit_color_texture_program->TexCoord_vec2, //attribute
+			texture_program->TexCoord_vec2, //attribute
 			2, //size
 			GL_FLOAT, //type
 			GL_FALSE, //normalized
 			sizeof(Vert), //stride
 			(GLbyte *)0 + offsetof(Vert, tex_coord) //offset
 		);
-		glEnableVertexAttribArray(lit_color_texture_program->TexCoord_vec2);
+		glEnableVertexAttribArray(texture_program->TexCoord_vec2);
 
 	}
 
-	glUseProgram(lit_color_texture_program->program);
+	glUseProgram(texture_program->program);
 
 	// step 2: figure out where in the window to draw the thing
 	glm::vec2 enemy_o2wc = object_to_window_coordinate(enemy.body_transform, player.camera, drawable_size);
@@ -874,8 +944,8 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	glBindBuffer(GL_ARRAY_BUFFER, enemy_hp_buffer);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(Vert) * attribs.size(), attribs.data(), GL_STREAM_DRAW);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glUseProgram(lit_color_texture_program->program);
-	glUniformMatrix4fv(lit_color_texture_program->OBJECT_TO_CLIP_mat4, 1, GL_FALSE, glm::value_ptr(glm::mat4(1.0f)));
+	glUseProgram(texture_program->program);
+	glUniformMatrix4fv(texture_program->OBJECT_TO_CLIP_mat4, 1, GL_FALSE, glm::value_ptr(glm::mat4(1.0f)));
 	glBindTexture(GL_TEXTURE_2D, enemy_hp_tex);
 	glDisable(GL_DEPTH_TEST);
 	glEnable(GL_BLEND);
@@ -889,7 +959,7 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	// STUFF I ADDED ENDS HERE
 
 
-	// DRAWING THE HP BAR FROM FILE
+	// DRAWING THE PLAYER HP BAR FROM FILE
 	// reference: https://gamedev.stackexchange.com/questions/59078/sdl-function-for-loading-pngs
 	// do this later
 	// for now: drawing HP bar on top of the screen
@@ -902,6 +972,8 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	static GLuint hpbar_buffer = 0;
 	static GLuint hpbar_vao = 0;
 
+	// step 1. load in the hp bar png, get the start x and end x of the area that should be
+	// depleted as HP is depleted
 	if (hpbar_data.empty()){
 		load_png(data_path("graphics/healthbar_base.png"), &hpbar_size, &hpbar_data, OriginLocation::UpperLeftOrigin);
 		for (int i=hpbar_size.y-1; i>=0; i--){
@@ -913,6 +985,7 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 					hpbar_data.at((i*hpbar_size.x)+j)[2],
 					hpbar_data.at((i*hpbar_size.x)+j)[3] * hp_bar_transparency
 				);
+				
 				// get where the hp bar "fillup" region starts and ends
 				// only need to do this if we haven't read in the texture yet
 				if (((int)pixel_at[0] == 0) && ((int)pixel_at[1] == 0) 
@@ -936,6 +1009,7 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	// and clearing the enture tex data array
 	// maybe figure out the bijection 
 
+	// step 2: enter condition if the hp has been changed
 	if (change_player_hp == true){
 
 		hpbar_tex_data.clear();
@@ -944,8 +1018,6 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 			std::floor((hp_bar_full_x - hp_bar_empty_x)*player.hp->get_percent_hp_left()));
 
 		glm::u8vec4 health_color = player.hp->get_health_color(hp_bar_transparency);
-
-		glm::u8vec4 empty_color = glm::u8vec4(0x00f, 0x00f, 0x00f, 0xff*hp_bar_transparency);
 		
 		for (int i=hpbar_size.y-1; i>=0; i--){
 			for (int j=0; j< (int) hpbar_size.x; j++){
@@ -1048,6 +1120,7 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	GL_ERRORS();
 
 	change_player_hp = false;
+	change_enemy_hp = false;
 
 
 }
