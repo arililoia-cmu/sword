@@ -177,11 +177,8 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 			enemy.wrist_transform = &transform;
 		}
 		for(int i=0;i<5;++i){
-			char num[5]={'\0'};
-			num[0]='.';
-			num[1]='0';
-			num[2]='0';
-			num[3]='0'+(char)i;
+			char num[5]={'.','0','0','0','\0'};
+			num[3]=i+48+1;
 			std::string snum(num);
 			if(transform.name=="Enemy_Body"+snum){
 				enemyList[i].body_transform = &transform;
@@ -216,11 +213,13 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 	for(int i=0;i<5;++i){
 			//same for enemy
 	// 	scene.transforms.emplace_back();
+
 		enemyList[i].transform = &scene.transforms.back();
 		enemyList[i].body_transform->parent = enemyList[i].transform;
 		enemyList[i].transform->position = walkmesh->to_world_point(enemyList[i].at);
 		enemyList[i].default_rotation = glm::angleAxis(glm::radians(180.0f), glm::vec3(0.0f, 0.0f, 1.0f)); //dictates enemy's original rotation wrt +x
 	}
+	
 
 
 	enemy.bt=new BehaviorTree();
@@ -343,6 +342,7 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 	collEng.cs.emplace_back(player.sword_transform, playerSwordCollMesh,  first, playerSwordHit);
 	collEng.cs.emplace_back(enemy.sword_transform, enemySwordCollMesh, second, enemySwordHit);
 	collEng.cs.emplace_back(enemy.transform, enemyCollMesh, second, enemyHit);
+
 }
 
 PlayMode::~PlayMode() {
@@ -456,7 +456,7 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 void PlayMode::walk_pawn(PlayMode::Pawn &pawn, float elapsed) {
 
 	glm::vec3 remain = pawn.pawn_control.move;
-	
+
 	///std::cout << remain.x << "," << remain.y << "," << remain.z << "\n";
 
 	//using a for() instead of a while() here so that if walkpoint gets stuck I
@@ -651,6 +651,7 @@ void PlayMode::walk_pawn(PlayMode::Pawn &pawn, float elapsed) {
 			}
 		}
 	}
+
 }
 
 void PlayMode::update(float elapsed) {
@@ -705,7 +706,6 @@ void PlayMode::update(float elapsed) {
 			enemy_control.parry=0;
 			walk_pawn(enemy, elapsed);	
 		}
-
 		for(int i=0;i<5;++i){
 			enemyList[i].bt->tick();// AI Thinking
 
