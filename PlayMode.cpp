@@ -176,6 +176,23 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 		} else if (transform.name == "Enemy_Wrist"){
 			enemy.wrist_transform = &transform;
 		}
+		for(int i=0;i<5;++i){
+			char num[1]={'\0'};
+			num[0]='0'+(char)i;
+			std::string snum(num);
+			if(transform.name=="Enemy_Body"+snum){
+				enemyList[i].body_transform = &transform;
+				enemyList[i].at = walkmesh->nearest_walk_point(enemyList[i].body_transform->position + glm::vec3(0.0f, 0.0001f, 0.0f));
+				float height = glm::length(enemy.body_transform->position - walkmesh->to_world_point(enemyList[i].at));
+				enemyList[i].body_transform->position = glm::vec3(0.0f, 0.0f, height);
+			}
+			if(transform.name=="Enemy_Sword"+snum){
+				enemyList[i].sword_transform = &transform;
+			}
+			if(transform.name=="Enemy_Wrist"+snum){
+				enemyList[i].wrist_transform = &transform;
+			}
+		}
 	}
 
 	//create player transform at player feet and start player walking at nearest walk point:
