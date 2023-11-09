@@ -247,7 +247,7 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 	enemy.default_rotation = glm::angleAxis(glm::radians(180.0f), glm::vec3(0.0f, 0.0f, 1.0f)); //dictates enemy's original rotation wrt +x
 	for(int i=0;i<5;++i){
 			//same for enemy
-	// 	scene.transforms.emplace_back();
+	 	scene.transforms.emplace_back();
 
 		enemyList[i].transform = &scene.transforms.back();
 		enemyList[i].body_transform->parent = enemyList[i].transform;
@@ -410,6 +410,7 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 	collEng.registerCollider(enemy.body_transform, enemyCollMesh, enemyCollMesh->containingRadius, enemyHit);
 	collEng.registerCollider(player.body_transform, playerCollMesh, playerCollMesh->containingRadius, playerHit);
 	//collEng.registerCollider(groundTransform, groundCollMesh, groundCollMesh->containingRadius, groundHit);
+	std::cout<<"end of loading scene"<<std::endl;
 }
 
 PlayMode::~PlayMode()
@@ -781,7 +782,6 @@ void PlayMode::update(float elapsed)
 		}
 		for(int i=0;i<5;++i){
 			enemyList[i].bt->tick();// AI Thinking
-
 			PlayMode::Control& enemy_control=enemyList[i].bt->GetControl();
 			//simple enemy that walks toward player
 			enemyList[i].pawn_control.move = enemy_control.move*elapsed;
@@ -792,7 +792,7 @@ void PlayMode::update(float elapsed)
 			enemyList[i].pawn_control.parry = enemy_control.parry; //secondAction.pressed; 
 			enemy_control.attack=0;
 			enemy_control.parry=0;
-		//	std::cout<<"ddfsfwerwe"<<i<<std::endl;
+			std::cout<<"ddfsfwerwe"<<i<<std::endl;
 			walk_pawn(enemyList[i], elapsed);	
 
 		}

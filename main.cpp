@@ -170,7 +170,7 @@ int main(int argc, char **argv) {
 			}
 			if (!Mode::current) break;
 		}
-
+	std::cout<<"Mainloop1"<<std::endl;
 		{ //(2) call the current mode's "update" function to deal with elapsed time:
 			auto current_time = std::chrono::high_resolution_clock::now();
 			static auto previous_time = current_time;
@@ -180,11 +180,12 @@ int main(int argc, char **argv) {
 			//if frames are taking a very long time to process,
 			//lag to avoid spiral of death:
 			elapsed = std::min(0.1f, elapsed);
-
+				std::cout<<"Mainloop1.2"<<std::endl;
 			Mode::current->update(elapsed);
+				std::cout<<"Mainloop1.5"<<std::endl;
 			if (!Mode::current) break;
 		}
-
+	std::cout<<"Mainloop2"<<std::endl;
 		{ //(3) call the current mode's "draw" function to produce output:
 		
 			Mode::current->draw(drawable_size);
