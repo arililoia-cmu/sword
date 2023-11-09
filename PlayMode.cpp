@@ -247,8 +247,9 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 				if ((elapsed / CLOCKS_PER_SEC) > min_enemy_sword_clang_interval){
 					w_conv2_sound = Sound::play(*w_conv2, 1.0f, 0.0f);
 					previous_enemy_sword_clang_time = clock();
-					player.hp->change_hp_by(-1);
-					change_player_hp = true;
+					// UNCOMMENT ME TO SEE HOW HP BAR DECREASES
+					// player.hp->change_hp_by(-1);
+					// change_player_hp = true;
 				}
 			}
 		};
