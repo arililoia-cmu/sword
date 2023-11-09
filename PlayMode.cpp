@@ -233,7 +233,7 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 					player.pawn_control.stance = 2;
 					player.pawn_control.swingHit = player.pawn_control.swingTime;
 				}
-
+				
 				// HERE WE HAVE HIT ENEMY WITH PLAYER SWORD (PROBABLY BEST TO ACTUALLY DECREASE ENEMY HP IN ITS HANDLE RATHER THAN SWORD HANDLE)
 			}
 		};
@@ -258,9 +258,7 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 				if ((elapsed / CLOCKS_PER_SEC) > min_enemy_sword_clang_interval){
 					w_conv2_sound = Sound::play(*w_conv2, 1.0f, 0.0f);
 					previous_enemy_sword_clang_time = clock();
-					// UNCOMMENT ME TO SEE HOW HP BAR DECREASES
-					// player.hp->change_hp_by(-1);
-					// change_player_hp = true;
+
 				}
 			}
 		};
@@ -725,9 +723,6 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	static glm::uvec2 enemy_hp_size;
 	static std::vector< glm::u8vec4 >  enemy_hp_data;
 
-	change_enemy_hp = true;
-	enemy.hp->change_hp_by(-1);
-
 	if (enemy_hp_data.empty()){
 		load_png(data_path("graphics/enemy-hp.png"), &enemy_hp_size, &enemy_hp_data, OriginLocation::UpperLeftOrigin);
 		for (int i=enemy_hp_size.y-1; i>=0; i--){
@@ -753,10 +748,6 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 								enemy_heart_full_x = j;
 							}
 							
-							// std::cout << "enemy_heart_full_x: " << enemy_heart_full_x << std::endl;
-							// if (enemy_heart_full_x < enemy_heart_empty_x){
-							// 	exit(0);
-							// }
 						}
 						
 						enemy_hp_tex_data.push_back(glm::u8vec4(0x00, 0xff, 0x00, 0xff*hp_bar_transparency));
@@ -768,9 +759,6 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 			}
 		}
 	}
-
-	std::cout << "enemy_heart_empty_x: " << enemy_heart_empty_x << std::endl;
-	std::cout << "enemy_heart_full_x: " << enemy_heart_full_x << std::endl;
 
 	if (change_enemy_hp == true){
 
@@ -1048,6 +1036,7 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	GL_ERRORS();
 
 	change_player_hp = false;
+	change_enemy_hp = false;
 
 
 }
