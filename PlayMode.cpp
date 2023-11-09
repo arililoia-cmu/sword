@@ -533,11 +533,11 @@ void PlayMode::processPawnControl(PlayMode::Pawn& pawn, float elapsed)
 		// coordinating timers for sounds with animations
 		bool stance_changed_in_attack = false;
 
+		movement = pawn.pawn_control.move * elapsed;
+		
 		uint8_t& stance = pawn.pawn_control.stance;
 		float& st = pawn.pawn_control.swingTime;
 		if (stance == 0){ // idle
-
-			movement = pawn.pawn_control.move * elapsed;
 			
 		//	std::cout<<"EEEEEEEEEEEEEEEEE"<<std::endl;
 			pawn.arm_transform->position = glm::vec3(0.0f, 0.0f, 0.5f);
@@ -848,7 +848,7 @@ void PlayMode::update(float elapsed)
 
 			PlayMode::Control& enemy_control=enemy.bt->GetControl();
 			//simple enemy that walks toward player
-			enemy.pawn_control.move = enemy_control.move*elapsed;
+			enemy.pawn_control.move = enemy_control.move;
 			enemy_control.move=glm::vec3(0,0,0);//like a consumer pattern
 		//and locks on player
 			enemy.pawn_control.rotate = enemy_control.rotate;
@@ -864,7 +864,7 @@ void PlayMode::update(float elapsed)
 			enemyList[i].bt->tick();// AI Thinking
 			PlayMode::Control& enemy_control=enemyList[i].bt->GetControl();
 			//simple enemy that walks toward player
-			enemyList[i].pawn_control.move = enemy_control.move*elapsed;
+			enemyList[i].pawn_control.move = enemy_control.move;
 			enemy_control.move=glm::vec3(0,0,0);//like a consumer pattern
 			//and locks on player
 			enemyList[i].pawn_control.rotate = enemy_control.rotate;
