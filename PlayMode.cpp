@@ -27,6 +27,31 @@ Load< MeshBuffer > phonebank_meshes(LoadTagDefault, []() -> MeshBuffer const * {
 	return ret;
 });
 
+// Adapted from 2018 code Jim mentioned
+GLuint load_texture(std::string const &filename) {
+	glm::uvec2 size;
+	std::vector< glm::u8vec4 > data;
+	load_png(filename, &size, &data, LowerLeftOrigin);
+
+	GLuint tex = 0;
+	glGenTextures(1, &tex);
+	glBindTexture(GL_TEXTURE_2D, tex);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, size.x, size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, data.data());
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+	glGenerateMipmap(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, 0);
+	GL_ERRORS();
+
+	return tex;
+}
+
+Load< GLuint > grass_tex(LoadTagDefault, [](){
+	return new GLuint(load_texture(data_path("textures/grass.png")));
+});
+
 Load< Scene > phonebank_scene(LoadTagDefault, []() -> Scene const * {
 	return new Scene(data_path("sword.scene"), [&](Scene &scene, Scene::Transform *transform, std::string const &mesh_name){
 		Mesh const &mesh = phonebank_meshes->lookup(mesh_name);
@@ -35,11 +60,14 @@ Load< Scene > phonebank_scene(LoadTagDefault, []() -> Scene const * {
 		Scene::Drawable &drawable = scene.drawables.back();
 
 		drawable.pipeline = lit_color_texture_program_pipeline;
-
 		drawable.pipeline.vao = phonebank_meshes_for_lit_color_texture_program;
 		drawable.pipeline.type = mesh.type;
 		drawable.pipeline.start = mesh.start;
 		drawable.pipeline.count = mesh.count;
+
+		if (transform->name == "Plane" || transform->name == "Cube"){
+			drawable.pipeline.textures[0].texture = *grass_tex;
+		}
 
 	});
 });
