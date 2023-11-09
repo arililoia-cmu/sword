@@ -57,11 +57,6 @@ class HpBar{
 			return health_color;
 		}
 
-	
-		// enemy_draw(){
-
-		// }
-
 };
 	
 
@@ -99,12 +94,6 @@ struct PlayMode : Mode {
 
 	//local copy of the game scene (so code can change it during gameplay):
 	Scene scene;
-
-	// struct Vert {
-	// 	Vert(glm::vec3 const &position_, glm::vec2 const &tex_coord_) : position(position_), tex_coord(tex_coord_) { }
-	// 	glm::vec3 position;
-	// 	glm::vec2 tex_coord;
-	// };
 
 	struct Control {
 		glm::vec3 move = glm::vec3(0.0f); // displacement in world (should be scaled by elapsed)
@@ -187,7 +176,16 @@ struct PlayMode : Mode {
 	// value between 0 and 1 to set the transparency
 	// of the HP bar on the screen
 	bool change_player_hp = false;
+	bool change_enemy_hp = false;
+
 	int hp_bar_empty_x = -1;
 	int hp_bar_full_x = 0;
+	
+	int enemy_heart_empty_x = -1;
+	int enemy_heart_full_x = 0;
+
+	glm::u8vec4 empty_color = glm::u8vec4(0x00f, 0x00f, 0x00f, 0xff*hp_bar_transparency);
+
+	
 
 };
