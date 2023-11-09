@@ -389,17 +389,6 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 						change_player_hp = true;
 				}
 			}
-			else
-			{
-				for(int i = 0; i < 5; i++)
-				{
-					if(t == enemyList[i].sword_transform)
-					{
-						player.hp->change_hp_by(-1);
-						change_player_hp = true;
-					}
-				}
-			}
 		};
 
 	// auto groundHit = [](Scene::Transform* t) -> void
