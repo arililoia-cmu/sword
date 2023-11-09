@@ -28,7 +28,7 @@ Load< MeshBuffer > phonebank_meshes(LoadTagDefault, []() -> MeshBuffer const * {
 });
 
 // Adapted from 2018 code Jim mentioned
-GLuint load_texture(std::string const &filename) {
+GLuint load_texture(std::string const &filename, bool mirror) {
 	glm::uvec2 size;
 	std::vector< glm::u8vec4 > data;
 	load_png(filename, &size, &data, LowerLeftOrigin);
@@ -39,8 +39,13 @@ GLuint load_texture(std::string const &filename) {
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, size.x, size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, data.data());
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+	if (mirror) {
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+	} else {
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	}
 	glGenerateMipmap(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_2D, 0);
 	GL_ERRORS();
@@ -49,7 +54,11 @@ GLuint load_texture(std::string const &filename) {
 }
 
 Load< GLuint > grass_tex(LoadTagDefault, [](){
-	return new GLuint(load_texture(data_path("textures/grass.png")));
+	return new GLuint(load_texture(data_path("textures/grass.png"), false));
+});
+
+Load< GLuint > tile_tex(LoadTagDefault, [](){
+	return new GLuint(load_texture(data_path("textures/grass.png"), false));
 });
 
 Load< Scene > phonebank_scene(LoadTagDefault, []() -> Scene const * {
@@ -67,6 +76,8 @@ Load< Scene > phonebank_scene(LoadTagDefault, []() -> Scene const * {
 
 		if (transform->name == "Plane"){
 			drawable.pipeline.textures[0].texture = *grass_tex;
+		} else if (transform->name == "Circle"){
+			drawable.pipeline.textures[0].texture = *tile_tex;
 		}
 
 	});
