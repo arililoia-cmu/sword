@@ -829,6 +829,7 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 					hpbar_data.at((i*hpbar_size.x)+j)[2],
 					hpbar_data.at((i*hpbar_size.x)+j)[3] * hp_bar_transparency
 				);
+				
 				// get where the hp bar "fillup" region starts and ends
 				// only need to do this if we haven't read in the texture yet
 				if (((int)pixel_at[0] == 0) && ((int)pixel_at[1] == 0) 
