@@ -61,6 +61,10 @@ Load< GLuint > tile_tex(LoadTagDefault, [](){
 	return new GLuint(load_texture(data_path("textures/tile.png"), false));
 });
 
+Load< GLuint > rock_tex(LoadTagDefault, [](){
+	return new GLuint(load_texture(data_path("textures/rock.png"), true));
+});
+
 Load< Scene > phonebank_scene(LoadTagDefault, []() -> Scene const * {
 	return new Scene(data_path("sword.scene"), [&](Scene &scene, Scene::Transform *transform, std::string const &mesh_name){
 		Mesh const &mesh = phonebank_meshes->lookup(mesh_name);
@@ -78,6 +82,8 @@ Load< Scene > phonebank_scene(LoadTagDefault, []() -> Scene const * {
 			drawable.pipeline.textures[0].texture = *grass_tex;
 		} else if (transform->name == "Arena"){
 			drawable.pipeline.textures[0].texture = *tile_tex;
+		} else if (transform->name.length() >= 8 && transform->name.substr(0, 8) == "Mountain") {
+			drawable.pipeline.textures[0].texture = *rock_tex;
 		}
 
 	});
