@@ -1063,147 +1063,186 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 
 
 	// STUFF ADDED STARTS HERE
-	static std::vector< glm::u8vec4 > enemy_hp_tex_data;
-	static GLuint enemy_hp_tex = 0;
-	static GLuint enemy_hp_buffer = 0;
-	static GLuint enemy_vao = 0;
-	static glm::uvec2 enemy_hp_size;
-	static std::vector< glm::u8vec4 >  enemy_hp_data;
+	// static std::vector< glm::u8vec4 > enemy_hp_tex_data;
+	// static GLuint enemy_hp_tex = 0;
+	// static GLuint enemy_hp_buffer = 0;
+	// static GLuint enemy_vao = 0;
+	// static glm::uvec2 enemy_hp_size;
+	// static std::vector< glm::u8vec4 >  enemy_hp_data;
 
-	if (enemy_hp_data.empty()){
-		load_png(data_path("graphics/enemy-hp.png"), &enemy_hp_size, &enemy_hp_data, OriginLocation::UpperLeftOrigin);
-		for (int i=enemy_hp_size.y-1; i>=0; i--){
-			for (int j=0; j< (int) enemy_hp_size.x; j++){
+	for (int e=0; e<5; e++){
+		if (enemyList[e].hp->hp_data.empty()){
+		// if (enemy_hp_data.empty()){
+			load_png(data_path("graphics/enemy-hp.png"), &enemyList[e].hp->hp_size, &enemyList[e].hp->hp_data, OriginLocation::UpperLeftOrigin);
+			for (int i=enemyList[e].hp->hp_size.y-1; i>=0; i--){
+				for (int j=0; j< (int) enemyList[e].hp->hp_size.x; j++){
 
-				glm::u8vec4 pixel_at = glm::u8vec4(
-					enemy_hp_data.at((i*enemy_hp_size.x)+j)[0],
-					enemy_hp_data.at((i*enemy_hp_size.x)+j)[1],
-					enemy_hp_data.at((i*enemy_hp_size.x)+j)[2],
-					enemy_hp_data.at((i*enemy_hp_size.x)+j)[3] * hp_bar_transparency
-				);
-				
-				// get where the hp bar "fillup" region starts and ends
-				// only need to do this if we haven't read in the texture yet
-				if (((int)pixel_at[0] == 0) && ((int)pixel_at[1] == 0) 
-					&& ((int)pixel_at[2] == 0) && ((int)pixel_at[3] == 127)){
-						if (enemy_heart_empty_x == -1 || 
-							(enemy_heart_empty_x > j) ){
-							enemy_heart_empty_x = j;
-							std::cout << "enemy_heart_empty_x: " << enemy_heart_empty_x << std::endl;
-						}else{
-							if ((j > enemy_heart_empty_x ) && (j > enemy_heart_full_x)){
-								enemy_heart_full_x = j;
+					glm::u8vec4 pixel_at = glm::u8vec4(
+						enemyList[e].hp->hp_data.at((i*enemyList[e].hp->hp_size.x)+j)[0],
+						enemyList[e].hp->hp_data.at((i*enemyList[e].hp->hp_size.x)+j)[1],
+						enemyList[e].hp->hp_data.at((i*enemyList[e].hp->hp_size.x)+j)[2],
+						enemyList[e].hp->hp_data.at((i*enemyList[e].hp->hp_size.x)+j)[3] * hp_bar_transparency
+					);
+					
+					// get where the hp bar "fillup" region starts and ends
+					// only need to do this if we haven't read in the texture yet
+					if (((int)pixel_at[0] == 0) && ((int)pixel_at[1] == 0) 
+						&& ((int)pixel_at[2] == 0) && ((int)pixel_at[3] == 127)){
+							if (enemyList[e].hp->empty_x == -1 || 
+								(enemyList[e].hp->empty_x > j) ){
+								enemyList[e].hp->empty_x = j;
+								std::cout << "enemyList[e].empty_x: " << enemyList[e].hp->empty_x << std::endl;
+							}else{
+								if ((j > enemyList[e].hp->full_x ) && (j > enemyList[e].hp->full_x)){
+									enemyList[e].hp->full_x = j;
+								}
+								
 							}
 							
-						}
-						
-						enemy_hp_tex_data.push_back(glm::u8vec4(0x00, 0xff, 0x00, 0xff*hp_bar_transparency));
-						enemy_heart_fillin_indices.push_back(enemy_hp_tex_data.size() - 1);
+							enemyList[e].hp->tex_data.push_back(glm::u8vec4(0x00, 0xff, 0x00, 0xff*hp_bar_transparency));
+							enemyList[e].hp->fillin_indices.push_back(enemyList[e].hp->tex_data.size() - 1);
 
-				}else{
-					enemy_hp_tex_data.push_back(pixel_at);
+					}else{
+						enemyList[e].hp->tex_data.push_back(pixel_at);
+					}
+					
 				}
-				
+			}
+		}
+	
+	}
+
+	for (int e=0; e<5; e++){
+		if (enemyList[e].hp->change_enemy_hp == true){
+			
+			int health_border = int(enemyList[e].hp->empty_x + 
+				std::floor((enemyList[e].hp->full_x - enemyList[e].hp->empty_x)*enemyList[e].hp->get_percent_hp_left()));
+
+			glm::u8vec4 health_color = enemy.hp->get_health_color(hp_bar_transparency);
+			
+			for (size_t i=0; i<enemyList[e].hp->fillin_indices.size(); i++){
+				if ((enemyList[e].hp->fillin_indices[i] % (int)enemyList[e].hp->hp_size.x) > health_border){
+					enemyList[e].hp->tex_data[enemyList[e].hp->fillin_indices[i]] = empty_color;
+				}else{
+					enemyList[e].hp->tex_data[enemyList[e].hp->fillin_indices[i]] = health_color;
+				}
+
+			}
+		}
+
+	}
+
+
+	for (int e=0; e<5; e++){
+		if (enemyList[e].hp->change_enemy_hp){
+			
+			int health_border = int(enemyList[e].hp->empty_x + 
+				std::floor((enemyList[e].hp->full_x - enemyList[e].hp->empty_x)*enemy.hp->get_percent_hp_left()));
+
+			glm::u8vec4 health_color = enemy.hp->get_health_color(hp_bar_transparency);
+			
+			for (size_t i=0; i<enemyList[e].hp->fillin_indices.size(); i++){
+				if ((enemyList[e].hp->fillin_indices[i] % (int)enemyList[e].hp->hp_size.x) > health_border){
+					enemyList[e].hp->tex_data[enemyList[e].hp->fillin_indices[i]] = empty_color;
+				}else{
+					enemyList[e].hp->tex_data[enemyList[e].hp->fillin_indices[i]] = health_color;
+				}
+
 			}
 		}
 	}
 
-	if (change_enemy_hp == true){
-        
-        int health_border = int(enemy_heart_empty_x + 
-            std::floor((enemy_heart_full_x - enemy_heart_empty_x)*enemy.hp->get_percent_hp_left()));
-
-        glm::u8vec4 health_color = enemy.hp->get_health_color(hp_bar_transparency);
-        
-        for (size_t i=0; i<enemy_heart_fillin_indices.size(); i++){
-            if ((enemy_heart_fillin_indices[i] % (int)enemy_hp_size.x) > health_border){
-                enemy_hp_tex_data[enemy_heart_fillin_indices[i]] = empty_color;
-            }else{
-                enemy_hp_tex_data[enemy_heart_fillin_indices[i]] = health_color;
-            }
-
-        }
-    }
-
-	if (enemy_hp_tex == 0 || change_enemy_hp) {
-		glGenTextures(1, &enemy_hp_tex);
-		glBindTexture(GL_TEXTURE_2D, enemy_hp_tex);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, enemy_hp_size.x, enemy_hp_size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, enemy_hp_tex_data.data());
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glBindTexture(GL_TEXTURE_2D, 0);
+	for (int e=0; e<5; e++){
+		if (enemyList[e].hp->hp_tex == 0 || enemyList[e].hp->change_enemy_hp) {
+			glGenTextures(1, &enemyList[e].hp->hp_tex);
+			glBindTexture(GL_TEXTURE_2D, enemyList[e].hp->hp_tex);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, enemyList[e].hp->hp_size.x, enemyList[e].hp->hp_size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, enemyList[e].hp->tex_data.data());
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glBindTexture(GL_TEXTURE_2D, 0);
+		}
 	}
+	
 
-
-	if (enemy_hp_buffer == 0 || change_enemy_hp){
-		glGenBuffers(1, &enemy_hp_buffer);
+	for (int e=0; e<5; e++){
+		if (enemyList[e].hp->hp_buffer == 0 || enemyList[e].hp->change_enemy_hp){
+			glGenBuffers(1, &enemyList[e].hp->hp_buffer);
+		}
 	}
+	
+	for (int e=0; e<5; e++){
+		if (enemyList[e].hp->vao == 0 || enemyList[e].hp->change_enemy_hp) {
+			//based on PPU466.cpp
 
-	if (enemy_vao == 0 || change_enemy_hp) {
-		//based on PPU466.cpp
+			glGenVertexArrays(1, &enemyList[e].hp->vao);
+			glBindVertexArray(enemyList[e].hp->vao);
 
-		glGenVertexArrays(1, &enemy_vao);
-		glBindVertexArray(enemy_vao);
+			glBindBuffer(GL_ARRAY_BUFFER, enemyList[e].hp->hp_buffer);
 
-		glBindBuffer(GL_ARRAY_BUFFER, enemy_hp_buffer);
+			glVertexAttribPointer(
+				texture_program->Position_vec4, //attribute
+				3, //size
+				GL_FLOAT, //type
+				GL_FALSE, //normalized
+				sizeof(Vert), //stride
+				(GLbyte *)0 + offsetof(Vert, position) //offset
+			);
+			glEnableVertexAttribArray(texture_program->Position_vec4);
 
-		glVertexAttribPointer(
-			texture_program->Position_vec4, //attribute
-			3, //size
-			GL_FLOAT, //type
-			GL_FALSE, //normalized
-			sizeof(Vert), //stride
-			(GLbyte *)0 + offsetof(Vert, position) //offset
-		);
-		glEnableVertexAttribArray(texture_program->Position_vec4);
+			glVertexAttribPointer(
+				texture_program->TexCoord_vec2, //attribute
+				2, //size
+				GL_FLOAT, //type
+				GL_FALSE, //normalized
+				sizeof(Vert), //stride
+				(GLbyte *)0 + offsetof(Vert, tex_coord) //offset
+			);
+			glEnableVertexAttribArray(texture_program->TexCoord_vec2);
 
-		glVertexAttribPointer(
-			texture_program->TexCoord_vec2, //attribute
-			2, //size
-			GL_FLOAT, //type
-			GL_FALSE, //normalized
-			sizeof(Vert), //stride
-			(GLbyte *)0 + offsetof(Vert, tex_coord) //offset
-		);
-		glEnableVertexAttribArray(texture_program->TexCoord_vec2);
+		}
 
 	}
+	
 
 	glUseProgram(texture_program->program);
 
 	// step 2: figure out where in the window to draw the thing
-	glm::vec2 enemy_o2wc = object_to_window_coordinate(enemy.body_transform, player.camera, drawable_size);
-	float enemy_window_x = ((enemy_o2wc.x / (drawable_size.x/2.0f)) * 2.0f) - 1.0f;
-	float enemy_window_y = ((enemy_o2wc.y / (drawable_size.y/2.0f)) * 2.0f) - 1.0f;
-	float block_size = 0.1f;
+	static float block_size = 0.1f;
 	// sqrm = square making ratio
-	float sqrm = ((float)drawable_size.y / (float)drawable_size.x);
+	static float sqrm = ((float)drawable_size.y / (float)drawable_size.x);
+	
+	for (int e=0; e<5; e++){
+		glm::vec2 enemy_o2wc = object_to_window_coordinate(enemyList[e].body_transform, player.camera, drawable_size);
+		float enemy_window_x = ((enemy_o2wc.x / (drawable_size.x/2.0f)) * 2.0f) - 1.0f;
+		float enemy_window_y = ((enemy_o2wc.y / (drawable_size.y/2.0f)) * 2.0f) - 1.0f;
 
-	std::vector< Vert > attribs;
-	// TODO: do to this whatever I did with the hp bar
-	attribs.emplace_back(glm::vec3( enemy_window_x - block_size*sqrm, enemy_window_y - block_size, 0.0f), glm::vec2(0.0f, 0.0f));
-	attribs.emplace_back(glm::vec3( enemy_window_x - block_size*sqrm,  enemy_window_y + block_size, 0.0f), glm::vec2(0.0f, 1.0f));
-	attribs.emplace_back(glm::vec3( enemy_window_x + block_size*sqrm, enemy_window_y - block_size, 0.0f), glm::vec2(1.0f, 0.0f));
-	attribs.emplace_back(glm::vec3( enemy_window_x + block_size*sqrm, enemy_window_y + block_size, 0.0f), glm::vec2(1.0f, 1.0f));
+		std::vector< Vert > attribs;
+		// TODO: do to this whatever I did with the hp bar
+		attribs.emplace_back(glm::vec3( enemy_window_x - block_size*sqrm, enemy_window_y - block_size, 0.0f), glm::vec2(0.0f, 0.0f));
+		attribs.emplace_back(glm::vec3( enemy_window_x - block_size*sqrm,  enemy_window_y + block_size, 0.0f), glm::vec2(0.0f, 1.0f));
+		attribs.emplace_back(glm::vec3( enemy_window_x + block_size*sqrm, enemy_window_y - block_size, 0.0f), glm::vec2(1.0f, 0.0f));
+		attribs.emplace_back(glm::vec3( enemy_window_x + block_size*sqrm, enemy_window_y + block_size, 0.0f), glm::vec2(1.0f, 1.0f));
 
-	glBindBuffer(GL_ARRAY_BUFFER, enemy_hp_buffer);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(Vert) * attribs.size(), attribs.data(), GL_STREAM_DRAW);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glUseProgram(texture_program->program);
-	glUniformMatrix4fv(texture_program->OBJECT_TO_CLIP_mat4, 1, GL_FALSE, glm::value_ptr(glm::mat4(1.0f)));
-	glBindTexture(GL_TEXTURE_2D, enemy_hp_tex);
-	glDisable(GL_DEPTH_TEST);
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glBindVertexArray(enemy_vao);
-	glDrawArrays(GL_TRIANGLE_STRIP, 0, (GLsizei)attribs.size());
-	// glBindVertexArray(0);
-	glDisable(GL_BLEND);
-	// glBindTexture(GL_TEXTURE_2D, 0);
-	GL_ERRORS();
-	// STUFF I ADDED ENDS HERE
+		glBindBuffer(GL_ARRAY_BUFFER, enemyList[e].hp->hp_buffer);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(Vert) * attribs.size(), attribs.data(), GL_STREAM_DRAW);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		glUseProgram(texture_program->program);
+		glUniformMatrix4fv(texture_program->OBJECT_TO_CLIP_mat4, 1, GL_FALSE, glm::value_ptr(glm::mat4(1.0f)));
+		glBindTexture(GL_TEXTURE_2D, enemyList[e].hp->hp_tex);
+		glDisable(GL_DEPTH_TEST);
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glBindVertexArray(enemyList[e].hp->vao);
+		glDrawArrays(GL_TRIANGLE_STRIP, 0, (GLsizei)attribs.size());
+		// glBindVertexArray(0);
+		glDisable(GL_BLEND);
+		// glBindTexture(GL_TEXTURE_2D, 0);
+		GL_ERRORS();
+		// STUFF I ADDED ENDS HERE
+	}
+	
 
 
 	// DRAWING THE PLAYER HP BAR FROM FILE
