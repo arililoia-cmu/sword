@@ -65,6 +65,10 @@ Load< GLuint > rock_tex(LoadTagDefault, [](){
 	return new GLuint(load_texture(data_path("textures/rock.png"), true));
 });
 
+Load< GLuint > path_tex(LoadTagDefault, [](){
+	return new GLuint(load_texture(data_path("textures/path.png"), false));
+});
+
 Load< Scene > phonebank_scene(LoadTagDefault, []() -> Scene const * {
 	return new Scene(data_path("sword.scene"), [&](Scene &scene, Scene::Transform *transform, std::string const &mesh_name){
 		Mesh const &mesh = phonebank_meshes->lookup(mesh_name);
@@ -78,12 +82,14 @@ Load< Scene > phonebank_scene(LoadTagDefault, []() -> Scene const * {
 		drawable.pipeline.start = mesh.start;
 		drawable.pipeline.count = mesh.count;
 
-		if (transform->name == "Plane"){
+		if (transform->name.length() >= 5 && transform->name.substr(0, 5) == "Plane"){
 			drawable.pipeline.textures[0].texture = *grass_tex;
 		} else if (transform->name == "Arena"){
 			drawable.pipeline.textures[0].texture = *tile_tex;
 		} else if (transform->name.length() >= 8 && transform->name.substr(0, 8) == "Mountain") {
 			drawable.pipeline.textures[0].texture = *rock_tex;
+		} else if (transform->name.length() >= 4 && transform->name.substr(0, 4) == "Path") {
+			drawable.pipeline.textures[0].texture = *path_tex;
 		}
 
 	});
@@ -301,6 +307,11 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 								enemyList[i].pawn_control.stance = 2;
 								enemyList[i].pawn_control.swingHit = enemyList[i].pawn_control.swingTime;
 							}
+							else if(enemyList[i].pawn_control.stance == 9)
+							{
+								enemyList[i].pawn_control.stance = 10;
+								enemyList[i].pawn_control.swingHit = enemyList[i].pawn_control.swingTime;
+							}
 							// else if(enemy.pawn_control.stance == 4)
 							// {
 							// 	enemy.pawn_control.stance = 5;
@@ -335,31 +346,8 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 	
 	auto playerSwordHit = [this](Scene::Transform* t) -> void
 		{
-			// if(t == enemy.sword_transform)
-			// {
-			// 	if(player.pawn_control.stance == 1)
-			// 	{
-			// 		player.pawn_control.stance = 2;
-			// 		player.pawn_control.swingHit = player.pawn_control.swingTime;
-			// 	}
-			// 	// else if(player.pawn_control.stance == 4)
-			// 	// {
-			// 	// 	player.pawn_control.stance = 5;
-			// 	// }
 
-			// 	// sound stuff starts here:
-			// 	clock_t current_time = clock();
-			// 	float elapsed = (float)(current_time - previous_player_sword_clang_time);
 
-			// 	if ((elapsed / CLOCKS_PER_SEC) > min_player_sword_clang_interval){
-			// 		w_conv1_sound = Sound::play(*w_conv1, 1.0f, 0.0f);
-			// 		previous_player_sword_clang_time = clock();
-			// 	}
-			// 	// sound stuff ends here
-
-			// }
-			// else
-			// {
 				for(int i = 0; i < 5; i++)
 				{
 					if(t == enemyList[i].sword_transform)
@@ -367,6 +355,11 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 						if(player.pawn_control.stance == 1)
 						{
 							player.pawn_control.stance = 2;
+							player.pawn_control.swingHit = player.pawn_control.swingTime;
+						}
+						else if(player.pawn_control.stance == 9)
+						{
+							player.pawn_control.stance = 10;
 							player.pawn_control.swingHit = player.pawn_control.swingTime;
 						}
 						
@@ -395,7 +388,17 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 						change_player_hp = true;
 				}
 			}
-			
+			else
+			{
+				for(int i = 0; i < 5; i++)
+				{
+					if(t == enemyList[i].sword_transform)
+					{
+						player.hp->change_hp_by(-1);
+						change_player_hp = true;
+					}
+				}
+			}
 		};
 
 	// auto groundHit = [](Scene::Transform* t) -> void
@@ -572,6 +575,7 @@ void PlayMode::processPawnControl(PlayMode::Pawn& pawn, float elapsed)
 				pawn.gameplay_tags="attack";
 				stance = 1;
 				pawn.pawn_control.attack=0;
+				pawn.pawn_control.stanceInfo.attack.attackAfter = 0;
 			}
 			else if (pawn.pawn_control.parry)
 			{
@@ -587,14 +591,22 @@ void PlayMode::processPawnControl(PlayMode::Pawn& pawn, float elapsed)
 					pawn.gameplay_tags = "dodge";
 					stance = 6;
 					pawn.pawn_control.stanceInfo.dodge.dir = glm::normalize(pawn.pawn_control.move);
+					pawn.pawn_control.stanceInfo.dodge.attackAfter = 0;
 				}
 				
 				pawn.pawn_control.dodge = 0;
 			}
 		} else if (stance == 1 || stance == 3){ // fast downswing, fast upswing, slow upswing
 			const float dur = (stance < 3) ? 0.4f : 1.0f; //total time of downswing/upswing
+
+			static auto interpolateWeapon = [](float x) -> float
+				{
+					return (float)(1.0f - 1.0f / (1.0f + pow((2.0f * x) / (1.0f - x), 3)));
+				};
+
 			float rt = st / dur;
-			float adt_time = 1 - (1-rt)*(1-rt)*(1-rt) * (2 - (1-rt)*(1-rt)*(1-rt)); // Time scaling, imitates acceleration
+			float adt_time = interpolateWeapon(rt); //1 - (1-rt)*(1-rt)*(1-rt) * (2 - (1-rt)*(1-rt)*(1-rt)); // Time scaling, imitates acceleration
+
 
 			pawn.arm_transform->position = glm::vec3(0.0f, 0.0f, 0.5f - adt_time * 1.5f);
 			pawn.arm_transform->rotation = glm::angleAxis(M_PI_2f * adt_time / 2.0f, glm::normalize(glm::vec3(0.0f, 0.0f, 1.0f)));
@@ -629,6 +641,15 @@ void PlayMode::processPawnControl(PlayMode::Pawn& pawn, float elapsed)
 				float amount = after - before;
 				movement = pawn.pawn_control.stanceInfo.attack.dir * amount * dur;
 
+				if(pawn.pawn_control.attack)
+				{
+					if(st > 0.2f)
+					{
+						pawn.pawn_control.stanceInfo.attack.attackAfter = 1;
+					}
+					pawn.pawn_control.attack = 0;
+				}
+
 				if(st == dur)
 				{
 					if (stance != 3){ stance_changed_in_attack = true; }
@@ -641,10 +662,25 @@ void PlayMode::processPawnControl(PlayMode::Pawn& pawn, float elapsed)
 				pawn.gameplay_tags="";//clear gameplay tag for AI
 			//	std::cout<<"ddddddddddddddddddddddddddddddddddddd"<<std::endl;
 			}
+			if(pawn.pawn_control.attack)
+				{
+					pawn.pawn_control.stanceInfo.attack.attackAfter = 1;
+					pawn.pawn_control.attack = 0;
+				}
+			
 				st -= elapsed;
 				if (st < 0.0f){
 					if (stance != 0){ stance_changed_in_attack = true; }
-					stance = 0;
+					st = 0.0f;
+					if(pawn.pawn_control.stanceInfo.attack.attackAfter)
+					{
+						stance = 9;
+						pawn.pawn_control.stanceInfo.sweep.dir = pawn.pawn_control.stanceInfo.attack.dir;
+					}
+					else
+					{
+						stance = 0;
+					}
 				}
 			} 
 		} else if (stance == 2) {
@@ -716,7 +752,7 @@ void PlayMode::processPawnControl(PlayMode::Pawn& pawn, float elapsed)
 
 			static auto interpolate = [](float x) -> float
 				{
-					return 1.0f - 1.0f / (1.0f + pow((2.0f * x) / (1.0f - x), 3));
+					return (float)(1.0f - 1.0f / (1.0f + pow((2.0f * x) / (1.0f - x), 3)));
 				};
 			
 			// 0 to 1
@@ -734,11 +770,143 @@ void PlayMode::processPawnControl(PlayMode::Pawn& pawn, float elapsed)
 
 			movement = pawn.pawn_control.stanceInfo.dodge.dir * distance * amount;
 
+			if(pawn.pawn_control.attack)
+			{
+				pawn.pawn_control.stanceInfo.dodge.attackAfter = 1;
+				pawn.pawn_control.attack = 0;
+			}
+
 			if(st == dur)
 			{
 				st = 0.0f;
-				stance = 0;
+				if(pawn.pawn_control.stanceInfo.dodge.attackAfter)
+				{
+					pawn.pawn_control.stanceInfo.lunge.dir = pawn.pawn_control.stanceInfo.dodge.dir;
+					stance = 7;
+				}
+				else
+				{
+					stance = 0;
+				}
 			}
+		}
+		else if(stance == 7 || stance == 8)
+		{
+			// Lunge attack
+			const float dur = (stance < 8) ? 0.4f : 0.4f; //total time of downswing/upswing
+			const float distance = 1.5f;
+
+			static auto interpolateWeapon = [](float x) -> float
+				{
+					return (float)( 1.0f - 1.0f / (1.0f + pow((2.0f * x) / (1.0f - x), 3)));
+				};
+			
+			static auto interpolate = [](float x) -> float
+				{
+					return (float)(1.0f - 1.0f / (1.0f + pow((1.0f * x) / (1.0f - x), 3)));
+				};
+			
+			float rt = st / dur;
+			float adt_time = interpolateWeapon(rt);
+			
+			pawn.arm_transform->position = glm::vec3(0.0f - adt_time * 1.5f, -adt_time * 0.4f, 0.5f);
+			//pawn.arm_transform->rotation = glm::angleAxis(M_PI_2f * interpolate(st / dur) / 2.0f, glm::normalize(glm::vec3(0.0f, 0.0f, 0.0f)));
+			pawn.wrist_transform->rotation = glm::angleAxis(M_PI_2f * -adt_time * 1.1f, glm::normalize(glm::vec3(0.0f, 1.0f, 0.0f)));
+
+			if(stance == 7)
+			{
+				// 0 to 1
+				float before = interpolate(st / dur);
+				
+				st += elapsed;
+				if(st >= dur)
+				{
+					st = dur;
+				}
+
+				float after = interpolate(st / dur);
+				float amount = after - before;
+				movement = pawn.pawn_control.stanceInfo.lunge.dir * amount * distance;
+
+				if(st == dur)
+				{
+					if (stance != 8){ stance_changed_in_attack = true; }
+					stance = 8;
+					st = 0.4f; 
+				}
+
+			} else {
+			if(stance==8){
+				pawn.gameplay_tags="";//clear gameplay tag for AI
+			//	std::cout<<"ddddddddddddddddddddddddddddddddddddd"<<std::endl;
+			}
+				st -= elapsed;
+				if (st < 0.0f){
+					if (stance != 0){ stance_changed_in_attack = true; }
+					stance = 0;
+				}
+			} 
+		}
+		else if(stance == 9 || stance == 10)
+		{
+			// Sweep left attack
+			const float dur = (stance < 8) ? 0.5f : 1.0f; //total time of downswing/upswing
+			const float distance = 0.5f;
+
+			static auto interpolateWeapon = [](float x) -> float
+				{
+					return (float)(1.0f - 1.0f / (1.0f + pow((1.0f * x) / (1.0f - x), 3)));
+				};
+			static auto interpolateWeaponFast = [](float x) -> float
+				{
+					return (float)(1.0f - 1.0f / (1.0f + pow((2.0f * x) / (1.0f - x), 3)));
+				};
+			
+			static auto interpolate = [](float x) -> float
+				{
+					return (float)(1.0f - 1.0f / (1.0f + pow((0.7f * x) / (1.0f - x), 3)));
+				};
+			
+			float rt = st / dur;
+			float adt_time = interpolateWeapon(rt);
+			
+			pawn.arm_transform->position = glm::vec3(0.0f, -adt_time * 0.4f, 0.5f);
+			pawn.arm_transform->rotation = glm::angleAxis(M_PI_2f * adt_time * 2.0f, glm::normalize(glm::vec3(0.0f, 0.0f, 1.0f)));
+			pawn.wrist_transform->rotation = glm::angleAxis(M_PI_2f * -interpolateWeaponFast(rt) * 1.0f, glm::normalize(glm::vec3(1.0f, 0.0f, 0.0f)));
+
+			if(stance == 9)
+			{
+				// 0 to 1
+				float before = interpolate(st / dur);
+				
+				st += elapsed;
+				if(st >= dur)
+				{
+					st = dur;
+				}
+
+				float after = interpolate(st / dur);
+				float amount = after - before;
+				movement = pawn.pawn_control.stanceInfo.sweep.dir * amount * distance;
+
+				if(st == dur)
+				{
+					if (stance != 10){ stance_changed_in_attack = true; }
+					stance = 10;
+					st = 1.0f; 
+				}
+
+			} else {
+			if(stance==10){
+				pawn.gameplay_tags="";//clear gameplay tag for AI
+			//	std::cout<<"ddddddddddddddddddddddddddddddddddddd"<<std::endl;
+			}
+				st -= elapsed;
+				if (st < 0.0f){
+					if (stance != 0){ stance_changed_in_attack = true; }
+					stance = 0;
+				}
+			} 
 		}
 
 		if (stance_changed_in_attack){
