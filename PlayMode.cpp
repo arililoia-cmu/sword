@@ -910,7 +910,7 @@ void PlayMode::processPawnControl(PlayMode::Pawn& pawn, float elapsed)
 			
 			pawn.arm_transform->position = glm::vec3(0.0f - adt_time * 1.5f, -adt_time * 0.4f, 0.5f);
 			//pawn.arm_transform->rotation = glm::angleAxis(M_PI_2f * interpolate(st / dur) / 2.0f, glm::normalize(glm::vec3(0.0f, 0.0f, 0.0f)));
-			pawn.wrist_transform->rotation = glm::angleAxis(M_PI_2f * -adt_time * 1.0f, glm::normalize(glm::vec3(0.0f, 1.0f, 0.0f)));
+			pawn.wrist_transform->rotation = glm::angleAxis(M_PI_2f * -adt_time * 1.1f, glm::normalize(glm::vec3(0.0f, 1.0f, 0.0f)));
 
 			if(stance == 7)
 			{
