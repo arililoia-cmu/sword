@@ -177,13 +177,16 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 			enemy.wrist_transform = &transform;
 		}
 		for(int i=0;i<5;++i){
-			char num[1]={'\0'};
-			num[0]='0'+(char)i;
+			char num[5]={'\0'};
+			num[0]='.';
+			num[1]='0';
+			num[2]='0';
+			num[3]='0'+(char)i;
 			std::string snum(num);
 			if(transform.name=="Enemy_Body"+snum){
 				enemyList[i].body_transform = &transform;
 				enemyList[i].at = walkmesh->nearest_walk_point(enemyList[i].body_transform->position + glm::vec3(0.0f, 0.0001f, 0.0f));
-				float height = glm::length(enemy.body_transform->position - walkmesh->to_world_point(enemyList[i].at));
+				float height = glm::length(enemyList[i].body_transform->position - walkmesh->to_world_point(enemyList[i].at));
 				enemyList[i].body_transform->position = glm::vec3(0.0f, 0.0f, height);
 			}
 			if(transform.name=="Enemy_Sword"+snum){
@@ -210,6 +213,15 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 	enemy.body_transform->parent = enemy.transform;
 	enemy.transform->position = walkmesh->to_world_point(enemy.at);
 	enemy.default_rotation = glm::angleAxis(glm::radians(180.0f), glm::vec3(0.0f, 0.0f, 1.0f)); //dictates enemy's original rotation wrt +x
+	for(int i=0;i<5;++i){
+			//same for enemy
+	// 	scene.transforms.emplace_back();
+		enemyList[i].transform = &scene.transforms.back();
+		enemyList[i].body_transform->parent = enemyList[i].transform;
+		enemyList[i].transform->position = walkmesh->to_world_point(enemyList[i].at);
+		enemyList[i].default_rotation = glm::angleAxis(glm::radians(180.0f), glm::vec3(0.0f, 0.0f, 1.0f)); //dictates enemy's original rotation wrt +x
+	}
+
 
 	enemy.bt=new BehaviorTree();
 	enemy.bt->Init();//AI Initialize
@@ -217,6 +229,16 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 	enemy.hp->Init(10);
 	enemy.bt->SetEnemy(&enemy);
 	enemy.bt->SetPlayer(&player);
+
+	for(int i=0;i<5;++i){
+		enemyList[i].bt=new BehaviorTree();
+		enemyList[i].bt->Init();//AI Initialize
+		enemyList[i].hp = new HpBar();
+		enemyList[i].hp->Init(10);
+		enemyList[i].bt->SetEnemy(&enemyList[i]);
+		enemyList[i].bt->SetPlayer(&player);
+	}
+
 	//setup camera
 	if (scene.cameras.size() != 1) throw std::runtime_error("Expecting scene to have exactly one camera, but it has " + std::to_string(scene.cameras.size()));
 	player.camera = &scene.cameras.front();
@@ -666,22 +688,39 @@ void PlayMode::update(float elapsed) {
 		walk_pawn(player, elapsed);	
 
 
+		{
+			enemy.bt->tick();// AI Thinking
 
-		enemy.bt->tick();// AI Thinking
-		PlayMode::Control& enemy_control=enemy.bt->GetControl();
-		//simple enemy that walks toward player
-		enemy.pawn_control.move = enemy_control.move*elapsed;
-		enemy_control.move=glm::vec3(0,0,0);//like a consumer pattern
+			PlayMode::Control& enemy_control=enemy.bt->GetControl();
+			//simple enemy that walks toward player
+			enemy.pawn_control.move = enemy_control.move*elapsed;
+			enemy_control.move=glm::vec3(0,0,0);//like a consumer pattern
 		//and locks on player
-		enemy.pawn_control.rotate = enemy_control.rotate;
+			enemy.pawn_control.rotate = enemy_control.rotate;
 
 
-		enemy.pawn_control.attack = enemy_control.attack; // mainAction.pressed; // For demonstration purposes bound to player attack
-		enemy.pawn_control.parry = enemy_control.parry; //secondAction.pressed; 
-		enemy_control.attack=0;
-		enemy_control.parry=0;
-		walk_pawn(enemy, elapsed);	
+			enemy.pawn_control.attack = enemy_control.attack; // mainAction.pressed; // For demonstration purposes bound to player attack
+			enemy.pawn_control.parry = enemy_control.parry; //secondAction.pressed; 
+			enemy_control.attack=0;
+			enemy_control.parry=0;
+			walk_pawn(enemy, elapsed);	
+		}
 
+		for(int i=0;i<5;++i){
+			enemyList[i].bt->tick();// AI Thinking
+
+			PlayMode::Control& enemy_control=enemyList[i].bt->GetControl();
+			//simple enemy that walks toward player
+			enemyList[i].pawn_control.move = enemy_control.move*elapsed;
+			enemy_control.move=glm::vec3(0,0,0);//like a consumer pattern
+			//and locks on player
+			enemyList[i].pawn_control.rotate = enemy_control.rotate;
+			enemyList[i].pawn_control.attack = enemy_control.attack; // mainAction.pressed; // For demonstration purposes bound to player attack
+			enemyList[i].pawn_control.parry = enemy_control.parry; //secondAction.pressed; 
+			enemy_control.attack=0;
+			enemy_control.parry=0;
+			walk_pawn(enemyList[i], elapsed);	
+		}
 		/*
 		glm::mat4x3 frame = camera->transform->make_local_to_parent();
 		glm::vec3 right = frame[0];
