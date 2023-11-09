@@ -1103,6 +1103,7 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 						}
 						
 						enemy_hp_tex_data.push_back(glm::u8vec4(0x00, 0xff, 0x00, 0xff*hp_bar_transparency));
+						enemy_heart_fillin_indices.push_back(enemy_hp_tex_data.size() - 1);
 
 				}else{
 					enemy_hp_tex_data.push_back(pixel_at);
@@ -1113,38 +1114,21 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	}
 
 	if (change_enemy_hp == true){
+        
+        int health_border = int(enemy_heart_empty_x + 
+            std::floor((enemy_heart_full_x - enemy_heart_empty_x)*enemy.hp->get_percent_hp_left()));
 
-		enemy_hp_tex_data.clear();
-		
-		int health_border = int(enemy_heart_empty_x + 
-			std::floor((enemy_heart_full_x - enemy_heart_empty_x)*enemy.hp->get_percent_hp_left()));
+        glm::u8vec4 health_color = enemy.hp->get_health_color(hp_bar_transparency);
+        
+        for (int i=0; i<enemy_heart_fillin_indices.size(); i++){
+            if ((enemy_heart_fillin_indices[i] % (int)enemy_hp_size.x) > health_border){
+                enemy_hp_tex_data[enemy_heart_fillin_indices[i]] = empty_color;
+            }else{
+                enemy_hp_tex_data[enemy_heart_fillin_indices[i]] = health_color;
+            }
 
-		glm::u8vec4 health_color = enemy.hp->get_health_color(hp_bar_transparency);
-	
-		for (int i=enemy_hp_size.y-1; i>=0; i--){
-			for (int j=0; j< (int) enemy_hp_size.x; j++){
-				glm::u8vec4 pixel_at = glm::u8vec4(
-					enemy_hp_data.at((i*enemy_hp_size.x)+j)[0],
-					enemy_hp_data.at((i*enemy_hp_size.x)+j)[1],
-					enemy_hp_data.at((i*enemy_hp_size.x)+j)[2],
-					enemy_hp_data.at((i*enemy_hp_size.x)+j)[3] * hp_bar_transparency
-				);
-
-				if (((int)pixel_at[0] == 0) && ((int)pixel_at[1] == 0) 
-					&& ((int)pixel_at[2] == 0) && ((int)pixel_at[3] == 127)){
-						if (j > health_border){
-							enemy_hp_tex_data.push_back(empty_color);
-						}else{
-							enemy_hp_tex_data.push_back(health_color);
-						}
-				}else{
-					enemy_hp_tex_data.push_back(pixel_at);
-				}
-							
-			}
-		}
-	}
-
+        }
+    }
 
 	if (enemy_hp_tex == 0 || change_enemy_hp) {
 		glGenTextures(1, &enemy_hp_tex);
@@ -1264,6 +1248,7 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 							hp_bar_full_x = j;
 						}
 						hpbar_tex_data.push_back(glm::u8vec4(0x00, 0xff, 0x00, 0xff*hp_bar_transparency));
+						hpbar_fillin_indices.push_back(hpbar_tex_data.size() - 1);
 
 				}else{
 					hpbar_tex_data.push_back(pixel_at);
@@ -1278,39 +1263,22 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	// maybe figure out the bijection 
 
 	// step 2: enter condition if the hp has been changed
-	if (change_player_hp == true){
+	 if (change_player_hp == true){
+        
+        int health_border = int(hp_bar_empty_x + 
+            std::floor((hp_bar_full_x - hp_bar_empty_x)*player.hp->get_percent_hp_left()));
 
-		hpbar_tex_data.clear();
-		
-		int health_border = int(hp_bar_empty_x + 
-			std::floor((hp_bar_full_x - hp_bar_empty_x)*player.hp->get_percent_hp_left()));
+        glm::u8vec4 health_color = player.hp->get_health_color(hp_bar_transparency);
+        
+        for (int i=0; i<hpbar_fillin_indices.size(); i++){
+            if ((hpbar_fillin_indices[i] % (int)hpbar_size.x) > health_border){
+                hpbar_tex_data[hpbar_fillin_indices[i]] = empty_color;
+            }else{
+                hpbar_tex_data[hpbar_fillin_indices[i]] = health_color;
+            }
 
-		glm::u8vec4 health_color = player.hp->get_health_color(hp_bar_transparency);
-		
-		for (int i=hpbar_size.y-1; i>=0; i--){
-			for (int j=0; j< (int) hpbar_size.x; j++){
-				glm::u8vec4 pixel_at = glm::u8vec4(
-					hpbar_data.at((i*hpbar_size.x)+j)[0],
-					hpbar_data.at((i*hpbar_size.x)+j)[1],
-					hpbar_data.at((i*hpbar_size.x)+j)[2],
-					hpbar_data.at((i*hpbar_size.x)+j)[3] * hp_bar_transparency
-				);
-
-				if (((int)pixel_at[0] == 0) && ((int)pixel_at[1] == 0) 
-					&& ((int)pixel_at[2] == 0) && ((int)pixel_at[3] == 127)){
-						if (j > health_border){
-							hpbar_tex_data.push_back(empty_color);
-						}else{
-							hpbar_tex_data.push_back(health_color);
-						}
-				}else{
-					hpbar_tex_data.push_back(pixel_at);
-				}
-							
-			}
-		}
-	}
-
+        }
+    }
 
 	if (hpbar_tex == 0 || change_player_hp) {
 		glGenTextures(1, &hpbar_tex);

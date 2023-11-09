@@ -222,6 +222,7 @@ struct PlayMode : Mode {
 
 	glm::u8vec4 empty_color = glm::u8vec4(0x00f, 0x00f, 0x00f, 0xff*hp_bar_transparency);
 
-	
+	std::vector<int> hpbar_fillin_indices;
+    std::vector<int> enemy_heart_fillin_indices;
 
 };
