@@ -780,7 +780,7 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glBindVertexArray(enemy_vao);
-	glDrawArrays(GL_TRIANGLE_STRIP, 0, attribs.size());
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, (GLsizei)attribs.size());
 	// glBindVertexArray(0);
 	glDisable(GL_BLEND);
 	// glBindTexture(GL_TEXTURE_2D, 0);
@@ -839,8 +839,8 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 
 		hpbar_tex_data.clear();
 		
-		int health_border = hp_bar_empty_x + 
-			std::floor((hp_bar_full_x - hp_bar_empty_x)*player.hp->get_percent_hp_left());
+		int health_border = int(hp_bar_empty_x + 
+			std::floor((hp_bar_full_x - hp_bar_empty_x)*player.hp->get_percent_hp_left()));
 
 		glm::u8vec4 health_color = player.hp->get_health_color(hp_bar_transparency);
 
@@ -940,7 +940,7 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glBindVertexArray(hpbar_vao);
-	glDrawArrays(GL_TRIANGLE_STRIP, 0, hpbar_attribs.size());
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, (GLsizei)hpbar_attribs.size());
 	glDisable(GL_BLEND);
 	glBindTexture(GL_TEXTURE_2D, 0);
 	glUseProgram(0);
