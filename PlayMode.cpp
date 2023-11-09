@@ -710,7 +710,7 @@ void PlayMode::processPawnControl(PlayMode::Pawn& pawn, float elapsed)
 
 			static auto interpolateWeapon = [](float x) -> float
 				{
-					return 1.0f - 1.0f / (1.0f + pow((2.0f * x) / (1.0f - x), 3));
+					return (float)(1.0f - 1.0f / (1.0f + pow((2.0f * x) / (1.0f - x), 3)));
 				};
 
 			float rt = st / dur;
@@ -861,7 +861,7 @@ void PlayMode::processPawnControl(PlayMode::Pawn& pawn, float elapsed)
 
 			static auto interpolate = [](float x) -> float
 				{
-					return 1.0f - 1.0f / (1.0f + pow((2.0f * x) / (1.0f - x), 3));
+					return (float)(1.0f - 1.0f / (1.0f + pow((2.0f * x) / (1.0f - x), 3)));
 				};
 			
 			// 0 to 1
@@ -907,12 +907,12 @@ void PlayMode::processPawnControl(PlayMode::Pawn& pawn, float elapsed)
 
 			static auto interpolateWeapon = [](float x) -> float
 				{
-					return 1.0f - 1.0f / (1.0f + pow((2.0f * x) / (1.0f - x), 3));
+					return (float)( 1.0f - 1.0f / (1.0f + pow((2.0f * x) / (1.0f - x), 3)));
 				};
 			
 			static auto interpolate = [](float x) -> float
 				{
-					return 1.0f - 1.0f / (1.0f + pow((1.0f * x) / (1.0f - x), 3));
+					return (float)(1.0f - 1.0f / (1.0f + pow((1.0f * x) / (1.0f - x), 3)));
 				};
 			
 			float rt = st / dur;
@@ -964,16 +964,16 @@ void PlayMode::processPawnControl(PlayMode::Pawn& pawn, float elapsed)
 
 			static auto interpolateWeapon = [](float x) -> float
 				{
-					return 1.0f - 1.0f / (1.0f + pow((1.0f * x) / (1.0f - x), 3));
+					return (float)(1.0f - 1.0f / (1.0f + pow((1.0f * x) / (1.0f - x), 3)));
 				};
 			static auto interpolateWeaponFast = [](float x) -> float
 				{
-					return 1.0f - 1.0f / (1.0f + pow((2.0f * x) / (1.0f - x), 3));
+					return (float)(1.0f - 1.0f / (1.0f + pow((2.0f * x) / (1.0f - x), 3)));
 				};
 			
 			static auto interpolate = [](float x) -> float
 				{
-					return 1.0f - 1.0f / (1.0f + pow((0.7f * x) / (1.0f - x), 3));
+					return (float)(1.0f - 1.0f / (1.0f + pow((0.7f * x) / (1.0f - x), 3)));
 				};
 			
 			float rt = st / dur;
