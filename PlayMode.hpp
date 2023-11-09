@@ -122,16 +122,30 @@ struct PlayMode : Mode {
 		struct DodgeStanceInfo
 		{
 			glm::vec3 dir;
+			int attackAfter;
 		};
 		struct AttackStanceInfo
 		{
 			glm::vec3 dir;
+			int attackAfter;
+		};
+		struct LungeStanceInfo
+		{
+			glm::vec3 dir;
+			int attackAfter;
+		};
+		struct SweepStanceInfo
+		{
+			glm::vec3 dir;
+			int attackAfter;
 		};
 		
 		union StanceInfo
 		{
 			DodgeStanceInfo dodge;
 			AttackStanceInfo attack;
+			SweepStanceInfo sweep;
+			LungeStanceInfo lunge;
 		} stanceInfo;
 
 		glm::vec3 vel = glm::vec3(0.0f);
