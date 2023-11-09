@@ -678,6 +678,7 @@ void PlayMode::processPawnControl(PlayMode::Pawn& pawn, float elapsed)
 				pawn.gameplay_tags="attack";
 				stance = 1;
 				pawn.pawn_control.attack=0;
+				pawn.pawn_control.stanceInfo.attack.attackAfter = 0;
 			}
 			else if (pawn.pawn_control.parry)
 			{
@@ -745,7 +746,10 @@ void PlayMode::processPawnControl(PlayMode::Pawn& pawn, float elapsed)
 
 				if(pawn.pawn_control.attack)
 				{
-					pawn.pawn_control.stanceInfo.attack.attackAfter = 1;
+					if(st > 0.2f)
+					{
+						pawn.pawn_control.stanceInfo.attack.attackAfter = 1;
+					}
 					pawn.pawn_control.attack = 0;
 				}
 
