@@ -300,11 +300,51 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 	enemy.arm_transform->parent = enemy.body_transform;
 	enemy.wrist_transform->parent = enemy.arm_transform;
 
-	for(int i=0;i<5;++i){
+	for(int i=0;i<5;++i)
+	{
 			scene.transforms.emplace_back();
-	enemyList[i].arm_transform = &scene.transforms.back();
-	enemyList[i].arm_transform->parent = enemyList[i].body_transform;
-	enemyList[i].wrist_transform->parent = enemyList[i].arm_transform;
+			enemyList[i].arm_transform = &scene.transforms.back();
+			enemyList[i].arm_transform->parent = enemyList[i].body_transform;
+			enemyList[i].wrist_transform->parent = enemyList[i].arm_transform;
+
+			auto enemyISwordHit = [this, i](Scene::Transform* t) -> void
+				{
+					if(t == player.sword_transform)
+					{
+						if(player.pawn_control.stance == 4)
+						{
+							if(enemyList[i].pawn_control.stance == 1)
+							{
+								enemyList[i].pawn_control.stance = 2;
+								enemyList[i].pawn_control.swingHit = enemyList[i].pawn_control.swingTime;
+							}
+							// else if(enemy.pawn_control.stance == 4)
+							// {
+							// 	enemy.pawn_control.stance = 5;
+							// }
+
+							clock_t current_time = clock();
+							float elapsed = (float)(current_time - previous_enemy_sword_clang_time);
+
+							if ((elapsed / CLOCKS_PER_SEC) > min_enemy_sword_clang_interval){
+								w_conv2_sound = Sound::play(*w_conv2, 1.0f, 0.0f);
+								previous_enemy_sword_clang_time = clock();
+							}
+						}
+					}
+				};
+
+			auto enemyIHit = [this, i](Scene::Transform* t) -> void
+				{
+					if(t == player.sword_transform)
+					{
+						enemyList[i].hp->change_hp_by(-1);
+						// Unsure what to put here?
+					}
+				};
+
+			collEng.registerCollider(enemyList[i].sword_transform, enemySwordCollMesh, enemySwordCollMesh->containingRadius, enemyISwordHit);
+			collEng.registerCollider(enemyList[i].body_transform, enemyCollMesh, enemyCollMesh->containingRadius, enemyIHit);
 	}
 	
 	auto playerSwordHit = [this](Scene::Transform* t) -> void
@@ -332,25 +372,51 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 				// sound stuff ends here
 
 			}
-			else if(t == enemy.body_transform)
+			else
 			{
-				if(player.pawn_control.stance == 1)
+				for(int i = 0; i < 5; i++)
 				{
-					player.pawn_control.stance = 2;
-					player.pawn_control.swingHit = player.pawn_control.swingTime;
-				}
-				
-				// HERE WE HAVE HIT ENEMY WITH PLAYER SWORD (PROBABLY BEST TO ACTUALLY DECREASE ENEMY HP IN ITS HANDLE RATHER THAN SWORD HANDLE)
-			}
+					if(t == enemyList[i].sword_transform)
+					{
+						if(player.pawn_control.stance == 1)
+						{
+							player.pawn_control.stance = 2;
+							player.pawn_control.swingHit = player.pawn_control.swingTime;
+						}
+						
+						// sound stuff starts here:
+						clock_t current_time = clock();
+						float elapsed = (float)(current_time - previous_player_sword_clang_time);
 
-			else if(t == groundTransform)
-			{
-				if(player.pawn_control.stance == 1)
-				{
-					player.pawn_control.stance = 2;
-					player.pawn_control.swingHit = player.pawn_control.swingTime;
+						if ((elapsed / CLOCKS_PER_SEC) > min_player_sword_clang_interval){
+							w_conv1_sound = Sound::play(*w_conv1, 1.0f, 0.0f);
+							previous_player_sword_clang_time = clock();
+						}
+						// sound stuff ends here
+
+						return;
+					}
 				}
 			}
+			// else if(t == enemy.body_transform)
+			// {
+			// 	if(player.pawn_control.stance == 1)
+			// 	{
+			// 		player.pawn_control.stance = 2;
+			// 		player.pawn_control.swingHit = player.pawn_control.swingTime;
+			// 	}
+				
+			// 	// HERE WE HAVE HIT ENEMY WITH PLAYER SWORD (PROBABLY BEST TO ACTUALLY DECREASE ENEMY HP IN ITS HANDLE RATHER THAN SWORD HANDLE)
+			// }
+
+			// else if(t == groundTransform)
+			// {
+			// 	if(player.pawn_control.stance == 1)
+			// 	{
+			// 		player.pawn_control.stance = 2;
+			// 		player.pawn_control.swingHit = player.pawn_control.swingTime;
+			// 	}
+			// }
 		};
 
 	auto enemySwordHit = [this](Scene::Transform* t) -> void
@@ -387,14 +453,21 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 
 	auto playerHit = [this](Scene::Transform* t) -> void
 		{
-			if(t == enemy.body_transform)
-			{
-				std::cout << "intersecting" << std::endl;
-			}
-			else if(t == enemy.sword_transform)
+			if(t == enemy.sword_transform)
 			{
 				player.hp->change_hp_by(-1);
 				change_player_hp = true;
+			}
+			else
+			{
+				for(int i = 0; i < 5; i++)
+				{
+					if(t == enemyList[i].sword_transform)
+					{
+						player.hp->change_hp_by(-1);
+						change_player_hp = true;
+					}
+				}
 			}
 		};
 
@@ -407,6 +480,7 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 	collEng.registerCollider(enemy.sword_transform, enemySwordCollMesh, enemySwordCollMesh->containingRadius, enemySwordHit);
 	collEng.registerCollider(enemy.body_transform, enemyCollMesh, enemyCollMesh->containingRadius, enemyHit);
 	collEng.registerCollider(player.body_transform, playerCollMesh, playerCollMesh->containingRadius, playerHit);
+	
 	//collEng.registerCollider(groundTransform, groundCollMesh, groundCollMesh->containingRadius, groundHit);
 	std::cout<<"end of loading scene"<<std::endl;
 }
@@ -533,24 +607,51 @@ void PlayMode::processPawnControl(PlayMode::Pawn& pawn, float elapsed)
 		// coordinating timers for sounds with animations
 		bool stance_changed_in_attack = false;
 
-		movement = pawn.pawn_control.move * elapsed;
-		
 		uint8_t& stance = pawn.pawn_control.stance;
 		float& st = pawn.pawn_control.swingTime;
-		if (stance == 0){ // idle
+
+		float moveLen2 = glm::length2(pawn.pawn_control.move);
+		if(stance != 6 && stance != 1)
+		{
+			static auto accelInterpolate = [](float x) -> float
+				{
+					return 0.5f + cos(x * M_PI_2f) * 0.5f;
+				};
 			
+			if(moveLen2 > 0.001f)
+			{
+				float moveKept = accelInterpolate(glm::dot(pawn.pawn_control.vel, pawn.pawn_control.move) / moveLen2);
+			
+				pawn.pawn_control.vel = pawn.pawn_control.move * moveKept;
+			}
+		}
+		if(moveLen2 <= 0.001f)
+		{
+			pawn.pawn_control.vel = pawn.pawn_control.vel * 0.5f;
+		}
+
+		movement = pawn.pawn_control.vel * elapsed;
+		
+		if (stance == 0)
+		{ // idle
 		//	std::cout<<"EEEEEEEEEEEEEEEEE"<<std::endl;
+
+			//pawn.pawn_control.vel -= glm::normalize(pawn.pawn_control.vel) * glm::length2(pawn.pawn_control.vel);
+			
 			pawn.arm_transform->position = glm::vec3(0.0f, 0.0f, 0.5f);
 			pawn.arm_transform->rotation = glm::angleAxis(0.0f, glm::vec3(0.0f, 0.0f, 1.0f));
 			pawn.wrist_transform->rotation = glm::angleAxis(0.0f, glm::vec3(0.0f, 1.0f, 0.0f));
-			if (pawn.pawn_control.attack){
+			if(pawn.pawn_control.attack)
+			{
 				if (stance != 1){ stance_changed_in_attack = true; }
 				pawn.pawn_control.stanceInfo.attack.dir = pawn.pawn_control.move;
 				pawn.gameplay_tags="attack";
 				stance = 1;
 				pawn.pawn_control.attack=0;
-			} else if (pawn.pawn_control.parry){
-				if (stance != 4){ stance_changed_in_attack = true; }
+			}
+			else if (pawn.pawn_control.parry)
+			{
+				if(stance != 4){ stance_changed_in_attack = true; }
 				pawn.gameplay_tags="parry";
 				stance = 4;
 				pawn.pawn_control.parry=0;
