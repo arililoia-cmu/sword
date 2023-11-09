@@ -918,8 +918,8 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	glUseProgram(texture_program->program);
 
 	// step 2: where to draw the hp bar
-	static glm::vec2 hpbar_bottom_left = glm::vec2(-0.9, 0.6);
-	static glm::vec2 hpbar_top_right = glm::vec2(0.9, 0.9);
+	static glm::vec2 hpbar_bottom_left = glm::vec2(-0.9f, 0.6f);
+	static glm::vec2 hpbar_top_right = glm::vec2(0.9f, 0.9f);
 
 	static std::vector< Vert > hpbar_attribs;
 	if (hpbar_attribs.size() == 0 || change_player_hp){
