@@ -54,11 +54,11 @@ GLuint load_texture(std::string const &filename, bool mirror) {
 }
 
 Load< GLuint > grass_tex(LoadTagDefault, [](){
-	return new GLuint(load_texture(data_path("textures/grass.png"), false));
+	return new GLuint(load_texture(data_path("textures/grass.png"), true));
 });
 
 Load< GLuint > tile_tex(LoadTagDefault, [](){
-	return new GLuint(load_texture(data_path("textures/grass.png"), false));
+	return new GLuint(load_texture(data_path("textures/tile.png"), false));
 });
 
 Load< Scene > phonebank_scene(LoadTagDefault, []() -> Scene const * {
@@ -76,7 +76,7 @@ Load< Scene > phonebank_scene(LoadTagDefault, []() -> Scene const * {
 
 		if (transform->name == "Plane"){
 			drawable.pipeline.textures[0].texture = *grass_tex;
-		} else if (transform->name == "Circle"){
+		} else if (transform->name == "Arena"){
 			drawable.pipeline.textures[0].texture = *tile_tex;
 		}
 
