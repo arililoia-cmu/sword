@@ -207,7 +207,7 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 			if(transform.name=="Enemy_Body"+snum){
 				enemyList[i].body_transform = &transform;
 				enemyList[i].at = walkmesh->nearest_walk_point(enemyList[i].body_transform->position + glm::vec3(0.0f, 0.0001f, 0.0f));
-				float height = glm::length(enemy.body_transform->position - walkmesh->to_world_point(enemyList[i].at));
+				float height = glm::length(enemyList[i].body_transform->position - walkmesh->to_world_point(enemyList[i].at));
 				enemyList[i].body_transform->position = glm::vec3(0.0f, 0.0f, height);
 			}
 			if(transform.name=="Enemy_Sword"+snum){
