@@ -474,12 +474,11 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 
 	auto enemyHit = [this](Scene::Transform* t) -> void
 		{
-			if (t == player.sword_transform)
+			if(t == player.sword_transform)
 			{
-                enemy.hp->change_hp_by(-1);
-                change_enemy_hp = true;
-
-            }
+				enemy.hp->change_hp_by(-1);
+				change_enemy_hp = true;
+			}
 		};
 
 	auto playerHit = [this](Scene::Transform* t) -> void
@@ -489,7 +488,17 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 				player.hp->change_hp_by(-1);
 				change_player_hp = true;
 			}
-			
+			else
+			{
+				for(int i = 0; i < 5; i++)
+				{
+					if(t == enemyList[i].sword_transform)
+					{
+						player.hp->change_hp_by(-1);
+						change_player_hp = true;
+					}
+				}
+			}
 		};
 
 	// auto groundHit = [](Scene::Transform* t) -> void
