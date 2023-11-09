@@ -82,6 +82,7 @@ Load< WalkMeshes > phonebank_walkmeshes(LoadTagDefault, []() -> WalkMeshes const
 CollideMesh const* playerSwordCollMesh = nullptr;
 CollideMesh const* enemySwordCollMesh = nullptr;
 CollideMesh const* enemyCollMesh = nullptr;
+CollideMesh const* playerCollMesh = nullptr;
 //CollideMesh const* groundCollMesh = nullptr;
 Load<CollideMeshes> COLLIDE_MESHES(LoadTagDefault, []() -> CollideMeshes const*
 	{
@@ -89,6 +90,7 @@ Load<CollideMeshes> COLLIDE_MESHES(LoadTagDefault, []() -> CollideMeshes const*
 		playerSwordCollMesh = &ret->lookup("PlayerSwordCollMesh");
 		enemySwordCollMesh = &ret->lookup("EnemySwordCollMesh");
 		enemyCollMesh = &ret->lookup("EnemyCollMesh");
+		playerCollMesh = &ret->lookup("PlayerCollMesh");
 		//groundCollMesh = &ret->lookup("GroundCollMesh");
 		return ret;
 	});
@@ -121,20 +123,20 @@ Load< Sound::Sample > footstep_wconv1(LoadTagDefault, []() -> Sound::Sample cons
 // https://github.com/arililoia-cmu/15-466-f23-base2/blob/8697e4fed38995ac9b5949fd30c0f75dabe02444/PlayMode.cpp
 glm::vec2 PlayMode::object_to_window_coordinate(Scene::Transform *object, Scene::Camera *camera, glm::uvec2 const &drawable_size){
 
-	std::cout << "object_to_window_coordinate: " << std::endl;
-	std::cout << "drawable_size.x,y :" << drawable_size.x << " " << drawable_size.y << std::endl;
+	//std::cout << "object_to_window_coordinate: " << std::endl;
+	//std::cout << "drawable_size.x,y :" << drawable_size.x << " " << drawable_size.y << std::endl;
 	
 
 	// glm::vec4 object_position = glm::vec4(object->position.x, object->position.y, object->position.z, 1.0f);
 	glm::vec4 object_position = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 
-	std::cout << "object_position: " << object_position.x << " " << object_position.y << " " << object_position.z << std::endl;
+	//std::cout << "object_position: " << object_position.x << " " << object_position.y << " " << object_position.z << std::endl;
 
 	glm::mat4x3 object_to_world = object->make_local_to_world();
 	// object to world 3x4 x 4x1 coordinates = 3x1 world coordinates
 	glm::vec3 op_world = object_to_world * object_position;
 
-	std::cout << "op_world: " << op_world.x << " " << op_world.y << " " << op_world.z << std::endl;
+	//std::cout << "op_world: " << op_world.x << " " << op_world.y << " " << op_world.z << std::endl;
 
 	// make a 4 vector out of op_world
 	glm::vec4 op_world_vec4 = glm::vec4(op_world.x, op_world.y, op_world.z, 1.0f);
@@ -346,6 +348,14 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 			
 		};
 
+	auto playerHit = [this](Scene::Transform* t) -> void
+		{
+			if(t == enemy.body_transform)
+			{
+				std::cout << "intersecting" << std::endl;
+			}
+		};
+
 	// auto groundHit = [](Scene::Transform* t) -> void
 	// 	{
 			
@@ -354,6 +364,7 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 	collEng.registerCollider(player.sword_transform, playerSwordCollMesh, playerSwordCollMesh->containingRadius, playerSwordHit);
 	collEng.registerCollider(enemy.sword_transform, enemySwordCollMesh, enemySwordCollMesh->containingRadius, enemySwordHit);
 	collEng.registerCollider(enemy.body_transform, enemyCollMesh, enemyCollMesh->containingRadius, enemyHit);
+	collEng.registerCollider(player.body_transform, playerCollMesh, playerCollMesh->containingRadius, playerHit);
 	//collEng.registerCollider(groundTransform, groundCollMesh, groundCollMesh->containingRadius, groundHit);
 }
 
@@ -743,7 +754,7 @@ void PlayMode::update(float elapsed)
 
 void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	//update camera aspect ratio for drawable:
-	std::cout << "enemy.hpbar.current_hp: " << enemy.hp->current_hp << std::endl;
+	//std::cout << "enemy.hpbar.current_hp: " << enemy.hp->current_hp << std::endl;
 	player.camera->aspect = float(drawable_size.x) / float(drawable_size.y);
 
 	//set up light type and position for lit_color_texture_program:

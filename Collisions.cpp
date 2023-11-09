@@ -27,8 +27,8 @@ bool GJK(Collider& a, Collider& b)
 	glm::mat4x3 awtl = a.transform->make_world_to_local();
 	glm::mat4x3 bwtl = b.transform->make_world_to_local();
 
-	glm::vec3 da = d * awtl;
-	glm::vec3 db = -d * bwtl;
+	glm::vec3 da = awtl * glm::vec4(d, 0.0f);
+	glm::vec3 db = bwtl * glm::vec4(-d, 0.0f);
 
 	glm::vec3 simplex[4] = {};
 
@@ -39,8 +39,8 @@ bool GJK(Collider& a, Collider& b)
 
 	while(true)
 	{
-		da = d * awtl;
-		db = -d * bwtl;
+		da = awtl * glm::vec4(d, 0.0f);
+		db = bwtl * glm::vec4(-d, 0.0f);
 		
 		glm::vec3 next = (altw * glm::vec4(a.farthest(da), 1.0f)) - (bltw * glm::vec4(b.farthest(db), 1.0f));
 
