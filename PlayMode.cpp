@@ -320,25 +320,28 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 		{
 			if(t == player.sword_transform)
 			{
-				if(enemy.pawn_control.stance == 1)
+				if(player.pawn_control.stance == 4)
 				{
-					enemy.pawn_control.stance = 2;
-					enemy.pawn_control.swingHit = enemy.pawn_control.swingTime;
-				}
-				// else if(enemy.pawn_control.stance == 4)
-				// {
-				// 	enemy.pawn_control.stance = 5;
-				// }
+					if(enemy.pawn_control.stance == 1)
+					{
+						enemy.pawn_control.stance = 2;
+						enemy.pawn_control.swingHit = enemy.pawn_control.swingTime;
+					}
+					// else if(enemy.pawn_control.stance == 4)
+					// {
+					// 	enemy.pawn_control.stance = 5;
+					// }
 
-				clock_t current_time = clock();
-				float elapsed = (float)(current_time - previous_enemy_sword_clang_time);
+					clock_t current_time = clock();
+					float elapsed = (float)(current_time - previous_enemy_sword_clang_time);
 
-				if ((elapsed / CLOCKS_PER_SEC) > min_enemy_sword_clang_interval){
-					w_conv2_sound = Sound::play(*w_conv2, 1.0f, 0.0f);
-					previous_enemy_sword_clang_time = clock();
-					// UNCOMMENT ME TO SEE HOW HP BAR DECREASES
-					// player.hp->change_hp_by(-1);
-					// change_player_hp = true;
+					if ((elapsed / CLOCKS_PER_SEC) > min_enemy_sword_clang_interval){
+						w_conv2_sound = Sound::play(*w_conv2, 1.0f, 0.0f);
+						previous_enemy_sword_clang_time = clock();
+						// UNCOMMENT ME TO SEE HOW HP BAR DECREASES
+						// player.hp->change_hp_by(-1);
+						// change_player_hp = true;
+					}
 				}
 			}
 		};
@@ -353,6 +356,11 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 			if(t == enemy.body_transform)
 			{
 				std::cout << "intersecting" << std::endl;
+			}
+			else if(t == enemy.sword_transform)
+			{
+				player.hp->change_hp_by(-1);
+				change_player_hp = true;
 			}
 		};
 
