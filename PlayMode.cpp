@@ -293,6 +293,7 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 	scene.transforms.emplace_back();
 	player.camera_transform = &scene.transforms.back();
 	player.camera_transform->parent = player.body_transform;
+	player.camera_transform->position = glm::vec3(0.0f, 0.0f, 1.0f);
 	player.camera_transform->rotation = glm::angleAxis(glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)); //dictates camera's original rotation wrt +y (not +x)
 
 	player.camera->transform->parent = player.camera_transform;
