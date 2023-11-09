@@ -202,7 +202,7 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 		}
 		for(int i=0;i<5;++i){
 			char num[5]={'.','0','0','0','\0'};
-			num[3]=i+48+1;
+			num[3]=(char)(i+48+1);
 			std::string snum(num);
 			if(transform.name=="Enemy_Body"+snum){
 				enemyList[i].body_transform = &transform;
@@ -290,6 +290,13 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 	enemy.arm_transform = &scene.transforms.back();
 	enemy.arm_transform->parent = enemy.body_transform;
 	enemy.wrist_transform->parent = enemy.arm_transform;
+
+	for(int i=0;i<5;++i){
+			scene.transforms.emplace_back();
+	enemyList[i].arm_transform = &scene.transforms.back();
+	enemyList[i].arm_transform->parent = enemyList[i].body_transform;
+	enemyList[i].wrist_transform->parent = enemyList[i].arm_transform;
+	}
 	
 	auto playerSwordHit = [this](Scene::Transform* t) -> void
 		{
@@ -585,6 +592,7 @@ void PlayMode::walk_pawn(PlayMode::Pawn &pawn, float elapsed)
 		uint8_t& stance = pawn.pawn_control.stance;
 		float& st = pawn.pawn_control.swingTime;
 		if (stance == 0){ // idle
+		//	std::cout<<"EEEEEEEEEEEEEEEEE"<<std::endl;
 			pawn.arm_transform->position = glm::vec3(0.0f, 0.0f, 0.5f);
 			pawn.arm_transform->rotation = glm::angleAxis(0.0f, glm::vec3(0.0f, 0.0f, 1.0f));
 			pawn.wrist_transform->rotation = glm::angleAxis(0.0f, glm::vec3(0.0f, 1.0f, 0.0f));
@@ -772,7 +780,9 @@ void PlayMode::update(float elapsed)
 			enemyList[i].pawn_control.parry = enemy_control.parry; //secondAction.pressed; 
 			enemy_control.attack=0;
 			enemy_control.parry=0;
+		//	std::cout<<"ddfsfwerwe"<<i<<std::endl;
 			walk_pawn(enemyList[i], elapsed);	
+
 		}
 		/*
 		glm::mat4x3 frame = camera->transform->make_local_to_parent();
