@@ -76,12 +76,13 @@ class CheckDistance:public Node{
     private:
         BlackBoard* status=nullptr;
         bool isNegative=false;
-        float distance=100.0f;
+        float distanceMax=100.0f;
+        float distanceMin=0.0f;
     public:
-        CheckDistance(BlackBoard* status,bool isNegative,float distance):status(status),isNegative(isNegative),distance(distance){
+        CheckDistance(BlackBoard* status,bool isNegative,float distance0,float distance1):status(status),isNegative(isNegative),distanceMax(distance0),distanceMin(distance1){
         }
         virtual bool run() override{
-            if(status->distanceToPlayer<distance){
+            if(status->distanceToPlayer<distanceMax && status->distanceToPlayer>distanceMin){
             //    std::cout<<status->distanceToPlayer<<std::endl;
                 return !isNegative;
             }else{
@@ -211,30 +212,37 @@ class BehaviorTree{
         }
         void InitInterrupt(){
             attack_ipt=new AttackInterrupt(status);
-            CheckDistance* checkDistance=new CheckDistance(status,false,4.5f);
+            CheckDistance* checkDistance=new CheckDistance(status,false,4.5f,0.0f);
             ParryTask* parryTask=new ParryTask(status);
             attack_ipt->addChild(checkDistance);
             attack_ipt->addChild(parryTask);
         }
         void Init(){
             std::cout<<"AI Initialize Start"<<std::endl;
-        	Sequence* rt = new Sequence, * sequence1 = new Sequence;
+        	Sequence* rt = new Sequence;
+            Sequence* sequence1 = new Sequence;
+            Selector* selector2=new Selector;
             Sequence* atkSequence=new Sequence;
 	        Selector* selector1 = new Selector;
+            Sequence* approachSequence=new Sequence;
 	        BlackBoard* blackBoard = new BlackBoard{};
             //blackBoard->distanceToPlayer=5;
 	        CheckIfPlayerExist* checkExist = new CheckIfPlayerExist(blackBoard,true);
 	        WalkToPlayerTask* approach = new WalkToPlayerTask(blackBoard);
 	        AttackTask* attack = new AttackTask(blackBoard);
-            CheckDistance* checkDistance=new CheckDistance(blackBoard,false,4.5f);
+            CheckDistance* checkDistanceAttack=new CheckDistance(blackBoard,false,4.5f,0.0f);
+            CheckDistance* checkDistanceApproach=new CheckDistance(blackBoard,false,20.0f,4.5f);
             status=blackBoard;
 
         	rt->addChild(selector1);
 	        selector1->addChild(checkExist);
 	        selector1->addChild(sequence1);
-	        sequence1->addChild(approach);
-            sequence1-> addChild(atkSequence);
-            atkSequence->addChild(checkDistance);
+            sequence1->addChild(selector2);
+	        selector2->addChild(approachSequence);
+            selector2-> addChild(atkSequence);
+            approachSequence->addChild(checkDistanceApproach);
+            approachSequence->addChild(approach);
+            atkSequence->addChild(checkDistanceAttack);
             atkSequence->addChild(attack);
             SetRoot(rt);
             InitInterrupt();
