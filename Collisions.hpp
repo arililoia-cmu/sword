@@ -6,7 +6,7 @@
 
 #include "Mesh.hpp"
 #include "Scene.hpp"
-
+#include<array>
 #include <vector>
 
 struct CollideMesh

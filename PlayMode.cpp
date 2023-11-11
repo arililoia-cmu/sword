@@ -1164,7 +1164,7 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 							}
 							
 							enemyList[e].hp->tex_data.push_back(glm::u8vec4(0x00, 0xff, 0x00, 0xff*hp_bar_transparency));
-							enemyList[e].hp->fillin_indices.push_back(enemyList[e].hp->tex_data.size() - 1);
+							enemyList[e].hp->fillin_indices.push_back((int)(enemyList[e].hp->tex_data.size() - 1));
 
 					}else{
 						enemyList[e].hp->tex_data.push_back(pixel_at);
@@ -1357,7 +1357,7 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 							hp_bar_full_x = j;
 						}
 						hpbar_tex_data.push_back(glm::u8vec4(0x00, 0xff, 0x00, 0xff*hp_bar_transparency));
-						hpbar_fillin_indices.push_back(hpbar_tex_data.size() - 1);
+						hpbar_fillin_indices.push_back((int)(hpbar_tex_data.size() - 1));
 
 				}else{
 					hpbar_tex_data.push_back(pixel_at);
