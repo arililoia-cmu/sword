@@ -1,0 +1,25 @@
+* Entities
+** Identification
+Entities can be identified by something that all of them have and none of them have more than one of, which could for example be their transform (this is basically already enforced by our blender file, where each entity and mesh is one transform). So I'd like to continue that. Enforce that entities are identified by their transform, and basically each component knows what transform it is attached to and can then find other components it has or stuff like that.
+* Systems
+** Walking
+We need a system that manages walkmeshes, and an associated component that enetities can have that let's them interact with the walkmeshes.
+For now, the system can just refuse to handle more than 1 walkmesh (always needs exactly 1 or 0 walkmeshes)
+** Collision
+We already kind of have a system that we can register colliders for. It's reasonable though that we should have a more robust system for how we handle the collisions afterwards (right now things are identified by a pointer to their transform which is maybe OK but we have to standardize it).
+** Physics
+Again, each transform likely only has one physics rigid body. So we can add this to a physics component that gets added to each entity, and then the system basically automatically handles physics when it gets collision events.
+** GUI Rendering
+This is somewhat hard. I think what we wnat is a specialized way of describing where things render on the screen that our components can use to describe what hey want to render, and then the system can batch them and render them.
+** Rendering
+This is basically what our scene class currently does, it iterates through the transforms and renders their meshes, right now each entity just has an implicit "mesh render" component which I think is fine.
+** 
+* Utilities
+** Printing
+We need a system that just oyu can instead of writing to the cout stream you just write to a stream defined by this utility and it automagically adds the file and line so that we don't need to spam cout and we can turn it all on and off quickly.
+So use would be like, a utility that uses preprocessor to remove it when debug is turned off
+Something like this https://stackoverflow.com/questions/2571157/debug-only-ostreams-in-c
+Can also have it put in file name, line number, function name, etc.
+** Configuring Scene
+The problem right now is that our scene is configured using the hierarchy from blender transforms, and we basically attach a "mesh render" component to that but we don't do anything else (we have to do that manually)
+We should have a way of configuring the scene that runs when we initialize the scene, that can attach the proper components to the proper stuff for this season. Would need to hardcode basically a different function for each scene, but that's OK, it's easier than making an actual scripting language with enough power to be useful.

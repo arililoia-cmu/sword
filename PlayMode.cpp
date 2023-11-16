@@ -19,17 +19,41 @@
 #include "load_save_png.hpp"
 #include "data_path.hpp"
 
-
 #define M_PI_2f 1.57079632679489661923f
-GLuint phonebank_meshes_for_lit_color_texture_program = 0;
-Load< MeshBuffer > phonebank_meshes(LoadTagDefault, []() -> MeshBuffer const * {
-	MeshBuffer const *ret = new MeshBuffer(data_path("sword.pnct"));
-	phonebank_meshes_for_lit_color_texture_program = ret->make_vao_for_program(lit_color_texture_program->program);
-	return ret;
-});
+
+GLuint G_LIT_COLOR_TEXTURE_PROGRAM_VAO = 0;
+
+// Stores all the relevant meshes
+Load<MeshBuffer> G_MESHES(LoadTagDefault,
+	[]() -> MeshBuffer const*
+	{
+		MeshBuffer const* ret = new MeshBuffer(data_path("sword.pnct"));
+		G_LIT_COLOR_TEXTURE_PROGRAM_VAO = ret->make_vao_for_program(lit_color_texture_program->program);
+		return ret;
+	});
+
+// Stores all the relevant walkmeshes
+WalkMesh const* walkmesh = nullptr;
+Load<WalkMeshes> G_WALKMESHES(LoadTagDefault,
+	[]() -> WalkMeshes const*
+	{
+		WalkMeshes* ret = new WalkMeshes(data_path("sword.w"));
+		walkmesh = &ret->lookup("WalkMesh");
+		return ret;
+	});
+
+// Stores all the relevant collidemeshes
+Load<CollideMeshes> G_COLLIDEMESHES(LoadTagDefault,
+	[]() -> CollideMeshes const*
+	{
+		CollideMeshes* ret = new CollideMeshes(data_path("sword.c"));
+		//groundCollMesh = &ret->lookup("GroundCollMesh");
+		return ret;
+	});
 
 // Adapted from 2018 code Jim mentioned
-GLuint load_texture(std::string const &filename, bool mirror) {
+GLuint load_texture(std::string const &filename, bool mirror)
+{
 	glm::uvec2 size;
 	std::vector< glm::u8vec4 > data;
 	load_png(filename, &size, &data, LowerLeftOrigin);
@@ -54,69 +78,64 @@ GLuint load_texture(std::string const &filename, bool mirror) {
 	return tex;
 }
 
-Load< GLuint > grass_tex(LoadTagDefault, [](){
-	return new GLuint(load_texture(data_path("textures/grass.png"), true));
-});
-
-Load< GLuint > tile_tex(LoadTagDefault, [](){
-	return new GLuint(load_texture(data_path("textures/tile.png"), false));
-});
-
-Load< GLuint > rock_tex(LoadTagDefault, [](){
-	return new GLuint(load_texture(data_path("textures/rock.png"), true));
-});
-
-Load< GLuint > path_tex(LoadTagDefault, [](){
-	return new GLuint(load_texture(data_path("textures/path.png"), false));
-});
-
-Load< Scene > phonebank_scene(LoadTagDefault, []() -> Scene const * {
-	return new Scene(data_path("sword.scene"), [&](Scene &scene, Scene::Transform *transform, std::string const &mesh_name){
-		Mesh const &mesh = phonebank_meshes->lookup(mesh_name);
-
-		scene.drawables.emplace_back(transform);
-		Scene::Drawable &drawable = scene.drawables.back();
-
-		drawable.pipeline = lit_color_texture_program_pipeline;
-		drawable.pipeline.vao = phonebank_meshes_for_lit_color_texture_program;
-		drawable.pipeline.type = mesh.type;
-		drawable.pipeline.start = mesh.start;
-		drawable.pipeline.count = mesh.count;
-
-		if (transform->name.length() >= 5 && transform->name.substr(0, 5) == "Plane"){
-			drawable.pipeline.textures[0].texture = *grass_tex;
-		} else if (transform->name == "Arena"){
-			drawable.pipeline.textures[0].texture = *tile_tex;
-		} else if (transform->name.length() >= 8 && transform->name.substr(0, 8) == "Mountain") {
-			drawable.pipeline.textures[0].texture = *rock_tex;
-		} else if (transform->name.length() >= 4 && transform->name.substr(0, 4) == "Path") {
-			drawable.pipeline.textures[0].texture = *path_tex;
-		}
-
-	});
-});
-
-WalkMesh const* walkmesh = nullptr;
-Load< WalkMeshes > phonebank_walkmeshes(LoadTagDefault, []() -> WalkMeshes const * {
-	WalkMeshes *ret = new WalkMeshes(data_path("sword.w"));
-	walkmesh = &ret->lookup("WalkMesh");
-	return ret;
-});
-
-CollideMesh const* playerSwordCollMesh = nullptr;
-CollideMesh const* enemySwordCollMesh = nullptr;
-CollideMesh const* enemyCollMesh = nullptr;
-CollideMesh const* playerCollMesh = nullptr;
-//CollideMesh const* groundCollMesh = nullptr;
-Load<CollideMeshes> COLLIDE_MESHES(LoadTagDefault, []() -> CollideMeshes const*
+Load<GLuint> grass_tex(LoadTagDefault,
+	[]()
 	{
-		CollideMeshes* ret = new CollideMeshes(data_path("sword.c"));
-		playerSwordCollMesh = &ret->lookup("PlayerSwordCollMesh");
-		enemySwordCollMesh = &ret->lookup("EnemySwordCollMesh");
-		enemyCollMesh = &ret->lookup("EnemyCollMesh");
-		playerCollMesh = &ret->lookup("PlayerCollMesh");
-		//groundCollMesh = &ret->lookup("GroundCollMesh");
-		return ret;
+		return new GLuint(load_texture(data_path("textures/grass.png"), true));
+	});
+
+Load<GLuint> tile_tex(LoadTagDefault,
+	[]()
+	{
+		return new GLuint(load_texture(data_path("textures/tile.png"), false));
+	});
+
+Load<GLuint> rock_tex(LoadTagDefault,
+	[]()
+	{
+		return new GLuint(load_texture(data_path("textures/rock.png"), true));
+	});
+
+Load<GLuint> path_tex(LoadTagDefault,
+	[]()
+	{
+		return new GLuint(load_texture(data_path("textures/path.png"), false));
+	});
+
+Load<Scene> G_SCENE(LoadTagDefault,
+	[]() -> Scene const*
+	{
+		return new Scene(data_path("sword.scene"),
+			[&](Scene& scene, Scene::Transform* transform, std::string const& mesh_name)
+			{
+				Mesh const& mesh = G_MESHES->lookup(mesh_name);
+
+				scene.drawables.emplace_back(transform);
+				Scene::Drawable& drawable = scene.drawables.back();
+
+				drawable.pipeline = lit_color_texture_program_pipeline;
+				drawable.pipeline.vao = G_LIT_COLOR_TEXTURE_PROGRAM_VAO;
+				drawable.pipeline.type = mesh.type;
+				drawable.pipeline.start = mesh.start;
+				drawable.pipeline.count = mesh.count;
+
+				if(transform->name.length() >= 5 && transform->name.substr(0, 5) == "Plane")
+				{
+					drawable.pipeline.textures[0].texture = *grass_tex;
+				}
+				else if(transform->name == "Arena")
+				{
+					drawable.pipeline.textures[0].texture = *tile_tex;
+				}
+				else if(transform->name.length() >= 8 && transform->name.substr(0, 8) == "Mountain")
+				{
+					drawable.pipeline.textures[0].texture = *rock_tex;
+				}
+				else if(transform->name.length() >= 4 && transform->name.substr(0, 4) == "Path")
+				{
+					drawable.pipeline.textures[0].texture = *path_tex;
+				}
+			});
 	});
 
 // in lieu of the 'multisample' object i'd like to make, for the demo,
@@ -181,20 +200,27 @@ glm::vec2 PlayMode::object_to_window_coordinate(Scene::Transform *object, Scene:
 	return glm::vec2(ws_x_real, ws_y_real2);
 }
 
-PlayMode::PlayMode() : scene(*phonebank_scene) {
+PlayMode::PlayMode() : scene(*G_SCENE)
+{
 	//create a player transform:
-
-	for (auto &transform : scene.transforms) {
-		if (transform.name == "Player_Body"){
+	for(auto& transform : scene.transforms)
+	{
+		if(transform.name == "Player_Body")
+		{
 			player.body_transform = &transform;
 			player.at = walkmesh->nearest_walk_point(player.body_transform->position + glm::vec3(0.0f, 0.0001f, 0.0f));
 			float height = glm::length(player.body_transform->position - walkmesh->to_world_point(player.at));
 			player.body_transform->position = glm::vec3(0.0f, 0.0f, height);
-		} else if (transform.name == "Player_Sword"){
+		}
+		else if(transform.name == "Player_Sword")
+		{
 			player.sword_transform = &transform;
-		} else if (transform.name == "Player_Wrist"){
+		}
+		else if(transform.name == "Player_Wrist")
+		{
 			player.wrist_transform = &transform;
-		} else if (transform.name == "Plane")
+		}
+		else if(transform.name == "Plane")
 		{
 			groundTransform = &transform;
 		}
@@ -290,6 +316,16 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 	player.arm_transform->parent = player.body_transform;
 	player.wrist_transform->parent = player.arm_transform;
 	scene.transforms.emplace_back();
+
+	CollideMesh const* playerSwordCollMesh = nullptr;
+	CollideMesh const* enemySwordCollMesh = nullptr;
+	CollideMesh const* enemyCollMesh = nullptr;
+	CollideMesh const* playerCollMesh = nullptr;
+
+	playerSwordCollMesh = &G_COLLIDEMESHES->lookup("PlayerSwordCollMesh");
+	enemySwordCollMesh = &G_COLLIDEMESHES->lookup("EnemySwordCollMesh");
+	enemyCollMesh = &G_COLLIDEMESHES->lookup("EnemyCollMesh");
+	playerCollMesh = &G_COLLIDEMESHES->lookup("PlayerCollMesh");
 
 	for(int i=0;i<5;++i)
 	{
