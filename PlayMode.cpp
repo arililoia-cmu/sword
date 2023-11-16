@@ -1240,14 +1240,14 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	
 
 	for (int e=0; e<5; e++){
-		if (enemyList[e].hp->hp_buffer == 0 || enemyList[e].hp->change_enemy_hp){
+		if (enemyList[e].hp->hp_buffer == 0){
 			std::cout << "enemy " << e << " hp changed" << std::endl;
 			glGenBuffers(1, &enemyList[e].hp->hp_buffer);
 		}
 	}
 	
 	for (int e=0; e<5; e++){
-		if (enemyList[e].hp->vao == 0 || enemyList[e].hp->change_enemy_hp) {
+		if (enemyList[e].hp->vao == 0) {
 			std::cout << "enemy " << e << " hp changed" << std::endl;
 			//based on PPU466.cpp
 
@@ -1400,11 +1400,11 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 
-	if (hpbar_buffer == 0 || change_player_hp){
+	if (hpbar_buffer == 0){
 		glGenBuffers(1, &hpbar_buffer);
 	}
 
-	if (hpbar_vao == 0 || change_player_hp) {
+	if (hpbar_vao == 0) {
 		//based on PPU466.cpp
 
 		glGenVertexArrays(1, &hpbar_vao);
@@ -1440,7 +1440,7 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	static glm::vec2 hpbar_top_right = glm::vec2(0.9f, 0.9f);
 
 	static std::vector< Vert > hpbar_attribs;
-	if (hpbar_attribs.size() == 0 || change_player_hp){
+	if (hpbar_attribs.size() == 0){
 		hpbar_attribs.emplace_back(glm::vec3( hpbar_bottom_left.x, hpbar_bottom_left.y, 0.0f), glm::vec2(0.0f, 0.0f)); // 1
 		hpbar_attribs.emplace_back(glm::vec3( hpbar_bottom_left.x,  hpbar_top_right.y, 0.0f), glm::vec2(0.0f, 1.0f)); // 2
 		hpbar_attribs.emplace_back(glm::vec3( hpbar_top_right.x, hpbar_bottom_left.y, 0.0f), glm::vec2(1.0f, 0.0f)); // 4 
