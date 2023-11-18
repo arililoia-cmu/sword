@@ -23,11 +23,12 @@
 
 GLuint G_LIT_COLOR_TEXTURE_PROGRAM_VAO = 0;
 
-// Stores all the relevant meshes
+// Contains all the meshes for the scene
 Load<MeshBuffer> G_MESHES(LoadTagDefault,
 	[]() -> MeshBuffer const*
 	{
 		MeshBuffer const* ret = new MeshBuffer(data_path("sword.pnct"));
+		// If we add more shader programs, we're going to need to make VAOs for them as well here
 		G_LIT_COLOR_TEXTURE_PROGRAM_VAO = ret->make_vao_for_program(lit_color_texture_program->program);
 		return ret;
 	});
@@ -38,6 +39,7 @@ Load<WalkMeshes> G_WALKMESHES(LoadTagDefault,
 	[]() -> WalkMeshes const*
 	{
 		WalkMeshes* ret = new WalkMeshes(data_path("sword.w"));
+		// TODO: move this out, this is only relevant for specific scenes
 		walkmesh = &ret->lookup("WalkMesh");
 		return ret;
 	});
@@ -47,7 +49,6 @@ Load<CollideMeshes> G_COLLIDEMESHES(LoadTagDefault,
 	[]() -> CollideMeshes const*
 	{
 		CollideMeshes* ret = new CollideMeshes(data_path("sword.c"));
-		//groundCollMesh = &ret->lookup("GroundCollMesh");
 		return ret;
 	});
 
@@ -78,6 +79,7 @@ GLuint load_texture(std::string const &filename, bool mirror)
 	return tex;
 }
 
+// TODO move this into an atlas (like meshbuffer or walkmeshes or collidemeshes)
 Load<GLuint> grass_tex(LoadTagDefault,
 	[]()
 	{
@@ -102,6 +104,15 @@ Load<GLuint> path_tex(LoadTagDefault,
 		return new GLuint(load_texture(data_path("textures/path.png"), false));
 	});
 
+// Here we set up the drawables correctly
+// Note that this is basically initializing the "mesh rendering" system
+// So other systems that are initialized can follow this same pattern
+// Note also that "scene" in this case does not fully describe what we might
+// think of as the "scene" for gameplay purposes -- it basically only describes
+// the mesh rendering part of it. The rest is set up when playmode is actually
+// entered. I guess the idea here is that if we wanted to reload the level we
+// already have it in memory here, and then we have a mutable copy of that which
+// is used during gameplay in the mode.
 Load<Scene> G_SCENE(LoadTagDefault,
 	[]() -> Scene const*
 	{
@@ -200,9 +211,14 @@ glm::vec2 PlayMode::object_to_window_coordinate(Scene::Transform *object, Scene:
 	return glm::vec2(ws_x_real, ws_y_real2);
 }
 
+// Right now, this makes a proper fully copy of the scene, which is fine, but
+// there's no reason to keep the global scene around if we're only using it
+// like this. Unsure what to do.
 PlayMode::PlayMode() : scene(*G_SCENE)
 {
-	//create a player transform:
+	// Binding transforms
+	// TODO: this is a lot of duplicated code, set up something that does this automatically
+	// for pawns
 	for(auto& transform : scene.transforms)
 	{
 		if(transform.name == "Player_Body")
@@ -260,7 +276,8 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 		}
 	}
 
-	//create player transform at player feet and start player walking at nearest walk point:
+	// Create player transform at player feet and start player walking at nearest walk point:
+	// TODO this can also be done per pawn
 	scene.transforms.emplace_back();
 	player.transform = &scene.transforms.back();
 	player.body_transform->parent = player.transform;
@@ -269,7 +286,6 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 	player.hp = new HpBar();
 	player.hp->Init(1000);
 
-	//same for enemy
 	scene.transforms.emplace_back();
 	for(int i=0;i<5;++i){
 			//same for enemy
@@ -290,7 +306,7 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 		enemyList[i].bt->SetPlayer(&player);
 	}
 
-	//setup camera
+	// TODO This should probably be done by setting the camera to match the properties from the blender camera but this is OK
 	if (scene.cameras.size() != 1) throw std::runtime_error("Expecting scene to have exactly one camera, but it has " + std::to_string(scene.cameras.size()));
 	player.camera = &scene.cameras.front();
 	player.camera->fovy = glm::radians(60.0f);
@@ -308,15 +324,16 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 
 	//rotate camera facing direction relative to player direction
 	player.camera->transform->rotation = glm::angleAxis(glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-
-
-	//arm transform between body and wrist
+	
+	// TODO this should be done in a phase that adds all the transforms that make a pawn
+	// Should be done with the ones before that add feet
 	scene.transforms.emplace_back();
 	player.arm_transform = &scene.transforms.back();
 	player.arm_transform->parent = player.body_transform;
 	player.wrist_transform->parent = player.arm_transform;
 	scene.transforms.emplace_back();
 
+	// Because some objects reuse the same colliders
 	CollideMesh const* playerSwordCollMesh = nullptr;
 	CollideMesh const* enemySwordCollMesh = nullptr;
 	CollideMesh const* enemyCollMesh = nullptr;
@@ -327,6 +344,7 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 	enemyCollMesh = &G_COLLIDEMESHES->lookup("EnemyCollMesh");
 	playerCollMesh = &G_COLLIDEMESHES->lookup("PlayerCollMesh");
 
+	// Here we register the pawns with the collision system
 	for(int i=0;i<5;++i)
 	{
 			scene.transforms.emplace_back();
