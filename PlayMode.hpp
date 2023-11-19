@@ -98,8 +98,8 @@ struct PlayMode : Mode {
 	struct Button {
 		uint8_t downs = 0;
 		uint8_t pressed = 0;
-	} left, right, down, up, secondAction, mainAction, dodge;
-
+	} left, right, down, up, secondAction, mainAction, dodge;//main=attack second=parry
+	bool isMouseVertical=true;
 	//local copy of the game scene (so code can change it during gameplay):
 	Scene scene;
 
@@ -151,7 +151,7 @@ struct PlayMode : Mode {
 		glm::vec3 vel = glm::vec3(0.0f);
 		glm::vec3 move = glm::vec3(0.0f); // displacement in world (should be scaled by elapsed)
 		float rotate = 0.0f; // angle in world, normal direction, ignore for player 
-		uint8_t attack = 0;
+		uint8_t attack = 0;//1=vertical 2=horizontal;
 		uint8_t parry = 0;
 		uint8_t dodge = 0;
 		

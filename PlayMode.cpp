@@ -563,8 +563,18 @@ void PlayMode::processPawnControl(PlayMode::Pawn& pawn, float elapsed)
 				if (stance != 1){ stance_changed_in_attack = true; }
 				pawn.pawn_control.stanceInfo.attack.dir = pawn.pawn_control.move;
 				pawn.gameplay_tags="attack";
-				stance = 1;
-				pawn.pawn_control.attack=0;
+
+				if(pawn.pawn_control.attack==1){// Here you can change whether the pawn is casting vertical(stance=1) or horizontal(stance=9)
+					stance = 1;
+					pawn.pawn_control.attack=0;
+				}
+				if(pawn.pawn_control.attack==2){
+					stance = 9;
+				//	std::cout<<"DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"<<std::endl;
+					pawn.pawn_control.attack=0;
+				}
+
+
 				pawn.pawn_control.stanceInfo.attack.attackAfter = 0;
 			}
 			else if (pawn.pawn_control.parry)
@@ -654,7 +664,7 @@ void PlayMode::processPawnControl(PlayMode::Pawn& pawn, float elapsed)
 			}
 			if(pawn.pawn_control.attack)
 				{
-					pawn.pawn_control.stanceInfo.attack.attackAfter = 1;
+					pawn.pawn_control.stanceInfo.attack.attackAfter =0;// 1;  Pearson Comment: don't actually need input buffer in attacking.
 					pawn.pawn_control.attack = 0;
 				}
 			
@@ -664,7 +674,7 @@ void PlayMode::processPawnControl(PlayMode::Pawn& pawn, float elapsed)
 					st = 0.0f;
 					if(pawn.pawn_control.stanceInfo.attack.attackAfter)
 					{
-						stance = 9;
+					//	stance = 9;
 						pawn.pawn_control.stanceInfo.sweep.dir = pawn.pawn_control.stanceInfo.attack.dir;
 					}
 					else
@@ -889,12 +899,17 @@ void PlayMode::processPawnControl(PlayMode::Pawn& pawn, float elapsed)
 			} else {
 			if(stance==10){
 				pawn.gameplay_tags="";//clear gameplay tag for AI
-			//	std::cout<<"ddddddddddddddddddddddddddddddddddddd"<<std::endl;
+
 			}
 				st -= elapsed;
 				if (st < 0.0f){
+										st = 0.0f;
+
 					if (stance != 0){ stance_changed_in_attack = true; }
 					stance = 0;
+					//				std::cout<<"JJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJ"<<std::endl;
+					//				int temp;
+					//				std::cin>>temp;
 				}
 			} 
 		}
@@ -1020,8 +1035,17 @@ void PlayMode::update(float elapsed)
 		
 		player.pawn_control.move = pmove;
 		
-		player.pawn_control.attack = mainAction.pressed; // Attack input control
-		player.pawn_control.parry = secondAction.pressed; // Attack input control
+		if(mainAction.pressed){
+			if(isMouseVertical){
+				player.pawn_control.attack=1;
+			}else{
+				player.pawn_control.attack=2;
+			}
+			mainAction.pressed=false;
+		}
+
+		//player.pawn_control.attack = mainAction.pressed; // Attack input control
+		player.pawn_control.parry = secondAction.pressed; // Parry input control
 		player.pawn_control.dodge = dodge.pressed;
 
 		processPawnControl(player, elapsed);
@@ -1179,7 +1203,7 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	for (int e=0; e<5; e++){
 		
 		if (enemyList[e].hp->change_enemy_hp == true){
-			std::cout << "enemy " << e << " hp changed" << std::endl;
+	//		std::cout << "enemy " << e << " hp changed" << std::endl;
 			int health_border = int(enemyList[e].hp->empty_x + 
 				std::floor((enemyList[e].hp->full_x - enemyList[e].hp->empty_x)*enemyList[e].hp->get_percent_hp_left()));
 
@@ -1194,7 +1218,7 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 
 			}
 		}else{
-			std::cout << "enemy " << e << " hp not changed" << std::endl;
+//std::cout << "enemy " << e << " hp not changed" << std::endl;
 		}
 
 	}
@@ -1202,7 +1226,7 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 
 	for (int e=0; e<5; e++){
 		if (enemyList[e].hp->change_enemy_hp){
-			std::cout << "enemy " << e << " hp changed" << std::endl;
+	//		std::cout << "enemy " << e << " hp changed" << std::endl;
 			
 			int health_border = int(enemyList[e].hp->empty_x + 
 				std::floor((enemyList[e].hp->full_x - enemyList[e].hp->empty_x)*enemyList[e].hp->get_percent_hp_left()));

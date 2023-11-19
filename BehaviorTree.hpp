@@ -50,6 +50,7 @@ struct BlackBoard{
     PlayMode::Control control;
     PlayMode::Pawn* player;
     PlayMode::Pawn* enemy;
+    PlayMode::Enemy* enmyList;
 };
 class CheckIfPlayerExist:public Node{
     private:
@@ -259,6 +260,9 @@ class BehaviorTree{
         }
         void SetEnemy(PlayMode::Pawn* input){
             status->enemy=input;
+        }
+        void SetEnemyList(PlayMode::Enemy* input){
+            status->enmyList=input;
         }
 
         void tick(){
