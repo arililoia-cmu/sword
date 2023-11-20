@@ -256,13 +256,17 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 	}
 
 	for(int i=0;i<5;++i){
+				std::cout<<"333333";
 		enemyList[i].bt=new BehaviorTree();
+
 		enemyList[i].bt->Init();//AI Initialize
+						std::cout<<"2222";
 		enemyList[i].hp = new HpBar();
 		enemyList[i].hp->Init(1000);
 		enemyList[i].bt->SetEnemy(&enemyList[i]);
 		enemyList[i].bt->SetPlayer(&player);
 	}
+
 
 	//setup camera
 	if (scene.cameras.size() != 1) throw std::runtime_error("Expecting scene to have exactly one camera, but it has " + std::to_string(scene.cameras.size()));

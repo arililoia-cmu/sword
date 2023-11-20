@@ -46,7 +46,9 @@ class Sequence: public CompositeNode{
 struct BlackBoard{
 //    PlayMode::Pawn* player;
     //glm::vec3 targetPosition;
-    float distanceToPlayer;
+    float distanceToPlayer=100.0f;
+    bool isBoss=false;
+    bool isVertical=false;
     PlayMode::Control control;
     PlayMode::Pawn* player;
     PlayMode::Pawn* enemy;
@@ -154,7 +156,18 @@ class AttackTask:public ActionNode{
             //    std::cout<<"AttackAction"<<status->control.attack<<std::endl;
             //    int temp=0;
             //    std::cin>>temp;
+            if (status->isBoss)
+            {
                 status->control.attack=1;
+            }else{
+                if(status->isVertical){
+                    status->control.attack=1;
+                }else{
+                    status->control.attack=2;
+                }
+            }
+            
+
                 RegisterTime();
                 return true;
             }else{
@@ -218,7 +231,7 @@ class BehaviorTree{
             attack_ipt->addChild(checkDistance);
             attack_ipt->addChild(parryTask);
         }
-        void Init(){
+        void SoldierBehaviorTree(){
             std::cout<<"AI Initialize Start"<<std::endl;
         	Sequence* rt = new Sequence;
             Sequence* sequence1 = new Sequence;
@@ -226,14 +239,15 @@ class BehaviorTree{
             Sequence* atkSequence=new Sequence;
 	        Selector* selector1 = new Selector;
             Sequence* approachSequence=new Sequence;
-	        BlackBoard* blackBoard = new BlackBoard{};
+	    //    BlackBoard* blackBoard = new BlackBoard{};
+            BlackBoard* blackBoard=status;
             //blackBoard->distanceToPlayer=5;
 	        CheckIfPlayerExist* checkExist = new CheckIfPlayerExist(blackBoard,true);
 	        WalkToPlayerTask* approach = new WalkToPlayerTask(blackBoard);
 	        AttackTask* attack = new AttackTask(blackBoard);
             CheckDistance* checkDistanceAttack=new CheckDistance(blackBoard,false,4.5f,0.0f);
             CheckDistance* checkDistanceApproach=new CheckDistance(blackBoard,false,20.0f,4.5f);
-            status=blackBoard;
+        //    status=blackBoard;
 
         	rt->addChild(selector1);
 	        selector1->addChild(checkExist);
@@ -249,6 +263,28 @@ class BehaviorTree{
             InitInterrupt();
             std::cout<<"AI Initialize End"<<std::endl;
         }
+        void BossBehaviorTree(){
+
+        }
+        void InitBlackBoard(){
+            BlackBoard* blackBoard = new BlackBoard{};
+            status=blackBoard;
+        }
+        void Init(){
+            InitBlackBoard();
+            if(status->isBoss){
+                std::cout<<"3333";
+                BossBehaviorTree();
+
+            }else
+            {
+                std::cout<<"3333";
+                SoldierBehaviorTree();
+            }
+
+        }
+
+
         void Start(){
 
         }
@@ -261,8 +297,21 @@ class BehaviorTree{
         void SetEnemy(PlayMode::Pawn* input){
             status->enemy=input;
         }
-        void SetEnemyList(PlayMode::Enemy* input){
+        void SetEnemyList(PlayMode::Enemy input[]){
             status->enmyList=input;
+        }
+        void SetEnemyType(int input){//0==boss;1==soldier+horizontal;2==soldier+vertical
+            if(input==0){
+                status->isBoss=true;
+            }
+            if(input==1){
+                status->isBoss=false;
+                status->isVertical=false;
+            }
+            if(input==2){
+                status->isBoss=false;
+                status->isVertical=true;
+            }
         }
 
         void tick(){
