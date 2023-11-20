@@ -491,6 +491,13 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 				evt.motion.xrel / float(window_size.y),
 				-evt.motion.yrel / float(window_size.y)
 			);
+			//deciding attacking direction
+			if(abs(motion.x)>abs(motion.y)){
+				isMouseVertical=false;
+			}else{
+				isMouseVertical=true;
+			}
+
 			glm::vec3 upDir = walkmesh->to_world_smooth_normal(player.at);
 			player.transform->rotation = glm::angleAxis(-motion.x * player.camera->fovy, upDir) * player.transform->rotation;
 
