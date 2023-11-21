@@ -349,15 +349,13 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 		enemies[i]->maxhp = 100;
 	}
 
-	// for(int i=0;i<5;++i)
-	// {
-	// 	enemies[i]->bt=new BehaviorTree();
-	// 	enemies[i]->bt->Init();//AI Initialize
-	// 	enemies[i]->hp = new HpBar();
-	// 	enemies[i]->hp->Init(1000);
-	// 	enemies[i]->bt->SetEnemy(&enemyList[i]);
-	// 	enemies[i]->bt->SetPlayer(&player);
-	// }
+	for(int i=0;i<5;++i)
+	{
+		enemies[i]->bt=new BehaviorTree();
+		enemies[i]->bt->Init();//AI Initialize
+		enemies[i]->bt->SetEnemy(enemies[i]);
+		enemies[i]->bt->SetPlayer(player);
+	}
 
 	// TODO This should probably be done by setting the camera to match the properties from the blender camera but this is OK
 	if (scene.cameras.size() != 1) throw std::runtime_error("Expecting scene to have exactly one camera, but it has " + std::to_string(scene.cameras.size()));
@@ -500,12 +498,13 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 	collEng.registerCollider(plyr, player->sword_transform, playerSwordCollMesh, playerSwordCollMesh->containingRadius, playerSwordHit, CollisionEngine::Layer::PLAYER_SWORD_LAYER);
 	collEng.registerCollider(plyr, player->body_transform, playerCollMesh, playerCollMesh->containingRadius, playerHit, CollisionEngine::Layer::PLAYER_BODY_LAYER);
 
-	auto playerHpBarCalculate = [this](float elapsed) -> float
+	auto playerHpBarCalculate = [this, plyr](float elapsed) -> float
 		{
-			return (float)player->hp / (float)player->maxhp;
+			Player* p = static_cast<Player*>(game.getCreature(plyr));
+			return (float)p->hp / (float)p->maxhp;
 		};
 	
-	gui.addElement(	new Gui::Bar(playerHpBarCalculate, *hp_bar_tex));
+	gui.addElement(new Gui::Bar(playerHpBarCalculate, *hp_bar_tex));
 	
 	std::cout<<"end of loading scene"<<std::endl;
 }
@@ -1142,20 +1141,20 @@ void PlayMode::update(float elapsed)
 		
 		processPawnControl(*player, elapsed);
 
-		// for(int i=0;i<5;++i)
-		// {
-		// 	enemies[i]->bt->tick();// AI Thinking
-		// 	PawnControl& enemy_control=enemies[i]->bt->GetControl();
-		// 	enemies[i]->pawn_control.move = enemy_control.move;
-		// 	enemy_control.move=glm::vec3(0,0,0);//like a consumer pattern
-		// 	enemies[i]->pawn_control.rotate = enemy_control.rotate;
-		// 	enemies[i]->pawn_control.attack = enemy_control.attack; // mainAction.pressed; // For demonstration purposes bound to player attack
-		// 	enemies[i]->pawn_control.parry = enemy_control.parry; //secondAction.pressed; 
-		// 	enemy_control.attack=0;
-		// 	enemy_control.parry=0;
+		for(int i=0;i<5;++i)
+		{
+			enemies[i]->bt->tick();// AI Thinking
+			PawnControl& enemy_control=enemies[i]->bt->GetControl();
+			enemies[i]->pawn_control.move = enemy_control.move;
+			enemy_control.move=glm::vec3(0,0,0);//like a consumer pattern
+			enemies[i]->pawn_control.rotate = enemy_control.rotate;
+			enemies[i]->pawn_control.attack = enemy_control.attack; // mainAction.pressed; // For demonstration purposes bound to player attack
+			enemies[i]->pawn_control.parry = enemy_control.parry; //secondAction.pressed; 
+			enemy_control.attack=0;
+			enemy_control.parry=0;
 			
-		// 	processPawnControl(*enemies[i], elapsed);	
-		// }
+			processPawnControl(*enemies[i], elapsed);	
+		}
 	}
 
 	// Updates the systems
