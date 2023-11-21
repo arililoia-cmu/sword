@@ -4,15 +4,137 @@
 #include "Scene.hpp"
 #include "WalkMesh.hpp"
 // #include "BehaviorTree.hpp"
+#include "load_save_png.hpp"
 #include "Collisions.hpp"
 #include "Sound.hpp"
 #include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include <vector>
 #include <deque>
 #include <ctime>
 #include <iostream>
 
+#include "data_path.hpp"
+#include "TextureProgram.hpp"
+
 class BehaviorTree;//Forward Declaration
+
+struct Vert {
+		Vert(glm::vec3 const &position_, glm::vec2 const &tex_coord_) : position(position_), tex_coord(tex_coord_) { }
+		glm::vec3 position;
+		glm::vec2 tex_coord;
+	};
+
+class ImagePopup{
+    public:
+        std::vector< glm::u8vec4 > img_data;
+        glm::uvec2 img_size;
+        std::vector< glm::u8vec4 > img_tex_data;
+        GLuint img_tex = 0;
+        GLuint img_buffer = 0;
+        GLuint img_vao = 0;
+        float previous_display_start_time = 0.0f;
+        float display_interval = 5.0f;
+        // specify bottom left and bottom right in terms of (-1,1) range 
+        // coordinates to make resizing easier
+        glm::vec2 img_bottom_left;
+        glm::vec2 img_top_right;
+        std::vector< Vert > img_attribs;
+
+        ImagePopup(){}
+
+        void Init(std::string const &image_path, glm::vec2 img_bottom_left_, 
+                glm::vec2 img_top_right_, float display_interval_){
+        
+            display_interval = display_interval_;
+            img_bottom_left = img_bottom_left_;
+            img_top_right = img_top_right_;
+
+            load_png(data_path(image_path), &img_size, &img_data, OriginLocation::UpperLeftOrigin);
+            for (int i=img_size.y-1; i>=0; i--){
+                for (int j=0; j< (int) img_size.x; j++){
+                    glm::u8vec4 pixel_at = img_data.at((i*img_size.x)+j);
+                    img_tex_data.push_back(pixel_at);
+                }
+            }
+
+            glGenTextures(1, &img_tex);
+            glBindTexture(GL_TEXTURE_2D, img_tex);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img_size.x, img_size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, img_tex_data.data());
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glBindTexture(GL_TEXTURE_2D, 0);
+
+            glGenBuffers(1, &img_buffer);
+
+            glGenVertexArrays(1, &img_vao);
+            glBindVertexArray(img_vao);
+
+            glBindBuffer(GL_ARRAY_BUFFER, img_buffer);
+            glVertexAttribPointer(
+                texture_program->Position_vec4, //attribute
+                3, //size
+                GL_FLOAT, //type
+                GL_FALSE, //normalized
+                sizeof(Vert), //stride
+                (GLbyte *)0 + offsetof(Vert, position) //offset
+            );
+            glEnableVertexAttribArray(texture_program->Position_vec4);
+
+            glVertexAttribPointer(
+                texture_program->TexCoord_vec2, //attribute
+                2, //size
+                GL_FLOAT, //type
+                GL_FALSE, //normalized
+                sizeof(Vert), //stride
+                (GLbyte *)0 + offsetof(Vert, tex_coord) //offset
+            );
+            glEnableVertexAttribArray(texture_program->TexCoord_vec2);
+
+            glUseProgram(texture_program->program);
+
+            img_attribs.emplace_back(glm::vec3( img_bottom_left.x, img_bottom_left.y, 0.0f), glm::vec2(0.0f, 0.0f)); // 1
+            img_attribs.emplace_back(glm::vec3( img_bottom_left.x,  img_top_right.y, 0.0f), glm::vec2(0.0f, 1.0f)); // 2
+            img_attribs.emplace_back(glm::vec3( img_top_right.x, img_bottom_left.y, 0.0f), glm::vec2(1.0f, 0.0f)); // 4 
+            img_attribs.emplace_back(glm::vec3( img_top_right.x, img_top_right.y, 0.0f), glm::vec2(1.0f, 1.0f)); // 3
+
+        }
+
+        void trigger_draw(){
+            previous_display_start_time = ((float)clock())/1000.0f;
+
+        }
+
+        void draw(){
+            // clock_t current_time = clock();
+            float current_time = ((float)clock())/1000.0f;
+            std::cout << "previous_display_start_time: " << previous_display_start_time << std::endl;
+            std::cout << "current time: " << current_time << std::endl;
+            std::cout << "display interval + prev display stat time: " << display_interval + previous_display_start_time << std::endl;
+            if (current_time < display_interval + previous_display_start_time){
+                glBindBuffer(GL_ARRAY_BUFFER, img_buffer);
+                glBufferData(GL_ARRAY_BUFFER, sizeof(Vert) * img_attribs.size(), img_attribs.data(), GL_STREAM_DRAW);
+                glBindBuffer(GL_ARRAY_BUFFER, 0);
+                
+                glUseProgram(texture_program->program);
+                glUniformMatrix4fv(texture_program->OBJECT_TO_CLIP_mat4, 1, GL_FALSE, glm::value_ptr(glm::mat4(1.0f)));
+                glBindTexture(GL_TEXTURE_2D, img_tex);
+                glDisable(GL_DEPTH_TEST);
+                glEnable(GL_BLEND);
+                glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+                glBindVertexArray(img_vao);
+                glDrawArrays(GL_TRIANGLE_STRIP, 0, (GLsizei)img_attribs.size());
+                glDisable(GL_BLEND);
+                glBindTexture(GL_TEXTURE_2D, 0);
+                glUseProgram(0);
+                // GL_ERRORS();
+            }
+        }
+
+};
+
 
 class HpBar{
 	public:
@@ -69,11 +191,7 @@ class HpBar{
 	
 
 
-struct Vert {
-		Vert(glm::vec3 const &position_, glm::vec2 const &tex_coord_) : position(position_), tex_coord(tex_coord_) { }
-		glm::vec3 position;
-		glm::vec2 tex_coord;
-	};
+
 
 
 struct PlayMode : Mode {

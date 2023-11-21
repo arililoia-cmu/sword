@@ -404,6 +404,10 @@ PlayMode::PlayMode() : scene(*phonebank_scene) {
 	collEng.registerCollider(player.body_transform, playerCollMesh, playerCollMesh->containingRadius, playerHit, CollisionEngine::Layer::PLAYER_BODY_LAYER);
 	
 	std::cout<<"end of loading scene"<<std::endl;
+
+	std::cout << "load image popups: " << std::endl;
+
+
 }
 
 PlayMode::~PlayMode()
@@ -1503,5 +1507,6 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 	for (int e=0; e<5; e++){
 		enemyList[e].hp->change_enemy_hp = false;
 	}
+
 
 }
