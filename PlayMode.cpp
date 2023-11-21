@@ -470,7 +470,11 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 		auto playerHpBarCalculate = [this, plyr](float elapsed) -> float
 			{
 				Pawn* p = static_cast<Pawn*>(game.getCreature(plyr));
-				return (float)p->hp / (float)p->maxhp;
+				if(p)
+				{
+					return (float)p->hp / (float)p->maxhp;
+				}
+				return 0.0f;
 			};
 		auto* playerHpBar = new Gui::Bar(playerHpBarCalculate, *hp_bar_tex);
 		playerHpBar->screenPos = glm::vec3(0.0f, 0.8f, 0.0f);
@@ -483,7 +487,11 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 		auto playerStamBarCalculate = [this, plyr](float elapsed) -> float
 			{
 				Pawn* p = static_cast<Pawn*>(game.getCreature(plyr));
-				return (float)p->stamina / (float)p->maxstamina;
+				if(p)
+				{
+					return (float)p->stamina / (float)p->maxstamina;
+				}
+				return 0.0f;
 			};
 		auto* playerStamBar = new Gui::Bar(playerStamBarCalculate, *hp_bar_tex);
 		playerStamBar->screenPos = glm::vec3(0.0f, 0.6f, 0.0f);
@@ -499,7 +507,11 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 			auto enemyHpBarCalculate = [this, enemyId](float elapsed) -> float
 				{
 					Pawn* p = static_cast<Pawn*>(game.getCreature(enemyId));
-					return (float)p->hp / (float)p->maxhp;
+					if(p)
+					{
+						return (float)p->hp / (float)p->maxhp;
+					}
+					return 0.0f;
 				};
 
 			auto* enemyHpBar = new Gui::Bar(enemyHpBarCalculate, *heart_tex);
@@ -790,7 +802,6 @@ void PlayMode::processPawnControl(Pawn& pawn, float elapsed)
 
 			if(stance==2){
 				pawn.gameplay_tags="";//clear gameplay tag for AI
-			//	std::cout<<"ddddddddddddddddddddddddddddddddddddd"<<std::endl;
 			}
 			const float dur = 0.4f;
 			const float delay = 0.4f;
