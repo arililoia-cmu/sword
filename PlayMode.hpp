@@ -8,6 +8,7 @@
 #include "GUI.hpp"
 #include "Collisions.hpp"
 #include "Sound.hpp"
+#include "Slots.hpp"
 #include <glm/glm.hpp>
 #include <vector>
 #include <deque>
