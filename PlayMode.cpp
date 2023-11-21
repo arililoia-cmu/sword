@@ -473,6 +473,7 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 	auto* playerHpBar = new Gui::Bar(playerHpBarCalculate, *hp_bar_tex);
 	playerHpBar->screenPos = glm::vec3(0.0f, 0.6f, 0.0f);
 	playerHpBar->scale = glm::vec2(0.9f, 0.3f);
+	playerHpBar->alpha = 0.5f;
 	gui.addElement(playerHpBar);
 
 	for(size_t i = 0; i < enemiesId.size(); i++)
@@ -486,6 +487,7 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 
 		auto* enemyHpBar = new Gui::Bar(enemyHpBarCalculate, *heart_tex);
 		enemyHpBar->scale = glm::vec2(0.08f, 0.08f);
+		enemyHpBar->alpha = 0.5f;
 		
 		enemyHpBars[i] = gui.addElement(enemyHpBar);
 	}
@@ -1143,19 +1145,12 @@ void PlayMode::update(float elapsed)
 
 	// Updates the systems
 	collEng.update(elapsed);
-	
-	// Updates the creatures individual update functions
 	game.update(elapsed);
-
 	gui.update(elapsed);
 }
 
-
-
 void PlayMode::draw(glm::uvec2 const &drawable_size)
 {
-	//update camera aspect ratio for drawable:
-	//std::cout << "enemy.hpbar.current_hp: " << enemy.hp->current_hp << std::endl;
 	player->camera->aspect = float(drawable_size.x) / float(drawable_size.y);
 
 	//set up light type and position for lit_color_texture_program:
@@ -1167,7 +1162,6 @@ void PlayMode::draw(glm::uvec2 const &drawable_size)
 	// glUseProgram(0);
 
 	glClearColor(140.0f / 256.0f, 190.0f / 256.0f, 250.0f / 256.0f, 1.0f);
-	// glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
 	glClearDepth(1.0f); //1.0 is actually the default value to clear the depth buffer to, but FYI you can change it.
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -1177,13 +1171,13 @@ void PlayMode::draw(glm::uvec2 const &drawable_size)
 	glm::mat4 world_to_clip; // Just want to reuse this lol
 	scene.draw(*player->camera, world_to_clip);
 
+	// Positioning enemy HP bars (yes I know we can do this much more efficiently on the GPU)
 	for(size_t i = 0; i < enemyHpBars.size(); i++)
 	{
 		Gui::Element* elem = gui.getElement(enemyHpBars[i]);
 		if(elem)
 		{
 			Gui::Bar* bar = static_cast<Gui::Bar*>(elem);
-
 			glm::vec4 clipPos = world_to_clip * glm::mat4(enemies[i]->body_transform->make_local_to_world()) * glm::vec4(0.0f, 0.0f, 2.0f, 1.0f);
 
 			// Cursed ass cpu clipping LMAO

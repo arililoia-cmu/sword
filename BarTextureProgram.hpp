@@ -20,6 +20,7 @@ struct BarTextureProgram {
 
 	//Uniform (per-invocation variable) locations:
 	GLuint PERCENT_float = -1U;
+	GLuint ALPHA_float = -1U;
 	GLuint CLIPPOS_vec4 = -1U;
 	GLuint SCALE_vec2 = -1U;
 

@@ -33,6 +33,7 @@ BarTextureProgram::BarTextureProgram() {
 		"#version 330\n"
 		"uniform sampler2D TEX;\n"
 		"uniform float PERCENT; \n"
+		"uniform float ALPHA; \n"
 		"in vec2 texCoord;\n"
 		"in float val;\n"
 		"out vec4 fragColor;\n"
@@ -42,16 +43,16 @@ BarTextureProgram::BarTextureProgram() {
 		"   {\n"
 		"      if(val <= PERCENT)\n"
 		"      {\n"
-		"         fragColor = vec4(1.0 * (1.0 - PERCENT), 1.0 * PERCENT, 0.0, co.a);"
+		"         fragColor = vec4(1.0 * (1.0 - PERCENT), 1.0 * PERCENT, 0.0, co.a * ALPHA);"
 		"      }\n"
 		"      else\n"
 		"      {\n"
-		"	      fragColor = co; \n"
+		"	      fragColor = vec4(co.rgb, co.a * ALPHA); \n"
 		"      }\n"
 		"   }\n"
 		"   else\n"
 		"   {\n"
-		"	   fragColor = co;\n"
+		"	      fragColor = vec4(co.rgb, co.a * ALPHA); \n"
 		"   }\n"
 		"}\n"
 	);
@@ -65,6 +66,7 @@ BarTextureProgram::BarTextureProgram() {
 
 	//look up the locations of uniforms:
 	PERCENT_float = glGetUniformLocation(program, "PERCENT");
+	ALPHA_float = glGetUniformLocation(program, "ALPHA");
 	CLIPPOS_vec4 = glGetUniformLocation(program, "CLIPPOS");
 	SCALE_vec2 = glGetUniformLocation(program, "SCALE");
 
