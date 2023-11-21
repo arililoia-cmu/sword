@@ -219,6 +219,24 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 	// Binding transforms
 	// TODO: this is a lot of duplicated code, set up something that does this automatically
 	// for pawns
+
+	// Create the pawns that we want for this scene
+	
+	// for(auto& transform : scene.transforms)
+	// {
+	// 	std::string& name = transform.name;
+
+	// 	// This if chain is inefficent but it probably doesn't matter since this is done once
+	// 	if(name.rfind("Player_", 0) == 0)
+	// 	{
+			
+	// 	}
+	// 	else if(name.rfind("Enemy_", 0) == 0)
+	// 	{
+			
+	// 	}
+	// }
+	
 	for(auto& transform : scene.transforms)
 	{
 		if(transform.name == "Player_Body")
@@ -297,7 +315,8 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 		enemyList[i].default_rotation = glm::angleAxis(glm::radians(180.0f), glm::vec3(0.0f, 0.0f, 1.0f)); //dictates enemy's original rotation wrt +x
 	}
 
-	for(int i=0;i<5;++i){
+	for(int i=0;i<5;++i)
+	{
 		enemyList[i].bt=new BehaviorTree();
 		enemyList[i].bt->Init();//AI Initialize
 		enemyList[i].hp = new HpBar();
@@ -430,7 +449,6 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 						return;
 					}
 				}
-
 		};
 
 
@@ -444,11 +462,6 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 				}
 			}
 		};
-
-	// auto groundHit = [](Scene::Transform* t) -> void
-	// 	{
-			
-	// 	};
 	
 	collEng.registerCollider(player.sword_transform, playerSwordCollMesh, playerSwordCollMesh->containingRadius, playerSwordHit, CollisionEngine::Layer::PLAYER_SWORD_LAYER);
 	collEng.registerCollider(player.body_transform, playerCollMesh, playerCollMesh->containingRadius, playerHit, CollisionEngine::Layer::PLAYER_BODY_LAYER);

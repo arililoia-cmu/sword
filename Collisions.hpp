@@ -31,6 +31,22 @@ struct CollideMeshes
 	std::unordered_map<std::string, CollideMesh> meshes;
 };
 
+// struct MeshCollider
+// {
+// 	MeshCollider(Scene::Transform* t, CollideMesh const* m, float br, std::function<void(Scene::Transform*)> c) : transform(t), mesh(m), broadRadius(br), callback(c) {};
+
+// 	// Finds the farthest point in the direction d
+// 	// (This obviously is only guaranteed to be useful if we're convex)
+// 	// In a convex mesh, this is always guaranteed to be a vertex of a mesh
+// 	glm::vec3 farthest(glm::vec3& d);
+
+// 	Scene::Transform* transform;
+// 	CollideMesh const* mesh;
+// 	float broadRadius;
+
+// 	std::function<void(Scene::Transform*)> callback;
+// }
+
 // MUST BE CONVEX
 struct Collider
 {

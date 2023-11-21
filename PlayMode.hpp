@@ -1,6 +1,7 @@
 #pragma once
 #include "Mode.hpp"
 
+#include "Game.hpp"
 #include "Scene.hpp"
 #include "WalkMesh.hpp"
 // #include "BehaviorTree.hpp"
@@ -66,7 +67,6 @@ public:
 		return health_color;
 	}
 };
-	
 
 
 struct Vert
@@ -76,19 +76,20 @@ struct Vert
 	glm::vec2 tex_coord;
 };
 
-
 struct PlayMode : Mode
 {
 	PlayMode();
 	virtual ~PlayMode();
 
-	//functions called by main loop:
+	// Input, update, render
 	virtual bool handle_event(SDL_Event const &, glm::uvec2 const &window_size) override;
 	virtual void update(float elapsed) override;
 	virtual void draw(glm::uvec2 const &drawable_size) override;
 
 	virtual glm::vec2 object_to_window_coordinate(Scene::Transform *object, Scene::Camera *camera, glm::uvec2 const &drawable_size);
 
+	Game game;
+	
 	//----- game state -----	
 	//input tracking:
 	struct Button
@@ -151,7 +152,6 @@ struct PlayMode : Mode
 		uint8_t attack = 0;
 		uint8_t parry = 0;
 		uint8_t dodge = 0;
-		
 
 		uint8_t stance = 0; // state variable, 0 is idle, 1 is swing forward, 2 is swing backward (bounce), 3 is swing backward (normal), 
 		// 4 is down parry, 5 is up parry, 6 is dodge
@@ -182,7 +182,6 @@ struct PlayMode : Mode
 		
 		// Hp_Bar hp_bar;
 		// MyStruct myInstance(int 42);
-
 	};
 
 	void walk_pawn(PlayMode::Pawn &pawn, glm::vec3 movement);
@@ -235,8 +234,6 @@ struct PlayMode : Mode
 
 	int hp_bar_empty_x = -1;
 	int hp_bar_full_x = 0;
-	
-	
 
 	glm::u8vec4 empty_color = glm::u8vec4(0x00f, 0x00f, 0x00f, 0xff*hp_bar_transparency);
 
