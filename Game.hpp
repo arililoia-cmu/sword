@@ -17,14 +17,13 @@
 #include <exception>
 #include <iostream>
 
-class BehaviorTree;
-
 struct Game
 {
 	Game();
+	~Game();
 
 	// This is the main feature of game, it manages creatures that register with systems
-	class Creature
+	struct Creature
 	{
 		virtual ~Creature() = 0;
 	};
@@ -34,7 +33,9 @@ struct Game
 	std::array<std::tuple<Creature*, creature_gen_t>, MAX_CREATURE_COUNT> creatures; // Fixed amount, we have the memory, who cares
 	
 	// This of cours breaks if we spawn gazillions of entities, but I don't really care
-	struct CreatureID // Wraps the creature index so it's easier to identify creatures (can't get lucky and accidentally delete wrong one)
+	// The nice thing here is that we can pass CreatureID around and know it refers to a single thing -- if the
+	// creature it refers to is destroyed, it still refers to that creature (but obviously that creature is now inaccessible)
+	struct CreatureID 
 	{
 		CreatureID(size_t i, creature_gen_t g) : idx(i), gen(g) {};
 		

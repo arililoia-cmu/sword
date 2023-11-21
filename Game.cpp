@@ -9,6 +9,19 @@ Game::Game()
 	for(size_t i = 0; i < Game::MAX_CREATURE_COUNT; i++)
 	{
 		openCreatureSlots.emplace(i, 0);
+		std::get<0>(creatures[i]) = nullptr;
+	}
+}
+
+Game::~Game()
+{
+	for(size_t i = 0; i < Game::MAX_CREATURE_COUNT; i++)
+	{
+		auto c = creatures[i];
+		if(std::get<0>(c) != nullptr)
+		{
+			delete std::get<0>(c);
+		}
 	}
 }
 
@@ -33,10 +46,11 @@ bool Game::destroyCreature(Game::CreatureID id)
 {
 	try
 	{
-		if(std::get<1>(creatures.at(id.idx)) == id.gen)
+		auto c = creatures.at(id.idx);
+		if(std::get<1>(c)== id.gen)
 		{
-			// TODO creature destruction cleanup code!
-			DEBUGOUT << "TODO creature destruction cleanup code!" << std::endl;
+			delete std::get<0>(c);
+			std::get<0>(c) = nullptr;
 
 			openCreatureSlots.emplace(id.idx, id.gen + 1);
 			return true;

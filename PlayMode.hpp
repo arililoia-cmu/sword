@@ -87,8 +87,6 @@ struct PlayMode : Mode
 	virtual void draw(glm::uvec2 const &drawable_size) override;
 
 	virtual glm::vec2 object_to_window_coordinate(Scene::Transform *object, Scene::Camera *camera, glm::uvec2 const &drawable_size);
-
-	Game game;
 	
 	//----- game state -----	
 	//input tracking:
@@ -98,6 +96,8 @@ struct PlayMode : Mode
 		uint8_t pressed = 0;
 	} left, right, down, up, secondAction, mainAction, dodge;
 
+	Game game;
+	
 	//local copy of the game scene (so code can change it during gameplay):
 	Scene scene;
 
@@ -161,21 +161,24 @@ struct PlayMode : Mode
 	}; 
 
 	//player info:
-	struct Pawn
+	struct Pawn : public Game::Creature
 	{
+		Pawn();
+		~Pawn();
+		
 		WalkPoint at;
 		//transform is at pawn's feet 
-		Scene::Transform *transform = nullptr;
+		Scene::Transform* transform = nullptr;
 		//body_transform is at pawn's body
-		Scene::Transform *body_transform = nullptr;
+		Scene::Transform* body_transform = nullptr;
 
 		bool is_player = false;
 		glm::quat default_rotation = glm::angleAxis(0.0f, glm::vec3(0.0f, 0.0f, 1.0f)); // Describes ``front'' direction with respect to +x
 		std::string gameplay_tags="";
 		// TODO
-		Scene::Transform *arm_transform = nullptr;
-		Scene::Transform *wrist_transform = nullptr;
-		Scene::Transform *sword_transform = nullptr;
+		Scene::Transform* arm_transform = nullptr;
+		Scene::Transform* wrist_transform = nullptr;
+		Scene::Transform* sword_transform = nullptr;
 
 		Control pawn_control;
 		HpBar* hp;
@@ -189,21 +192,18 @@ struct PlayMode : Mode
 	void processPawnControl(PlayMode::Pawn& pawn, float elapsed);
 
 
-	struct Enemy : Pawn {
+	struct Enemy : Pawn
+	{
 		BehaviorTree* bt;
-		// HpBar* hp;
-	} enemy;
-	Enemy enemyList[5];
-	struct Player : Pawn {
-		
+	};
+	
+	struct Player : Pawn
+	{	
 		//camera_transform joins body_transform and camera->transform
 		Scene::Transform *camera_transform = nullptr;
 		//camera is attatched to camera_transform and will be pitched by mouse up/down motion:
 		Scene::Camera *camera = nullptr;
-
-	} player;
-
-	Scene::Transform* groundTransform;
+	};
 	
 	CollisionEngine collEng;
 
