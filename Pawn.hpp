@@ -77,6 +77,9 @@ struct Pawn : public Game::Creature
 
 	int hp;
 	int maxhp;
+
+	int stamina;
+	int maxstamina;
 };
 
 struct Enemy : public Pawn

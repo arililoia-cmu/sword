@@ -297,11 +297,10 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 	player->body_transform->parent = player->transform;
 	player->transform->position = walkmesh->to_world_point(player->at);
 	player->is_player = true;
-	// player.hp = new HpBar();
-	// player.hp->Init(1000);
-
 	player->hp = 100;
 	player->maxhp = 100;
+	player->stamina = 100;
+	player->maxstamina = 100;
 
 	scene.transforms.emplace_back();
 	for(int i=0;i<5;++i){
@@ -471,10 +470,25 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 			return (float)p->hp / (float)p->maxhp;
 		};
 	auto* playerHpBar = new Gui::Bar(playerHpBarCalculate, *hp_bar_tex);
-	playerHpBar->screenPos = glm::vec3(0.0f, 0.6f, 0.0f);
-	playerHpBar->scale = glm::vec2(0.9f, 0.3f);
+	playerHpBar->screenPos = glm::vec3(0.0f, 0.8f, 0.0f);
+	playerHpBar->scale = glm::vec2(0.9f, 0.1f);
 	playerHpBar->alpha = 0.5f;
+	playerHpBar->fullColor = glm::vec3(0.0f, 1.0f, 0.0f);
+	playerHpBar->emptyColor = glm::vec3(1.0f, 0.0f, 0.0f);
 	gui.addElement(playerHpBar);
+
+	auto playerStamBarCalculate = [this, plyr](float elapsed) -> float
+		{
+			Pawn* p = static_cast<Pawn*>(game.getCreature(plyr));
+			return (float)p->stamina / (float)p->maxstamina;
+		};
+	auto* playerStamBar = new Gui::Bar(playerStamBarCalculate, *hp_bar_tex);
+	playerStamBar->screenPos = glm::vec3(0.0f, 0.6f, 0.0f);
+	playerStamBar->scale = glm::vec2(0.9f, 0.1f);
+	playerStamBar->alpha = 0.5f;
+	playerStamBar->fullColor = glm::vec3(1.0f, 0.0f, 1.0f);
+	playerStamBar->emptyColor = glm::vec3(0.0f, 1.0f, 1.0f);
+	gui.addElement(playerStamBar);
 
 	for(size_t i = 0; i < enemiesId.size(); i++)
 	{
@@ -488,6 +502,8 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 		auto* enemyHpBar = new Gui::Bar(enemyHpBarCalculate, *heart_tex);
 		enemyHpBar->scale = glm::vec2(0.08f, 0.08f);
 		enemyHpBar->alpha = 0.5f;
+		enemyHpBar->fullColor = glm::vec3(0.0f, 1.0f, 0.0f);
+		enemyHpBar->emptyColor = glm::vec3(1.0f, 0.0f, 0.0f);
 		
 		enemyHpBars[i] = gui.addElement(enemyHpBar);
 	}

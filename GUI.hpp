@@ -87,6 +87,8 @@ struct Gui
 				glUniform1f(bar_texture_program->ALPHA_float, alpha);
 				glUniform4fv(bar_texture_program->CLIPPOS_vec4, 1, glm::value_ptr(glm::vec4(screenPos, 0.0f)));
 				glUniform2fv(bar_texture_program->SCALE_vec2, 1, glm::value_ptr(scale));
+				glUniform3fv(bar_texture_program->FULLCO_vec3, 1, glm::value_ptr(fullColor));
+				glUniform3fv(bar_texture_program->EMPTYCO_vec3, 1, glm::value_ptr(emptyColor));
 				glBindTexture(GL_TEXTURE_2D, tex);
 				
 				glDisable(GL_DEPTH_TEST);
@@ -114,6 +116,9 @@ struct Gui
 		GLuint vao; // It makes these
 		GLuint vbo;
 
+		glm::vec3 fullColor = glm::vec3(0.0f, 1.0f, 0.0f);
+		glm::vec3 emptyColor = glm::vec3(1.0f, 0.0f, 0.0f);
+		
 		glm::vec3 screenPos = glm::vec3(0.0f, 0.0f, 0.0f);
 		glm::vec2 scale = glm::vec2(1.0f, 1.0f);
 		float alpha = 1.0f;
