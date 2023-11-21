@@ -6,7 +6,6 @@
 #include "WalkMesh.hpp"
 #include "Pawn.hpp"
 #include "GUI.hpp"
-// #include "BehaviorTree.hpp"
 #include "Collisions.hpp"
 #include "Sound.hpp"
 #include <glm/glm.hpp>
@@ -38,7 +37,6 @@ struct PlayMode : Mode
 	std::array<Gui::GuiID, 5> enemyHpBars;
 	
 	Game game;
-	
 	Scene scene;
 	CollisionEngine collEng;
 	Gui gui;

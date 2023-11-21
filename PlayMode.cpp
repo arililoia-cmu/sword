@@ -351,20 +351,21 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 	player->wrist_transform->parent = player->arm_transform;
 	scene.transforms.emplace_back();
 
-	// Because some objects reuse the same colliders
-	CollideMesh const* playerSwordCollMesh = nullptr;
-	CollideMesh const* enemySwordCollMesh = nullptr;
-	CollideMesh const* enemyCollMesh = nullptr;
-	CollideMesh const* playerCollMesh = nullptr;
+	// SETTING UP COLLIDERS
+	{	// Because some objects reuse the same colliders
+		CollideMesh const* playerSwordCollMesh = nullptr;
+		CollideMesh const* enemySwordCollMesh = nullptr;
+		CollideMesh const* enemyCollMesh = nullptr;
+		CollideMesh const* playerCollMesh = nullptr;
 
-	playerSwordCollMesh = &G_COLLIDEMESHES->lookup("PlayerSwordCollMesh");
-	enemySwordCollMesh = &G_COLLIDEMESHES->lookup("EnemySwordCollMesh");
-	enemyCollMesh = &G_COLLIDEMESHES->lookup("EnemyCollMesh");
-	playerCollMesh = &G_COLLIDEMESHES->lookup("PlayerCollMesh");
+		playerSwordCollMesh = &G_COLLIDEMESHES->lookup("PlayerSwordCollMesh");
+		enemySwordCollMesh = &G_COLLIDEMESHES->lookup("EnemySwordCollMesh");
+		enemyCollMesh = &G_COLLIDEMESHES->lookup("EnemyCollMesh");
+		playerCollMesh = &G_COLLIDEMESHES->lookup("PlayerCollMesh");
 
-	// Here we register the pawns with the collision system
-	for(int i=0;i<5;++i)
-	{
+		// Here we register the pawns with the collision system
+		for(int i=0;i<5;++i)
+		{
 			scene.transforms.emplace_back();
 			enemies[i]->arm_transform = &scene.transforms.back();
 			enemies[i]->arm_transform->parent = enemies[i]->body_transform;
@@ -410,105 +411,108 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 						//enemies[i]->hp->change_enemy_hp = true;
 						std::cout << "ENEMY " << i << " HIT WITH SWORD" << std::endl;
 						// exit(0);
-
 					}
 				};
 
 			collEng.registerCollider(enemiesId[i], enemies[i]->sword_transform, enemySwordCollMesh, enemySwordCollMesh->containingRadius, enemyISwordHit, CollisionEngine::Layer::ENEMY_SWORD_LAYER);
 			collEng.registerCollider(enemiesId[i], enemies[i]->body_transform, enemyCollMesh, enemyCollMesh->containingRadius, enemyIHit, CollisionEngine::Layer::ENEMY_BODY_LAYER);
-	}
+		}
 	
-	auto playerSwordHit = [this](Game::CreatureID c, Scene::Transform* t) -> void
-		{
-			for(int i = 0; i < 5; i++)
+		auto playerSwordHit = [this](Game::CreatureID c, Scene::Transform* t) -> void
 			{
-				if(t == enemies[i]->sword_transform)
+				for(int i = 0; i < 5; i++)
 				{
-					if(player->pawn_control.stance == 1)
+					if(t == enemies[i]->sword_transform)
 					{
-						player->pawn_control.stance = 2;
-						player->pawn_control.swingHit = player->pawn_control.swingTime;
-					}
-					else if(player->pawn_control.stance == 9)
-					{
-						player->pawn_control.stance = 10;
-						player->pawn_control.swingHit = player->pawn_control.swingTime;
-					}
+						if(player->pawn_control.stance == 1)
+						{
+							player->pawn_control.stance = 2;
+							player->pawn_control.swingHit = player->pawn_control.swingTime;
+						}
+						else if(player->pawn_control.stance == 9)
+						{
+							player->pawn_control.stance = 10;
+							player->pawn_control.swingHit = player->pawn_control.swingTime;
+						}
 						
-					// sound stuff starts here:
-					clock_t current_time = clock();
-					float elapsed = (float)(current_time - previous_player_sword_clang_time);
+						// sound stuff starts here:
+						clock_t current_time = clock();
+						float elapsed = (float)(current_time - previous_player_sword_clang_time);
 
-					if ((elapsed / CLOCKS_PER_SEC) > min_player_sword_clang_interval){
-						w_conv1_sound = Sound::play(*w_conv1, 1.0f, 0.0f);
-						previous_player_sword_clang_time = clock();
+						if ((elapsed / CLOCKS_PER_SEC) > min_player_sword_clang_interval){
+							w_conv1_sound = Sound::play(*w_conv1, 1.0f, 0.0f);
+							previous_player_sword_clang_time = clock();
+						}
+						// sound stuff ends here
+
+						return;
 					}
-					// sound stuff ends here
-
-					return;
 				}
-			}
-		};
+			};
 
 
-	auto playerHit = [this](Game::CreatureID c, Scene::Transform* t) -> void
-		{		
-			for(int i = 0; i < 5; i++){
-				if(t == enemies[i]->sword_transform){
-					player->hp -= 1;
-					//change_player_hp = true;
+		auto playerHit = [this](Game::CreatureID c, Scene::Transform* t) -> void
+			{		
+				for(int i = 0; i < 5; i++){
+					if(t == enemies[i]->sword_transform){
+						player->hp -= 1;
+						//change_player_hp = true;
+					}
 				}
-			}
-		};
+			};
 	
-	collEng.registerCollider(plyr, player->sword_transform, playerSwordCollMesh, playerSwordCollMesh->containingRadius, playerSwordHit, CollisionEngine::Layer::PLAYER_SWORD_LAYER);
-	collEng.registerCollider(plyr, player->body_transform, playerCollMesh, playerCollMesh->containingRadius, playerHit, CollisionEngine::Layer::PLAYER_BODY_LAYER);
-
-	auto playerHpBarCalculate = [this, plyr](float elapsed) -> float
-		{
-			Pawn* p = static_cast<Pawn*>(game.getCreature(plyr));
-			return (float)p->hp / (float)p->maxhp;
-		};
-	auto* playerHpBar = new Gui::Bar(playerHpBarCalculate, *hp_bar_tex);
-	playerHpBar->screenPos = glm::vec3(0.0f, 0.8f, 0.0f);
-	playerHpBar->scale = glm::vec2(0.9f, 0.1f);
-	playerHpBar->alpha = 0.5f;
-	playerHpBar->fullColor = glm::vec3(0.0f, 1.0f, 0.0f);
-	playerHpBar->emptyColor = glm::vec3(1.0f, 0.0f, 0.0f);
-	gui.addElement(playerHpBar);
-
-	auto playerStamBarCalculate = [this, plyr](float elapsed) -> float
-		{
-			Pawn* p = static_cast<Pawn*>(game.getCreature(plyr));
-			return (float)p->stamina / (float)p->maxstamina;
-		};
-	auto* playerStamBar = new Gui::Bar(playerStamBarCalculate, *hp_bar_tex);
-	playerStamBar->screenPos = glm::vec3(0.0f, 0.6f, 0.0f);
-	playerStamBar->scale = glm::vec2(0.9f, 0.1f);
-	playerStamBar->alpha = 0.5f;
-	playerStamBar->fullColor = glm::vec3(1.0f, 0.0f, 1.0f);
-	playerStamBar->emptyColor = glm::vec3(0.0f, 1.0f, 1.0f);
-	gui.addElement(playerStamBar);
-
-	for(size_t i = 0; i < enemiesId.size(); i++)
-	{
-		auto enemyId = enemiesId[i];
-		auto enemyHpBarCalculate = [this, enemyId](float elapsed) -> float
-		{
-			Pawn* p = static_cast<Pawn*>(game.getCreature(enemyId));
-			return (float)p->hp / (float)p->maxhp;
-		};
-
-		auto* enemyHpBar = new Gui::Bar(enemyHpBarCalculate, *heart_tex);
-		enemyHpBar->scale = glm::vec2(0.08f, 0.08f);
-		enemyHpBar->alpha = 0.5f;
-		enemyHpBar->fullColor = glm::vec3(0.0f, 1.0f, 0.0f);
-		enemyHpBar->emptyColor = glm::vec3(1.0f, 0.0f, 0.0f);
-		
-		enemyHpBars[i] = gui.addElement(enemyHpBar);
+		collEng.registerCollider(plyr, player->sword_transform, playerSwordCollMesh, playerSwordCollMesh->containingRadius, playerSwordHit, CollisionEngine::Layer::PLAYER_SWORD_LAYER);
+		collEng.registerCollider(plyr, player->body_transform, playerCollMesh, playerCollMesh->containingRadius, playerHit, CollisionEngine::Layer::PLAYER_BODY_LAYER);
 	}
 
-	std::cout<<"end of loading scene"<<std::endl;
+	// SETTING UP UI BARS
+	{
+		auto playerHpBarCalculate = [this, plyr](float elapsed) -> float
+			{
+				Pawn* p = static_cast<Pawn*>(game.getCreature(plyr));
+				return (float)p->hp / (float)p->maxhp;
+			};
+		auto* playerHpBar = new Gui::Bar(playerHpBarCalculate, *hp_bar_tex);
+		playerHpBar->screenPos = glm::vec3(0.0f, 0.8f, 0.0f);
+		playerHpBar->scale = glm::vec2(0.9f, 0.1f);
+		playerHpBar->alpha = 0.5f;
+		playerHpBar->fullColor = glm::vec3(0.0f, 1.0f, 0.0f);
+		playerHpBar->emptyColor = glm::vec3(1.0f, 0.0f, 0.0f);
+		gui.addElement(playerHpBar);
+
+		auto playerStamBarCalculate = [this, plyr](float elapsed) -> float
+			{
+				Pawn* p = static_cast<Pawn*>(game.getCreature(plyr));
+				return (float)p->stamina / (float)p->maxstamina;
+			};
+		auto* playerStamBar = new Gui::Bar(playerStamBarCalculate, *hp_bar_tex);
+		playerStamBar->screenPos = glm::vec3(0.0f, 0.6f, 0.0f);
+		playerStamBar->scale = glm::vec2(0.9f, 0.1f);
+		playerStamBar->alpha = 0.5f;
+		playerStamBar->fullColor = glm::vec3(1.0f, 0.0f, 1.0f);
+		playerStamBar->emptyColor = glm::vec3(0.0f, 1.0f, 1.0f);
+		gui.addElement(playerStamBar);
+
+		for(size_t i = 0; i < enemiesId.size(); i++)
+		{
+			auto enemyId = enemiesId[i];
+			auto enemyHpBarCalculate = [this, enemyId](float elapsed) -> float
+				{
+					Pawn* p = static_cast<Pawn*>(game.getCreature(enemyId));
+					return (float)p->hp / (float)p->maxhp;
+				};
+
+			auto* enemyHpBar = new Gui::Bar(enemyHpBarCalculate, *heart_tex);
+			enemyHpBar->scale = glm::vec2(0.08f, 0.08f);
+			enemyHpBar->alpha = 0.5f;
+			enemyHpBar->fullColor = glm::vec3(0.0f, 1.0f, 0.0f);
+			enemyHpBar->emptyColor = glm::vec3(1.0f, 0.0f, 0.0f);
+		
+			enemyHpBars[i] = gui.addElement(enemyHpBar);
+		}
+	}
+
+	DEBUGOUT << "end of loading scene" << std::endl;
 }
 
 PlayMode::~PlayMode()
