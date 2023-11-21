@@ -125,6 +125,8 @@ struct Gui
 	};
 	
 	Gui() : elements() {};
+
+	~Gui() {} // Slots automatically handles deletion of the Element*
 	
 	void update(float elapsed)
 		{
