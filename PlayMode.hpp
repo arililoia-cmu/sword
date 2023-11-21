@@ -238,7 +238,6 @@ struct PlayMode : Mode {
 	int hp_bar_empty_x = -1;
 	int hp_bar_full_x = 0;
 	
-	
 
 	glm::u8vec4 empty_color = glm::u8vec4(0x00f, 0x00f, 0x00f, 0xff*hp_bar_transparency);
 
