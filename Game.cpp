@@ -85,7 +85,7 @@ bool Game::destroyCreature(Game::CreatureID id)
 	}
 	catch(std::out_of_range const& e)
 	{
-		DEBUGOUT << "Tried to destroy a creature with out of range id idx " << id.idx << std::endl;
+		DEBUGOUT << "Tried to destroy a creature with out of range id idx "<< id.idx << std::endl;
 		return false;
 	}
 }
