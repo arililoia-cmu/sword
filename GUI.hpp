@@ -20,6 +20,7 @@ struct Gui
 {	
 	struct Element
 	{
+		
 		virtual ~Element() = 0;
 		
 		virtual void update(float elapsed) = 0;
