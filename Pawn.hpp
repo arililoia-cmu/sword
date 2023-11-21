@@ -93,6 +93,7 @@ struct Player : public Pawn
 	Scene::Transform *camera_transform = nullptr;
 	//camera is attatched to camera_transform and will be pitched by mouse up/down motion:
 	Scene::Camera *camera = nullptr;
+	float player_height = 10.0f; // read during setup
 };
 
 #endif

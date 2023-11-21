@@ -240,8 +240,8 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 		{
 			player->body_transform = &transform;
 			player->at = walkmesh->nearest_walk_point(player->body_transform->position + glm::vec3(0.0f, 0.0001f, 0.0f));
-			float height = glm::length(player->body_transform->position - walkmesh->to_world_point(player->at));
-			player->body_transform->position = glm::vec3(0.0f, 0.0f, height);
+			player->player_height = glm::length(player->body_transform->position - walkmesh->to_world_point(player->at));
+			player->body_transform->position = glm::vec3(0.0f, 0.0f, player->player_height);
 		}
 		else if(transform.name == "Player_Sword")
 		{
@@ -338,7 +338,7 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 	player->camera_transform->rotation = glm::angleAxis(glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)); //dictates camera's original rotation wrt +y (not +x)
 
 	player->camera->transform->parent = player->camera_transform;
-	player->camera->transform->position = glm::vec3(0.0f, -10.0f, 0.0f);
+	player->camera->transform->position = glm::vec3(0.0f, -6.0f, 0.0f);
 
 	//rotate camera facing direction relative to player direction
 	player->camera->transform->rotation = glm::angleAxis(glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
@@ -636,7 +636,11 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 
 			glm::mat4x3 frame = player->camera->transform->make_local_to_parent();
 			glm::vec3 forward = -frame[2];
-			player->camera->transform->position = -10.0f * forward; // -glm::length(player.camera->transform->position) * forward; // Camera distance behind player
+			float camera_length = 6.0f;
+			if (pitch > 0.5f * 3.1415926f) {
+				camera_length = std::min(camera_length, 0.9f * (player->player_height + player->camera_transform->position.z) / sin(pitch - 0.5f * 3.1415926f));
+			}
+			player->camera->transform->position = - camera_length * forward; // -glm::length(player.camera->transform->position) * forward; // Camera distance behind player
 
 			return true;
 		}
