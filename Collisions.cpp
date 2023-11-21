@@ -244,9 +244,9 @@ glm::vec3 Collider::farthest(glm::vec3& d)
 
 CollisionEngine::CollisionEngine() : nextID(0), colliders(), fromID() {}
 
-CollisionEngine::ID CollisionEngine::registerCollider(Scene::Transform* t, CollideMesh const* m, float br, std::function<void(Scene::Transform*)> c, CollisionEngine::Layer l)
+CollisionEngine::ID CollisionEngine::registerCollider(Game::CreatureID cid, Scene::Transform* t, CollideMesh const* m, float br, std::function<void(Game::CreatureID, Scene::Transform*)> c, CollisionEngine::Layer l)
 {
-	colliders[l].emplace_back(t, m, br, c);
+	colliders[l].emplace_back(cid, t, m, br, c);
 
 	fromID.emplace(nextID, std::make_pair(l, colliders[l].size()));
 	
@@ -306,7 +306,7 @@ void CollisionEngine::update(float elapsed)
 
 	for(auto& c : collisionOccurences)
 	{
-		colliders[c.al][c.a].callback(colliders[c.bl][c.b].transform);
-		colliders[c.bl][c.b].callback(colliders[c.al][c.a].transform);
+		colliders[c.al][c.a].callback(colliders[c.bl][c.b].cId, colliders[c.bl][c.b].transform);
+		colliders[c.bl][c.b].callback(colliders[c.al][c.a].cId, colliders[c.al][c.a].transform);
 	}
 }

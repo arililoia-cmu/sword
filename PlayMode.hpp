@@ -4,6 +4,8 @@
 #include "Game.hpp"
 #include "Scene.hpp"
 #include "WalkMesh.hpp"
+#include "Pawn.hpp"
+#include "GUI.hpp"
 // #include "BehaviorTree.hpp"
 #include "Collisions.hpp"
 #include "Sound.hpp"
@@ -12,8 +14,6 @@
 #include <deque>
 #include <ctime>
 #include <iostream>
-
-class BehaviorTree;//Forward Declaration
 
 class HpBar
 {
@@ -96,116 +96,17 @@ struct PlayMode : Mode
 		uint8_t pressed = 0;
 	} left, right, down, up, secondAction, mainAction, dodge;
 
+	Player* player;
+	std::array<Enemy*, 5> enemies;
+	
 	Game game;
 	
-	//local copy of the game scene (so code can change it during gameplay):
 	Scene scene;
-
-	struct Control
-	{
-		// enum class STANCE
-		// {
-		// 	IDLE = 0,
-		// 	WALK,
-		// 	ATTACK_A_FORWARD,
-		// 	ATTACK_A_BOUNCE,
-		// 	ATTACK_A_BACKWARD,
-		// 	PARRY_FORWARD,
-		// 	PARRY_BACKWARD,
-		// 	DODGE
-		// };
-
-		//STANCE stance;
-
-		struct DodgeStanceInfo
-		{
-			glm::vec3 dir;
-			int attackAfter;
-		};
-		struct AttackStanceInfo
-		{
-			glm::vec3 dir;
-			int attackAfter;
-		};
-		struct LungeStanceInfo
-		{
-			glm::vec3 dir;
-			int attackAfter;
-		};
-		struct SweepStanceInfo
-		{
-			glm::vec3 dir;
-			int attackAfter;
-		};
-		
-		union StanceInfo
-		{
-			DodgeStanceInfo dodge;
-			AttackStanceInfo attack;
-			SweepStanceInfo sweep;
-			LungeStanceInfo lunge;
-		} stanceInfo;
-
-		glm::vec3 vel = glm::vec3(0.0f);
-		glm::vec3 move = glm::vec3(0.0f); // displacement in world (should be scaled by elapsed)
-		float rotate = 0.0f; // angle in world, normal direction, ignore for player 
-		uint8_t attack = 0;
-		uint8_t parry = 0;
-		uint8_t dodge = 0;
-
-		uint8_t stance = 0; // state variable, 0 is idle, 1 is swing forward, 2 is swing backward (bounce), 3 is swing backward (normal), 
-		// 4 is down parry, 5 is up parry, 6 is dodge
-
-		float swingHit = 0.0f; // logged on block
-		float swingTime = 0.0f;
-	}; 
-
-	//player info:
-	struct Pawn : public Game::Creature
-	{
-		Pawn();
-		~Pawn();
-		
-		WalkPoint at;
-		//transform is at pawn's feet 
-		Scene::Transform* transform = nullptr;
-		//body_transform is at pawn's body
-		Scene::Transform* body_transform = nullptr;
-
-		bool is_player = false;
-		glm::quat default_rotation = glm::angleAxis(0.0f, glm::vec3(0.0f, 0.0f, 1.0f)); // Describes ``front'' direction with respect to +x
-		std::string gameplay_tags="";
-		// TODO
-		Scene::Transform* arm_transform = nullptr;
-		Scene::Transform* wrist_transform = nullptr;
-		Scene::Transform* sword_transform = nullptr;
-
-		Control pawn_control;
-		HpBar* hp;
-		
-		// Hp_Bar hp_bar;
-		// MyStruct myInstance(int 42);
-	};
-
-	void walk_pawn(PlayMode::Pawn &pawn, glm::vec3 movement);
-
-	void processPawnControl(PlayMode::Pawn& pawn, float elapsed);
-
-
-	struct Enemy : Pawn
-	{
-		BehaviorTree* bt;
-	};
-	
-	struct Player : Pawn
-	{	
-		//camera_transform joins body_transform and camera->transform
-		Scene::Transform *camera_transform = nullptr;
-		//camera is attatched to camera_transform and will be pitched by mouse up/down motion:
-		Scene::Camera *camera = nullptr;
-	};
-	
 	CollisionEngine collEng;
+	Gui gui;
+
+	void walk_pawn(Pawn& pawn, glm::vec3 movement);
+	void processPawnControl(Pawn& pawn, float elapsed);
 
 	// sound stuff starts here:
 	// set previous clang time to something ridiculous
@@ -237,8 +138,5 @@ struct PlayMode : Mode
 
 	glm::u8vec4 empty_color = glm::u8vec4(0x00f, 0x00f, 0x00f, 0xff*hp_bar_transparency);
 
-
 	std::vector<int> hpbar_fillin_indices;
-	
-
 };

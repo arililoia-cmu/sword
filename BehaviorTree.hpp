@@ -1,11 +1,17 @@
 #pragma once
-#include<iostream>
-#include<list>
-#include"PlayMode.hpp"
-#include<ctime>
+
+#include "Pawn.hpp"
+#include "PrintUtil.hpp"
+
+#include <iostream>
+#include <list>
+#include <ctime>
+
 #include <glm/glm.hpp>
+
 //Insruction: https://cplusplus.com/forum/general/141582/
-class Node{
+class Node
+{
     public:
         virtual bool run()=0;
 
@@ -47,9 +53,9 @@ struct BlackBoard{
 //    PlayMode::Pawn* player;
     //glm::vec3 targetPosition;
     float distanceToPlayer;
-    PlayMode::Control control;
-    PlayMode::Pawn* player;
-    PlayMode::Pawn* enemy;
+    PawnControl control;
+    Pawn* player;
+    Pawn* enemy;
 };
 class CheckIfPlayerExist:public Node{
     private:
@@ -60,7 +66,7 @@ class CheckIfPlayerExist:public Node{
         }
         virtual bool run() override{
             if(status->player==nullptr){
-                std::cout<<"Player doesn't exist"<<std::endl;
+                DEBUGOUT << "Player doesn't exist"<<std::endl;
                 return isNegative;
             }else{
                 glm::vec3 distance=status->player->transform->position - status->enemy->transform->position;
@@ -101,7 +107,7 @@ class ActionNode:public Node{
             if(cd==0)return true;
             time_t t=time(0);
             time_t delta=t-timestamp;
-            std::cout<<delta<<std::endl;
+            DEBUGOUT<<delta<<std::endl;
             if(delta>cd){
                 return true;
             }else{
@@ -171,7 +177,7 @@ class ParryTask:public ActionNode{
         }
         virtual bool run()override{
             if(CheckTime()){
-                std::cout<<"ParryAction"<<std::endl;
+                DEBUGOUT<<"ParryAction"<<std::endl;
 
                 status->control.parry=1;
                 RegisterTime();
@@ -192,7 +198,7 @@ class AttackInterrupt:public Sequence{
 
         bool IsActivated(){
             if(status->player->gameplay_tags=="attack"){
-                std::cout<<"Interrupt Activated!"<<std::endl;
+                DEBUGOUT<<"Interrupt Activated!"<<std::endl;
                 this->run();
                 return true;
             }else{
@@ -204,7 +210,6 @@ class BehaviorTree{
     private:
         BlackBoard* status=nullptr;
         Node* root=nullptr;
-        PlayMode::Pawn *enemy=nullptr;
         AttackInterrupt* attack_ipt=nullptr;
     public:
         BehaviorTree(){
@@ -218,7 +223,7 @@ class BehaviorTree{
             attack_ipt->addChild(parryTask);
         }
         void Init(){
-            std::cout<<"AI Initialize Start"<<std::endl;
+            DEBUGOUT<<"AI Initialize Start"<<std::endl;
         	Sequence* rt = new Sequence;
             Sequence* sequence1 = new Sequence;
             Selector* selector2=new Selector;
@@ -246,7 +251,7 @@ class BehaviorTree{
             atkSequence->addChild(attack);
             SetRoot(rt);
             InitInterrupt();
-            std::cout<<"AI Initialize End"<<std::endl;
+            DEBUGOUT<<"AI Initialize End"<<std::endl;
         }
         void Start(){
 
@@ -254,10 +259,10 @@ class BehaviorTree{
         void SetRoot(Node* rt){
             root=rt;
         }
-        void SetPlayer(PlayMode::Pawn* input){
+        void SetPlayer(Pawn* input){
             status->player=input;
         }
-        void SetEnemy(PlayMode::Pawn* input){
+        void SetEnemy(Pawn* input){
             status->enemy=input;
         }
 
@@ -269,12 +274,13 @@ class BehaviorTree{
                 }
             }
             if(root!=nullptr){
-            //    std::cout<<"AI Thinking Start----------"<<std::endl;
+            //    DEBUGOUT<<"AI Thinking Start----------"<<std::endl;
                 root->run();
-            //    std::cout<<"AI Thinking End---------"<<std::endl;
+            //    DEBUGOUT<<"AI Thinking End---------"<<std::endl;
             }
         }
-        PlayMode::Control& GetControl(){
+        PawnControl& GetControl()
+		{
             return status->control;
         }
 };

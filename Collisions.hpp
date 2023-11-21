@@ -6,7 +6,9 @@
 
 #include "Mesh.hpp"
 #include "Scene.hpp"
-#include<array>
+#include "Game.hpp"
+
+#include <array>
 #include <vector>
 
 struct CollideMesh
@@ -50,18 +52,19 @@ struct CollideMeshes
 // MUST BE CONVEX
 struct Collider
 {
-	Collider(Scene::Transform* t, CollideMesh const* m, float br, std::function<void(Scene::Transform*)> c) : transform(t), mesh(m), broadRadius(br), callback(c) {};
+	Collider(Game::CreatureID cid, Scene::Transform* t, CollideMesh const* m, float br, std::function<void(Game::CreatureID, Scene::Transform*)> c) : cId(cid), transform(t), mesh(m), broadRadius(br), callback(c) {};
 	
 	// Finds the farthest point in the direction d
 	// (This obviously is only guaranteed to be useful if we're convex)
 	// In a convex mesh, this is always guaranteed to be a vertex of a mesh
 	glm::vec3 farthest(glm::vec3& d);
 
+	Game::CreatureID cId;
 	Scene::Transform* transform;
 	CollideMesh const* mesh;
 	float broadRadius;
 
-	std::function<void(Scene::Transform*)> callback;
+	std::function<void(Game::CreatureID, Scene::Transform*)> callback;
 };
 
 struct CollisionEngine
@@ -98,7 +101,7 @@ public:
 
 	// Also note that this does not forward the arguments, so it can be slower than optimal, but I'll fix
 	// it if it's a problem
-	ID registerCollider(Scene::Transform* t, CollideMesh const* m, float br, std::function<void(Scene::Transform*)> c, Layer l);
+	ID registerCollider(Game::CreatureID cid, Scene::Transform* t, CollideMesh const* m, float br, std::function<void(Game::CreatureID, Scene::Transform*)> c, Layer l);
 
 	// Deregister a collider so the engine can forget about it
 	void unregisterCollider(ID id);

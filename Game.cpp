@@ -4,6 +4,8 @@
 
 #include <stdexcept>
 
+Game::Creature::~Creature() {}
+
 Game::Game()
 {
 	for(size_t i = 0; i < Game::MAX_CREATURE_COUNT; i++)
@@ -21,6 +23,26 @@ Game::~Game()
 		if(std::get<0>(c) != nullptr)
 		{
 			delete std::get<0>(c);
+		}
+	}
+}
+
+void Game::update(float elapsed)
+{
+	size_t activeCreatures = Game::MAX_CREATURE_COUNT - openCreatureSlots.size();
+
+	size_t seenSoFar = 0;
+	for(size_t i = 0; i < Game::MAX_CREATURE_COUNT; i++)
+	{
+		auto c = creatures[i];
+		if(std::get<0>(c) == nullptr)
+		{
+			continue;
+		}
+		std::get<0>(c)->update(elapsed);
+		if(++seenSoFar == activeCreatures)
+		{
+			return;
 		}
 	}
 }
