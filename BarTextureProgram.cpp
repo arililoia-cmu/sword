@@ -6,32 +6,8 @@
 #include "gl_compile_program.hpp"
 #include "gl_errors.hpp"
 
-Scene::Drawable::Pipeline bar_texture_program_pipeline;
-
 Load< BarTextureProgram > bar_texture_program(LoadTagEarly, []() -> BarTextureProgram const * {
 	BarTextureProgram *ret = new BarTextureProgram();
-
-	//----- build the pipeline template -----
-	bar_texture_program_pipeline.program = ret->program;
-
-	bar_texture_program_pipeline.OBJECT_TO_CLIP_mat4 = ret->OBJECT_TO_CLIP_mat4;
-
-	//make a 1-pixel white texture to bind by default:
-	GLuint tex;
-	glGenTextures(1, &tex);
-
-	glBindTexture(GL_TEXTURE_2D, tex);
-	std::vector< glm::u8vec4 > tex_data(1, glm::u8vec4(0xff));
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, tex_data.data());
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glBindTexture(GL_TEXTURE_2D, 0);
-
-	bar_texture_program_pipeline.textures[0].texture = tex;
-	bar_texture_program_pipeline.textures[0].target = GL_TEXTURE_2D;
-
 	return ret;
 });
 
@@ -40,14 +16,15 @@ BarTextureProgram::BarTextureProgram() {
 	program = gl_compile_program(
 		//vertex shader:
 		"#version 330\n"
-		"uniform mat4 OBJECT_TO_CLIP;\n"
+		"uniform vec4 CLIPPOS;\n"
+		"uniform vec2 SCALE;\n"
 		"in vec4 Position;\n"
 		"in vec2 TexCoord;\n"
 		"in float Val;\n"
 		"out vec2 texCoord;\n"
 		"out float val;\n"
 		"void main() {\n"
-		"	gl_Position = OBJECT_TO_CLIP * Position;\n"
+		"	gl_Position = vec4(Position.x * SCALE.x, Position.y * SCALE.y, Position.zw) + CLIPPOS;\n"
 		"	texCoord = TexCoord;\n"
 		"   val = Val;\n"
 		"}\n"
@@ -87,8 +64,9 @@ BarTextureProgram::BarTextureProgram() {
 	Val_f = glGetAttribLocation(program, "Val");
 
 	//look up the locations of uniforms:
-	OBJECT_TO_CLIP_mat4 = glGetUniformLocation(program, "OBJECT_TO_CLIP");
 	PERCENT_float = glGetUniformLocation(program, "PERCENT");
+	CLIPPOS_vec4 = glGetUniformLocation(program, "CLIPPOS");
+	SCALE_vec2 = glGetUniformLocation(program, "SCALE");
 
 	GLuint TEX_sampler2D = glGetUniformLocation(program, "TEX");
 

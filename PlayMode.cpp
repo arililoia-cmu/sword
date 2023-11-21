@@ -123,6 +123,12 @@ Load<GLuint> hp_bar_tex(LoadTagDefault,
 		return new GLuint(load_texture(data_path("graphics/healthbar_base.png"), false, true, true));
 	});
 
+Load<GLuint> heart_tex(LoadTagDefault,
+	[]()
+	{
+		return new GLuint(load_texture(data_path("graphics/enemy-hp.png"), false, true, true));
+	});
+
 // Here we set up the drawables correctly
 // Note that this is basically initializing the "mesh rendering" system
 // So other systems that are initialized can follow this same pattern
@@ -191,44 +197,6 @@ Load< Sound::Sample > footstep_wconv1(LoadTagDefault, []() -> Sound::Sample cons
 	return new Sound::Sample(data_path("sound/footstep/footstep_wconv1.wav"));
 });
 // sound stuff ends here
-
-// this method taken from my game 2 code:
-// https://github.com/arililoia-cmu/15-466-f23-base2/blob/8697e4fed38995ac9b5949fd30c0f75dabe02444/PlayMode.cpp
-glm::vec2 PlayMode::object_to_window_coordinate(Scene::Transform *object, Scene::Camera *camera, glm::uvec2 const &drawable_size){
-
-	//std::cout << "object_to_window_coordinate: " << std::endl;
-	//std::cout << "drawable_size.x,y :" << drawable_size.x << " " << drawable_size.y << std::endl;
-	
-
-	// glm::vec4 object_position = glm::vec4(object->position.x, object->position.y, object->position.z, 1.0f);
-	glm::vec4 object_position = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-
-	//std::cout << "object_position: " << object_position.x << " " << object_position.y << " " << object_position.z << std::endl;
-
-	glm::mat4x3 object_to_world = object->make_local_to_world();
-	// object to world 3x4 x 4x1 coordinates = 3x1 world coordinates
-	glm::vec3 op_world = object_to_world * object_position;
-
-	//std::cout << "op_world: " << op_world.x << " " << op_world.y << " " << op_world.z << std::endl;
-
-	// make a 4 vector out of op_world
-	glm::vec4 op_world_vec4 = glm::vec4(op_world.x, op_world.y, op_world.z, 1.0f);
-
-	assert(camera->transform);
-	glm::mat4 world_to_clip = camera->make_projection() * glm::mat4(camera->transform->make_world_to_local());
-	glm::vec4 op_clip = world_to_clip * op_world_vec4;
-
-	float ws_x = op_clip.x / op_clip.w;
-	float ws_y = op_clip.y / op_clip.w;
-
-	// The next step is to transform from this [-1, 1] space to window-relative coordinate
-	// taken from this stackexchange post
-	// https://stackoverflow.com/questions/8491247/c-opengl-convert-world-coords-to-screen2d-coords
-	float ws_x_real = ((ws_x+1.0f)/2.0f) * (drawable_size.x / 2.0f);
-	float ws_y_real = (drawable_size.y / 2.0f) - (((ws_y+1.0f)/2.0f)*(drawable_size.y / 2.0f));
-	float ws_y_real2 = abs((drawable_size.y / 2.0f) - ws_y_real);
-	return glm::vec2(ws_x_real, ws_y_real2);
-}
 
 // Right now, this makes a proper fully copy of the scene, which is fine, but
 // there's no reason to keep the global scene around if we're only using it
@@ -453,40 +421,39 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 	
 	auto playerSwordHit = [this](Game::CreatureID c, Scene::Transform* t) -> void
 		{
-				for(int i = 0; i < 5; i++)
+			for(int i = 0; i < 5; i++)
+			{
+				if(t == enemies[i]->sword_transform)
 				{
-					if(t == enemies[i]->sword_transform)
+					if(player->pawn_control.stance == 1)
 					{
-						if(player->pawn_control.stance == 1)
-						{
-							player->pawn_control.stance = 2;
-							player->pawn_control.swingHit = player->pawn_control.swingTime;
-						}
-						else if(player->pawn_control.stance == 9)
-						{
-							player->pawn_control.stance = 10;
-							player->pawn_control.swingHit = player->pawn_control.swingTime;
-						}
-						
-						// sound stuff starts here:
-						clock_t current_time = clock();
-						float elapsed = (float)(current_time - previous_player_sword_clang_time);
-
-						if ((elapsed / CLOCKS_PER_SEC) > min_player_sword_clang_interval){
-							w_conv1_sound = Sound::play(*w_conv1, 1.0f, 0.0f);
-							previous_player_sword_clang_time = clock();
-						}
-						// sound stuff ends here
-
-						return;
+						player->pawn_control.stance = 2;
+						player->pawn_control.swingHit = player->pawn_control.swingTime;
 					}
+					else if(player->pawn_control.stance == 9)
+					{
+						player->pawn_control.stance = 10;
+						player->pawn_control.swingHit = player->pawn_control.swingTime;
+					}
+						
+					// sound stuff starts here:
+					clock_t current_time = clock();
+					float elapsed = (float)(current_time - previous_player_sword_clang_time);
+
+					if ((elapsed / CLOCKS_PER_SEC) > min_player_sword_clang_interval){
+						w_conv1_sound = Sound::play(*w_conv1, 1.0f, 0.0f);
+						previous_player_sword_clang_time = clock();
+					}
+					// sound stuff ends here
+
+					return;
 				}
+			}
 		};
 
 
 	auto playerHit = [this](Game::CreatureID c, Scene::Transform* t) -> void
-		{	
-			
+		{		
 			for(int i = 0; i < 5; i++){
 				if(t == enemies[i]->sword_transform){
 					player->hp -= 1;
@@ -500,12 +467,29 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 
 	auto playerHpBarCalculate = [this, plyr](float elapsed) -> float
 		{
-			Player* p = static_cast<Player*>(game.getCreature(plyr));
+			Pawn* p = static_cast<Pawn*>(game.getCreature(plyr));
 			return (float)p->hp / (float)p->maxhp;
 		};
-	
-	gui.addElement(new Gui::Bar(playerHpBarCalculate, *hp_bar_tex));
-	
+	auto* playerHpBar = new Gui::Bar(playerHpBarCalculate, *hp_bar_tex);
+	playerHpBar->screenPos = glm::vec3(0.0f, 0.6f, 0.0f);
+	playerHpBar->scale = glm::vec2(0.9f, 0.3f);
+	gui.addElement(playerHpBar);
+
+	for(size_t i = 0; i < enemiesId.size(); i++)
+	{
+		auto enemyId = enemiesId[i];
+		auto enemyHpBarCalculate = [this, enemyId](float elapsed) -> float
+		{
+			Pawn* p = static_cast<Pawn*>(game.getCreature(enemyId));
+			return (float)p->hp / (float)p->maxhp;
+		};
+
+		auto* enemyHpBar = new Gui::Bar(enemyHpBarCalculate, *heart_tex);
+		enemyHpBar->scale = glm::vec2(0.08f, 0.08f);
+		
+		enemyHpBars[i] = gui.addElement(enemyHpBar);
+	}
+
 	std::cout<<"end of loading scene"<<std::endl;
 }
 
@@ -1190,19 +1174,23 @@ void PlayMode::draw(glm::uvec2 const &drawable_size)
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS); //this is the default depth comparison function, but FYI you can change it.
 
-	scene.draw(*player->camera);
+	glm::mat4 world_to_clip; // Just want to reuse this lol
+	scene.draw(*player->camera, world_to_clip);
 
-	/* In case you are wondering if your walkmesh is lining up with your scene, try:
+	for(size_t i = 0; i < enemyHpBars.size(); i++)
 	{
-		glDisable(GL_DEPTH_TEST);
-		DrawLines lines(player.camera->make_projection() * glm::mat4(player.camera->transform->make_world_to_local()));
-		for (auto const &tri : walkmesh->triangles) {
-			lines.draw(walkmesh->vertices[tri.x], walkmesh->vertices[tri.y], glm::u8vec4(0x88, 0x00, 0xff, 0xff));
-			lines.draw(walkmesh->vertices[tri.y], walkmesh->vertices[tri.z], glm::u8vec4(0x88, 0x00, 0xff, 0xff));
-			lines.draw(walkmesh->vertices[tri.z], walkmesh->vertices[tri.x], glm::u8vec4(0x88, 0x00, 0xff, 0xff));
+		Gui::Element* elem = gui.getElement(enemyHpBars[i]);
+		if(elem)
+		{
+			Gui::Bar* bar = static_cast<Gui::Bar*>(elem);
+
+			glm::vec4 clipPos = world_to_clip * glm::mat4(enemies[i]->body_transform->make_local_to_world()) * glm::vec4(0.0f, 0.0f, 2.0f, 1.0f);
+
+			// Cursed ass cpu clipping LMAO
+			bar->screenPos = glm::vec3(clipPos.x / clipPos.w, clipPos.y / clipPos.w, (clipPos.w > 0) ? 0.0f : 1.0f);
 		}
 	}
-	*/
+	gui.render(world_to_clip);
 
 	{ //use DrawLines to overlay some text:
 		glDisable(GL_DEPTH_TEST);
@@ -1226,348 +1214,4 @@ void PlayMode::draw(glm::uvec2 const &drawable_size)
 			glm::u8vec4(0xff, 0xff, 0xff, 0x00));
 	}
 	GL_ERRORS();
-
-	gui.render();
-	
-	// STUFF ADDED STARTS HERE
-	// static std::vector< glm::u8vec4 > enemy_hp_tex_data;
-	// static GLuint enemy_hp_tex = 0;
-	// static GLuint enemy_hp_buffer = 0;
-	// static GLuint enemy_vao = 0;
-	// static glm::uvec2 enemy_hp_size;
-	// // static std::vector< glm::u8vec4 >  enemy_hp_data;
-
-	// for (int e=0; e<5; e++){
-	// 	if (enemyList[e].hp->hp_data.empty()){
-	// 	// if (enemy_hp_data.empty()){
-	// 		load_png(data_path("graphics/enemy-hp.png"), &enemyList[e].hp->hp_size, &enemyList[e].hp->hp_data, OriginLocation::UpperLeftOrigin);
-	// 		for (int i=enemyList[e].hp->hp_size.y-1; i>=0; i--){
-	// 			for (int j=0; j< (int) enemyList[e].hp->hp_size.x; j++){
-
-	// 				glm::u8vec4 pixel_at = glm::u8vec4(
-	// 					enemyList[e].hp->hp_data.at((i*enemyList[e].hp->hp_size.x)+j)[0],
-	// 					enemyList[e].hp->hp_data.at((i*enemyList[e].hp->hp_size.x)+j)[1],
-	// 					enemyList[e].hp->hp_data.at((i*enemyList[e].hp->hp_size.x)+j)[2],
-	// 					enemyList[e].hp->hp_data.at((i*enemyList[e].hp->hp_size.x)+j)[3] * hp_bar_transparency
-	// 				);
-					
-	// 				// get where the hp bar "fillup" region starts and ends
-	// 				// only need to do this if we haven't read in the texture yet
-	// 				if (((int)pixel_at[0] == 0) && ((int)pixel_at[1] == 0) 
-	// 					&& ((int)pixel_at[2] == 0) && ((int)pixel_at[3] == 127)){
-	// 						if (enemyList[e].hp->empty_x == -1 || 
-	// 							(enemyList[e].hp->empty_x > j) ){
-	// 							enemyList[e].hp->empty_x = j;
-	// 							std::cout << "enemyList[e].empty_x: " << enemyList[e].hp->empty_x << std::endl;
-	// 						}else{
-	// 							if ((j > enemyList[e].hp->full_x ) && (j > enemyList[e].hp->full_x)){
-	// 								enemyList[e].hp->full_x = j;
-	// 							}
-								
-	// 						}
-							
-	// 						enemyList[e].hp->tex_data.push_back(glm::u8vec4(0x00, 0xff, 0x00, 0xff*hp_bar_transparency));
-	// 						enemyList[e].hp->fillin_indices.push_back((int)(enemyList[e].hp->tex_data.size() - 1));
-
-	// 				}else{
-	// 					enemyList[e].hp->tex_data.push_back(pixel_at);
-	// 				}
-					
-	// 			}
-	// 		}
-	// 	}
-	
-	// }
-
-	// for (int e=0; e<5; e++){
-		
-	// 	if (enemyList[e].hp->change_enemy_hp == true){
-	// 		std::cout << "enemy " << e << " hp changed" << std::endl;
-	// 		int health_border = int(enemyList[e].hp->empty_x + 
-	// 			std::floor((enemyList[e].hp->full_x - enemyList[e].hp->empty_x)*enemyList[e].hp->get_percent_hp_left()));
-
-	// 		glm::u8vec4 health_color = enemyList[e].hp->get_health_color(hp_bar_transparency);
-			
-	// 		for (size_t i=0; i<enemyList[e].hp->fillin_indices.size(); i++){
-	// 			if ((enemyList[e].hp->fillin_indices[i] % (int)enemyList[e].hp->hp_size.x) > health_border){
-	// 				enemyList[e].hp->tex_data[enemyList[e].hp->fillin_indices[i]] = empty_color;
-	// 			}else{
-	// 				enemyList[e].hp->tex_data[enemyList[e].hp->fillin_indices[i]] = health_color;
-	// 			}
-
-	// 		}
-	// 	}else{
-	// 		std::cout << "enemy " << e << " hp not changed" << std::endl;
-	// 	}
-
-	// }
-
-
-	// for (int e=0; e<5; e++){
-	// 	if (enemyList[e].hp->change_enemy_hp){
-	// 		std::cout << "enemy " << e << " hp changed" << std::endl;
-			
-	// 		int health_border = int(enemyList[e].hp->empty_x + 
-	// 			std::floor((enemyList[e].hp->full_x - enemyList[e].hp->empty_x)*enemyList[e].hp->get_percent_hp_left()));
-
-	// 		glm::u8vec4 health_color = enemyList[e].hp->get_health_color(hp_bar_transparency);
-			
-	// 		for (size_t i=0; i<enemyList[e].hp->fillin_indices.size(); i++){
-	// 			if ((enemyList[e].hp->fillin_indices[i] % (int)enemyList[e].hp->hp_size.x) > health_border){
-	// 				enemyList[e].hp->tex_data[enemyList[e].hp->fillin_indices[i]] = empty_color;
-	// 			}else{
-	// 				enemyList[e].hp->tex_data[enemyList[e].hp->fillin_indices[i]] = health_color;
-	// 			}
-
-	// 		}
-	// 	}else{
-	// 		// std::cout << "enemy " << e << " hp not changed" << std::endl;
-	// 	}
-	// }
-
-	// for (int e=0; e<5; e++){
-	// 	if (enemyList[e].hp->hp_tex == 0 || enemyList[e].hp->change_enemy_hp) {
-	// 		std::cout << "enemy " << e << " hp changed" << std::endl;
-	// 		glGenTextures(1, &enemyList[e].hp->hp_tex);
-	// 		glBindTexture(GL_TEXTURE_2D, enemyList[e].hp->hp_tex);
-	// 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, enemyList[e].hp->hp_size.x, enemyList[e].hp->hp_size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, enemyList[e].hp->tex_data.data());
-	// 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	// 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	// 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	// 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	// 		glBindTexture(GL_TEXTURE_2D, 0);
-	// 	}else{
-	// 		std::cout << "enemy " << e << " hp not changed" << std::endl;
-	// 	}
-	// }
-	
-
-	// for (int e=0; e<5; e++){
-	// 	if (enemyList[e].hp->hp_buffer == 0 || enemyList[e].hp->change_enemy_hp){
-	// 		std::cout << "enemy " << e << " hp changed" << std::endl;
-	// 		glGenBuffers(1, &enemyList[e].hp->hp_buffer);
-	// 	}
-	// }
-	
-	// for (int e=0; e<5; e++){
-	// 	if (enemyList[e].hp->vao == 0 || enemyList[e].hp->change_enemy_hp) {
-	// 		std::cout << "enemy " << e << " hp changed" << std::endl;
-	// 		//based on PPU466.cpp
-
-	// 		glGenVertexArrays(1, &enemyList[e].hp->vao);
-	// 		glBindVertexArray(enemyList[e].hp->vao);
-
-	// 		glBindBuffer(GL_ARRAY_BUFFER, enemyList[e].hp->hp_buffer);
-
-	// 		glVertexAttribPointer(
-	// 			texture_program->Position_vec4, //attribute
-	// 			3, //size
-	// 			GL_FLOAT, //type
-	// 			GL_FALSE, //normalized
-	// 			sizeof(Vert), //stride
-	// 			(GLbyte *)0 + offsetof(Vert, position) //offset
-	// 		);
-	// 		glEnableVertexAttribArray(texture_program->Position_vec4);
-
-	// 		glVertexAttribPointer(
-	// 			texture_program->TexCoord_vec2, //attribute
-	// 			2, //size
-	// 			GL_FLOAT, //type
-	// 			GL_FALSE, //normalized
-	// 			sizeof(Vert), //stride
-	// 			(GLbyte *)0 + offsetof(Vert, tex_coord) //offset
-	// 		);
-	// 		glEnableVertexAttribArray(texture_program->TexCoord_vec2);
-
-	// 	}
-
-	// }
-	
-
-	// glUseProgram(texture_program->program);
-
-	// // step 2: figure out where in the window to draw the thing
-	// static float block_size = 0.1f;
-	// // sqrm = square making ratio
-	// static float sqrm = ((float)drawable_size.y / (float)drawable_size.x);
-	
-	// for (int e=0; e<5; e++){
-	// 	glm::vec2 enemy_o2wc = object_to_window_coordinate(enemyList[e].body_transform, player.camera, drawable_size);
-	// 	float enemy_window_x = ((enemy_o2wc.x / (drawable_size.x/2.0f)) * 2.0f) - 1.0f;
-	// 	float enemy_window_y = ((enemy_o2wc.y / (drawable_size.y/2.0f)) * 2.0f) - 1.0f;
-
-	// 	std::vector< Vert > attribs;
-	// 	// TODO: do to this whatever I did with the hp bar
-	// 	attribs.emplace_back(glm::vec3( enemy_window_x - block_size*sqrm, enemy_window_y - block_size, 0.0f), glm::vec2(0.0f, 0.0f));
-	// 	attribs.emplace_back(glm::vec3( enemy_window_x - block_size*sqrm,  enemy_window_y + block_size, 0.0f), glm::vec2(0.0f, 1.0f));
-	// 	attribs.emplace_back(glm::vec3( enemy_window_x + block_size*sqrm, enemy_window_y - block_size, 0.0f), glm::vec2(1.0f, 0.0f));
-	// 	attribs.emplace_back(glm::vec3( enemy_window_x + block_size*sqrm, enemy_window_y + block_size, 0.0f), glm::vec2(1.0f, 1.0f));
-
-	// 	glBindBuffer(GL_ARRAY_BUFFER, enemyList[e].hp->hp_buffer);
-	// 	glBufferData(GL_ARRAY_BUFFER, sizeof(Vert) * attribs.size(), attribs.data(), GL_STREAM_DRAW);
-	// 	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	// 	glUseProgram(texture_program->program);
-	// 	glUniformMatrix4fv(texture_program->OBJECT_TO_CLIP_mat4, 1, GL_FALSE, glm::value_ptr(glm::mat4(1.0f)));
-	// 	glBindTexture(GL_TEXTURE_2D, enemyList[e].hp->hp_tex);
-	// 	glDisable(GL_DEPTH_TEST);
-	// 	glEnable(GL_BLEND);
-	// 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	// 	glBindVertexArray(enemyList[e].hp->vao);
-	// 	glDrawArrays(GL_TRIANGLE_STRIP, 0, (GLsizei)attribs.size());
-	// 	// glBindVertexArray(0);
-	// 	glDisable(GL_BLEND);
-	// 	// glBindTexture(GL_TEXTURE_2D, 0);
-	// 	GL_ERRORS();
-	// 	// STUFF I ADDED ENDS HERE
-	// }
-
-
-	// DRAWING THE PLAYER HP BAR FROM FILE
-	// reference: https://gamedev.stackexchange.com/questions/59078/sdl-function-for-loading-pngs
-	// do this later
-	// for now: drawing HP bar on top of the screen
-
-	// static std::vector< glm::u8vec4 > hpbar_data;
-	// static glm::uvec2 hpbar_size;
-	// static std::vector< glm::u8vec4 > hpbar_tex_data;
-
-	// static GLuint hpbar_tex = 0;
-	// static GLuint hpbar_buffer = 0;
-	// static GLuint hpbar_vao = 0;
-
-	// // step 1. load in the hp bar png, get the start x and end x of the area that should be
-	// // depleted as HP is depleted
-	// if (hpbar_data.empty()){
-	// 	load_png(data_path("graphics/healthbar_base.png"), &hpbar_size, &hpbar_data, OriginLocation::UpperLeftOrigin);
-	// 	for (int i=hpbar_size.y-1; i>=0; i--){
-	// 		for (int j=0; j< (int) hpbar_size.x; j++){
-
-	// 			glm::u8vec4 pixel_at = glm::u8vec4(
-	// 				hpbar_data.at((i*hpbar_size.x)+j)[0],
-	// 				hpbar_data.at((i*hpbar_size.x)+j)[1],
-	// 				hpbar_data.at((i*hpbar_size.x)+j)[2],
-	// 				hpbar_data.at((i*hpbar_size.x)+j)[3] * hp_bar_transparency
-	// 			);
-				
-	// 			// get where the hp bar "fillup" region starts and ends
-	// 			// only need to do this if we haven't read in the texture yet
-	// 			if (((int)pixel_at[0] == 0) && ((int)pixel_at[1] == 0) 
-	// 				&& ((int)pixel_at[2] == 0) && ((int)pixel_at[3] == 127)){
-	// 					if (hp_bar_empty_x == -1){
-	// 						hp_bar_empty_x = j;
-	// 					}else{
-	// 						hp_bar_full_x = j;
-	// 					}
-	// 					hpbar_tex_data.push_back(glm::u8vec4(0x00, 0xff, 0x00, 0xff*hp_bar_transparency));
-	// 					hpbar_fillin_indices.push_back((int)(hpbar_tex_data.size() - 1));
-
-	// 			}else{
-	// 				hpbar_tex_data.push_back(pixel_at);
-	// 			}
-				
-	// 		}
-	// 	}
-	// }
-
-	// // todo : figure out a way to do this that doesn't involve a double for loop
-	// // and clearing the enture tex data array
-	// // maybe figure out the bijection 
-
-	// // step 2: enter condition if the hp has been changed
-	//  if (change_player_hp == true){
-        
-    //     int health_border = int(hp_bar_empty_x + 
-    //         std::floor((hp_bar_full_x - hp_bar_empty_x)*player.hp->get_percent_hp_left()));
-
-    //     glm::u8vec4 health_color = player.hp->get_health_color(hp_bar_transparency);
-        
-    //     for (size_t i=0; i<hpbar_fillin_indices.size(); i++){
-    //         if ((hpbar_fillin_indices[i] % (int)hpbar_size.x) > health_border){
-    //             hpbar_tex_data[hpbar_fillin_indices[i]] = empty_color;
-    //         }else{
-    //             hpbar_tex_data[hpbar_fillin_indices[i]] = health_color;
-    //         }
-
-    //     }
-    // }
-
-	// if (hpbar_tex == 0 || change_player_hp) {
-	// 	glGenTextures(1, &hpbar_tex);
-	// 	glBindTexture(GL_TEXTURE_2D, hpbar_tex);
-	// 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, hpbar_size.x, hpbar_size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, hpbar_tex_data.data());
-	// 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	// 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	// 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	// 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	// 	glBindTexture(GL_TEXTURE_2D, 0);
-	// }
-
-	// if (hpbar_buffer == 0 || change_player_hp){
-	// 	glGenBuffers(1, &hpbar_buffer);
-	// }
-
-	// if (hpbar_vao == 0 || change_player_hp) {
-	// 	//based on PPU466.cpp
-
-	// 	glGenVertexArrays(1, &hpbar_vao);
-	// 	glBindVertexArray(hpbar_vao);
-
-	// 	glBindBuffer(GL_ARRAY_BUFFER, hpbar_buffer);
-	// 	glVertexAttribPointer(
-	// 		texture_program->Position_vec4, //attribute
-	// 		3, //size
-	// 		GL_FLOAT, //type
-	// 		GL_FALSE, //normalized
-	// 		sizeof(Vert), //stride
-	// 		(GLbyte *)0 + offsetof(Vert, position) //offset
-	// 	);
-	// 	glEnableVertexAttribArray(texture_program->Position_vec4);
-
-	// 	glVertexAttribPointer(
-	// 		texture_program->TexCoord_vec2, //attribute
-	// 		2, //size
-	// 		GL_FLOAT, //type
-	// 		GL_FALSE, //normalized
-	// 		sizeof(Vert), //stride
-	// 		(GLbyte *)0 + offsetof(Vert, tex_coord) //offset
-	// 	);
-	// 	glEnableVertexAttribArray(texture_program->TexCoord_vec2);
-
-	// }
-
-	// glUseProgram(texture_program->program);
-
-	// // step 2: where to draw the hp bar
-	// static glm::vec2 hpbar_bottom_left = glm::vec2(-0.9f, 0.6f);
-	// static glm::vec2 hpbar_top_right = glm::vec2(0.9f, 0.9f);
-
-	// static std::vector< Vert > hpbar_attribs;
-	// if (hpbar_attribs.size() == 0 || change_player_hp){
-	// 	hpbar_attribs.emplace_back(glm::vec3( hpbar_bottom_left.x, hpbar_bottom_left.y, 0.0f), glm::vec2(0.0f, 0.0f)); // 1
-	// 	hpbar_attribs.emplace_back(glm::vec3( hpbar_bottom_left.x,  hpbar_top_right.y, 0.0f), glm::vec2(0.0f, 1.0f)); // 2
-	// 	hpbar_attribs.emplace_back(glm::vec3( hpbar_top_right.x, hpbar_bottom_left.y, 0.0f), glm::vec2(1.0f, 0.0f)); // 4 
-	// 	hpbar_attribs.emplace_back(glm::vec3( hpbar_top_right.x, hpbar_top_right.y, 0.0f), glm::vec2(1.0f, 1.0f)); // 3
-	// }
-	
-	// glBindBuffer(GL_ARRAY_BUFFER, hpbar_buffer);
-	// glBufferData(GL_ARRAY_BUFFER, sizeof(Vert) * hpbar_attribs.size(), hpbar_attribs.data(), GL_STREAM_DRAW);
-	// glBindBuffer(GL_ARRAY_BUFFER, 0);
-	
-	// glUseProgram(texture_program->program);
-	// glUniformMatrix4fv(texture_program->OBJECT_TO_CLIP_mat4, 1, GL_FALSE, glm::value_ptr(glm::mat4(1.0f)));
-	// glBindTexture(GL_TEXTURE_2D, hpbar_tex);
-	// glDisable(GL_DEPTH_TEST);
-	// glEnable(GL_BLEND);
-	// glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	// glBindVertexArray(hpbar_vao);
-	// glDrawArrays(GL_TRIANGLE_STRIP, 0, (GLsizei)hpbar_attribs.size());
-	// glDisable(GL_BLEND);
-	// glBindTexture(GL_TEXTURE_2D, 0);
-	// glUseProgram(0);
-	// GL_ERRORS();
-
-	// change_player_hp = false;
-	// for (int e=0; e<5; e++){
-	// 	enemyList[e].hp->change_enemy_hp = false;
-	// }
 }

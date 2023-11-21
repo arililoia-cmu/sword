@@ -19,7 +19,7 @@
 
 // I used https://www.youtube.com/watch?v=ajv46BSqcK4 to help visualize this algorithm
 bool GJK(Collider& a, Collider& b)
-{
+{	
 	glm::mat4x3 altw = a.transform->make_local_to_world();
 	glm::mat4x3 bltw = b.transform->make_local_to_world();
 

@@ -7,6 +7,7 @@
 #include "Mesh.hpp"
 #include "Scene.hpp"
 #include "Game.hpp"
+#include "Slots.hpp"
 
 #include <array>
 #include <vector>

@@ -87,6 +87,16 @@ void Scene::draw(Camera const &camera) const {
 	draw(world_to_clip, world_to_light);
 }
 
+void Scene::draw(Camera const &camera, glm::mat4& w2cret) const
+{
+	assert(camera.transform);
+	glm::mat4 world_to_clip = camera.make_projection() * glm::mat4(camera.transform->make_world_to_local());
+	glm::mat4x3 world_to_light = glm::mat4x3(1.0f);
+	draw(world_to_clip, world_to_light);
+
+	w2cret = world_to_clip;
+}
+
 void Scene::draw(glm::mat4 const &world_to_clip, glm::mat4x3 const &world_to_light) const {
 
 	//Iterate through all drawables, sending each one to OpenGL:

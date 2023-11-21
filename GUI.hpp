@@ -4,6 +4,7 @@
 #include "BarTextureProgram.hpp"
 #include "Slots.hpp"
 #include "gl_errors.hpp"
+#include "Scene.hpp"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -22,13 +23,14 @@ struct Gui
 		virtual ~Element() = 0;
 		
 		virtual void update(float elapsed) = 0;
-		virtual void render() = 0;
+		virtual void render(glm::mat4 const& world_to_clip) = 0;
 	};
-	
+
 	struct Bar : Element
 	{
 		struct Vert
 		{
+			Vert() : position(0), texCoord(0), val(0) {};
 			Vert(glm::vec3 p, glm::vec2 t, float v) : position(p), texCoord(t), val(v) {};
 			
 			glm::vec3 position;
@@ -40,13 +42,13 @@ struct Gui
 			{
 				std::vector<Vert> corners;
 
-				glm::vec2 hpbar_bottom_left = glm::vec2(-0.9f, 0.6f);
-				glm::vec2 hpbar_top_right = glm::vec2(0.9f, 0.9f);
+				glm::vec2 hpbar_bottom_left = glm::vec2(-1.0f, -1.0f);
+				glm::vec2 hpbar_top_right = glm::vec2(1.0f, 1.0f);
 				
-				corners.emplace_back(glm::vec3( hpbar_bottom_left.x, hpbar_bottom_left.y, 0.0f), glm::vec2(0.0f, 0.0f), 0.0f); // 1
-				corners.emplace_back(glm::vec3( hpbar_bottom_left.x,  hpbar_top_right.y, 0.0f), glm::vec2(0.0f, 1.0f), 0.0f); // 2
-				corners.emplace_back(glm::vec3( hpbar_top_right.x, hpbar_bottom_left.y, 0.0f), glm::vec2(1.0f, 0.0f), 1.0f); // 4 
-				corners.emplace_back(glm::vec3( hpbar_top_right.x, hpbar_top_right.y, 0.0f), glm::vec2(1.0f, 1.0f), 1.0f); // 3
+				corners.emplace_back(glm::vec3(hpbar_bottom_left.x, hpbar_bottom_left.y, 1.0f), glm::vec2(0.0f, 0.0f), 0.0f); // 1
+				corners.emplace_back(glm::vec3(hpbar_bottom_left.x, hpbar_top_right.y, 1.0f), glm::vec2(0.0f, 1.0f), 0.0f); // 2
+				corners.emplace_back(glm::vec3(hpbar_top_right.x, hpbar_bottom_left.y, 0.0f), glm::vec2(1.0f, 0.0f), 1.0f); // 4 
+				corners.emplace_back(glm::vec3(hpbar_top_right.x, hpbar_top_right.y, 0.0f), glm::vec2(1.0f, 1.0f), 1.0f); // 3
 				
 				glGenBuffers(1, &vbo);
 				glBindBuffer(GL_ARRAY_BUFFER, vbo);
@@ -78,11 +80,12 @@ struct Gui
 			{
 				value = calculateValue(elapsed);
 			}
-		void render() override
+		void render(glm::mat4 const& world_to_clip) override
 			{
 				glUseProgram(bar_texture_program->program);
-				glUniformMatrix4fv(bar_texture_program->OBJECT_TO_CLIP_mat4, 1, GL_FALSE, glm::value_ptr(glm::mat4(1.0f)));
 				glUniform1f(bar_texture_program->PERCENT_float, value);
+				glUniform4fv(bar_texture_program->CLIPPOS_vec4, 1, glm::value_ptr(glm::vec4(screenPos, 0.0f)));
+				glUniform2fv(bar_texture_program->SCALE_vec2, 1, glm::value_ptr(scale));
 				glBindTexture(GL_TEXTURE_2D, tex);
 				
 				glDisable(GL_DEPTH_TEST);
@@ -109,6 +112,9 @@ struct Gui
 		
 		GLuint vao; // It makes these
 		GLuint vbo;
+
+		glm::vec3 screenPos = glm::vec3(0.0f, 0.0f, 0.0f);
+		glm::vec2 scale = glm::vec2(1.0f, 1.0f);
 	};
 	
 	Gui() : elements() {};
@@ -124,14 +130,14 @@ struct Gui
 				}
 			}
 		}
-	void render()
+	void render(glm::mat4 const& world_to_clip)
 		{
 			for(auto e : elements.slots)
 			{
 				Element* elem = std::get<0>(e);
 				if(elem != nullptr)
 				{
-					elem->render();
+					elem->render(world_to_clip);
 				}
 			}
 		}
