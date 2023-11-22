@@ -2,6 +2,7 @@
 #define GUI_HPP
 
 #include "BarTextureProgram.hpp"
+#include "TextureProgram.hpp"
 #include "Slots.hpp"
 #include "gl_errors.hpp"
 #include "Scene.hpp"
@@ -18,6 +19,17 @@
 
 struct Gui
 {	
+
+	struct Vert
+	{
+		Vert() : position(0), texCoord(0), val(0) {};
+		Vert(glm::vec3 p, glm::vec2 t, float v) : position(p), texCoord(t), val(v) {};
+		
+		glm::vec3 position;
+		glm::vec2 texCoord;
+		float val;
+	};
+
 	struct Element
 	{
 		
@@ -27,17 +39,83 @@ struct Gui
 		virtual void render(glm::mat4 const& world_to_clip) = 0;
 	};
 
+	struct Popup : Element
+	{
+		
+		Popup(GLuint t) : tex(t)
+			{
+				std::vector<Vert> corners;
+
+				glm::vec2 popup_bottom_left = glm::vec2(-1.0f, -1.0f);
+				glm::vec2 popup_top_right = glm::vec2(1.0f, 1.0f);
+				
+				corners.emplace_back(glm::vec3(popup_bottom_left.x, popup_bottom_left.y, 1.0f), glm::vec2(0.0f, 0.0f), 0.0f); // 1
+				corners.emplace_back(glm::vec3(popup_bottom_left.x, popup_top_right.y, 1.0f), glm::vec2(0.0f, 1.0f), 0.0f); // 2
+				corners.emplace_back(glm::vec3(popup_top_right.x, popup_bottom_left.y, 0.0f), glm::vec2(1.0f, 0.0f), 1.0f); // 4 
+				corners.emplace_back(glm::vec3(popup_top_right.x, popup_top_right.y, 0.0f), glm::vec2(1.0f, 1.0f), 1.0f); // 3
+				
+				glGenBuffers(1, &vbo);
+				glBindBuffer(GL_ARRAY_BUFFER, vbo);
+				glBufferData(GL_ARRAY_BUFFER, corners.size() * sizeof(Vert), corners.data(), GL_STATIC_DRAW);
+
+				glGenVertexArrays(1, &vao);
+				glBindVertexArray(vao);
+				
+				glVertexAttribPointer(texture_program->Position_vec4, 3, GL_FLOAT, GL_FALSE, sizeof(Vert), (GLbyte*)0 + offsetof(Vert, position));
+				glEnableVertexAttribArray(texture_program->Position_vec4);
+
+				glVertexAttribPointer(texture_program->TexCoord_vec2, 2, GL_FLOAT, GL_FALSE, sizeof(Vert), (GLbyte*)0 + offsetof(Vert, texCoord));
+				glEnableVertexAttribArray(texture_program->TexCoord_vec2);
+				
+				glBindBuffer(GL_ARRAY_BUFFER, 0);
+				glBindVertexArray(0);
+			}
+
+		virtual ~Popup()
+			{
+				glDeleteVertexArrays(1, &vao);
+				glDeleteBuffers(1, &vbo);
+			}
+
+		void update(float elapsed) override
+			{
+				
+			}
+		void render(glm::mat4 const& world_to_clip) override
+			{
+				std::cout << "render dodge" << std::endl;
+				glUseProgram(texture_program->program);
+				glBindTexture(GL_TEXTURE_2D, tex);
+				
+				glDisable(GL_DEPTH_TEST);
+				glEnable(GL_BLEND);
+				glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+				
+				glBindVertexArray(vao);
+				glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+				
+				glEnable(GL_DEPTH_TEST);
+				glDisable(GL_BLEND);
+				
+				glBindVertexArray(0);
+				glBindTexture(GL_TEXTURE_2D, 0);
+				glUseProgram(0);
+
+				GL_ERRORS();
+			}
+		
+		// std::function<float(float)> calculateValue; // Function that calculates the value for this bar
+		// float value; // From 0 to 1, don't touch
+
+		GLuint tex; // We have to give this
+		
+		GLuint vao; // It makes these
+		GLuint vbo;
+	
+	};
+
 	struct Bar : Element
 	{
-		struct Vert
-		{
-			Vert() : position(0), texCoord(0), val(0) {};
-			Vert(glm::vec3 p, glm::vec2 t, float v) : position(p), texCoord(t), val(v) {};
-			
-			glm::vec3 position;
-			glm::vec2 texCoord;
-			float val;
-		};
 		
 		Bar(std::function<float(float)> c, GLuint t) : calculateValue(c), tex(t)
 			{

@@ -129,6 +129,12 @@ Load<GLuint> heart_tex(LoadTagDefault,
 		return new GLuint(load_texture(data_path("graphics/enemy-hp.png"), false, true, true));
 	});
 
+Load<GLuint> dodge_tex(LoadTagDefault,
+	[]()
+	{
+		return new GLuint(load_texture(data_path("graphics/dodge.png"), false, true, true));
+	});
+
 // Here we set up the drawables correctly
 // Note that this is basically initializing the "mesh rendering" system
 // So other systems that are initialized can follow this same pattern
@@ -523,6 +529,10 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 			enemyHpBars[i] = gui.addElement(enemyHpBar);
 		}
 	}
+
+	// SETTING UP POPUPS
+	auto* dodgeGraphic = new Gui::Popup(*dodge_tex);
+	popups[0] = gui.addElement(dodgeGraphic);
 
 	DEBUGOUT << "end of loading scene" << std::endl;
 }
