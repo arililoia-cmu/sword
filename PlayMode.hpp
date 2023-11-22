@@ -41,7 +41,9 @@ struct PlayMode : Mode
 	std::array<Enemy*, 5> enemies;
 	std::array<Gui::GuiID, 5> enemyHpBars;
 
-	std::array<Gui::GuiID, 1> popups;
+	//  std::array<Gui::GuiID, 1> popups;
+
+	Gui::GuiID dodge_popup_ID;
 	
 	Game game;
 	Scene scene;

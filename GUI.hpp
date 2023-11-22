@@ -42,12 +42,13 @@ struct Gui
 	struct Popup : Element
 	{
 		
-		Popup(GLuint t) : tex(t)
+		Popup(GLuint t, glm::vec2 popup_bottom_left_, glm::vec2 popup_top_right_,
+			float display_interval_) : tex(t)
 			{
-				std::vector<Vert> corners;
 
-				glm::vec2 popup_bottom_left = glm::vec2(-1.0f, -1.0f);
-				glm::vec2 popup_top_right = glm::vec2(1.0f, 1.0f);
+				popup_bottom_left = popup_bottom_left_;
+				popup_top_right = popup_top_right_;
+				display_interval = display_interval_;
 				
 				corners.emplace_back(glm::vec3(popup_bottom_left.x, popup_bottom_left.y, 1.0f), glm::vec2(0.0f, 0.0f), 0.0f); // 1
 				corners.emplace_back(glm::vec3(popup_bottom_left.x, popup_top_right.y, 1.0f), glm::vec2(0.0f, 1.0f), 0.0f); // 2
@@ -79,39 +80,48 @@ struct Gui
 
 		void update(float elapsed) override
 			{
-				
 			}
+
+		void trigger_render(){
+			previous_display_start_time = ((float)clock())/1000.0f;
+		}
+		
 		void render(glm::mat4 const& world_to_clip) override
 			{
-				std::cout << "render dodge" << std::endl;
-				glUseProgram(texture_program->program);
-				glBindTexture(GL_TEXTURE_2D, tex);
-				
-				glDisable(GL_DEPTH_TEST);
-				glEnable(GL_BLEND);
-				glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-				
-				glBindVertexArray(vao);
-				glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-				
-				glEnable(GL_DEPTH_TEST);
-				glDisable(GL_BLEND);
-				
-				glBindVertexArray(0);
-				glBindTexture(GL_TEXTURE_2D, 0);
-				glUseProgram(0);
 
-				GL_ERRORS();
+				float current_time = ((float)clock())/1000.0f;
+				if (current_time < display_interval + previous_display_start_time){
+
+					glBindBuffer(GL_ARRAY_BUFFER, vbo);
+					glBufferData(GL_ARRAY_BUFFER, sizeof(Vert) * corners.size(), corners.data(), GL_STREAM_DRAW);
+					glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+					glUseProgram(texture_program->program);
+					glUniformMatrix4fv(texture_program->OBJECT_TO_CLIP_mat4, 1, GL_FALSE, glm::value_ptr(glm::mat4(1.0f)));
+					glBindTexture(GL_TEXTURE_2D, tex);
+					glDisable(GL_DEPTH_TEST);
+					glEnable(GL_BLEND);
+					glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+					glBindVertexArray(vao);
+					glDrawArrays(GL_TRIANGLE_STRIP, 0, (GLsizei)corners.size());
+					glDisable(GL_BLEND);
+					
+					glBindVertexArray(0);
+					glBindTexture(GL_TEXTURE_2D, 0);
+					glUseProgram(0);
+
+					GL_ERRORS();
+				}
 			}
 		
-		// std::function<float(float)> calculateValue; // Function that calculates the value for this bar
-		// float value; // From 0 to 1, don't touch
-
 		GLuint tex; // We have to give this
-		
+		std::vector<Vert> corners;
 		GLuint vao; // It makes these
 		GLuint vbo;
-	
+		glm::vec2 popup_bottom_left;
+	    glm::vec2 popup_top_right;
+		float display_interval; 
+		float previous_display_start_time = 0.0f;
 	};
 
 	struct Bar : Element

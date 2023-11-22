@@ -531,8 +531,13 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 	}
 
 	// SETTING UP POPUPS
-	auto* dodgeGraphic = new Gui::Popup(*dodge_tex);
-	popups[0] = gui.addElement(dodgeGraphic);
+
+
+	auto* dodgeGraphic = new Gui::Popup(*dodge_tex, 
+		glm::vec2(-0.1, -0.4), glm::vec2(0.1,-0.3), 100.0f
+	);
+
+	dodge_popup_ID = gui.addElement(dodgeGraphic);
 
 	DEBUGOUT << "end of loading scene" << std::endl;
 }
@@ -1193,6 +1198,14 @@ void PlayMode::update(float elapsed)
 		player->pawn_control.parry = secondAction.pressed; // Parry input control
 		player->pawn_control.dodge = dodge.pressed;
 
+		if (dodge.downs > 0){
+			Gui::Element* elem = gui.getElement(dodge_popup_ID);
+			if (elem){
+				Gui::Popup* dodge_grabbed = static_cast<Gui::Popup*>(elem);
+				dodge_grabbed->trigger_render();
+			}			
+		}
+
 		//reset button press counters:
 		left.downs = 0;
 		right.downs = 0;
@@ -1261,6 +1274,7 @@ void PlayMode::draw(glm::uvec2 const &drawable_size)
 			bar->screenPos = glm::vec3(clipPos.x / clipPos.w, clipPos.y / clipPos.w, (clipPos.w > 0) ? 0.0f : 1.0f);
 		}
 	}
+	
 	gui.render(world_to_clip);
 
 	{ //use DrawLines to overlay some text:
