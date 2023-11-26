@@ -14,6 +14,7 @@ class Node
 {
     public:
         virtual bool run()=0;
+        virtual void destroy()=0;
 
 };
 class CompositeNode :public Node{
@@ -38,6 +39,12 @@ class Selector: public CompositeNode{
             }
             return false;
         }
+        virtual void destroy(){
+           for(Node* child:getChildren()){
+                child->destroy();
+            }
+           delete this;
+        }
 };
 class Sequence: public CompositeNode{
     public:
@@ -47,6 +54,12 @@ class Sequence: public CompositeNode{
                     return false;
             }
             return true;
+        }
+        virtual void destroy(){
+           for(Node* child:getChildren()){
+                child->destroy();
+            }
+           delete this;
         }
 };
 struct BlackBoard{
@@ -78,7 +91,9 @@ class CheckIfPlayerExist:public Node{
                 return !isNegative;
             }
         }
-        
+       virtual void destroy(){
+           delete this;
+        }
 };
 
 class CheckDistance:public Node{
@@ -98,6 +113,9 @@ class CheckDistance:public Node{
             //    std::cout<<status->distanceToPlayer<<std::endl;
                 return isNegative;
             }
+        }
+       virtual void destroy(){
+                      delete this;
         }
         
 };
@@ -148,11 +166,14 @@ class WalkToPlayerTask: public ActionNode{
             }
             return true;
         }
+       virtual void destroy(){
+                      delete this;
+        }
 };
 class AttackTask:public ActionNode{
     private:
         BlackBoard* status=nullptr;
-
+        int currentCount=0;
     public:
         AttackTask(BlackBoard* status):status(status){
 
@@ -164,7 +185,13 @@ class AttackTask:public ActionNode{
             //    std::cin>>temp;
             if (status->isBoss)
             {
-                status->control.attack=1;
+                currentCount++;
+                if(currentCount%2==0){
+                    status->control.attack=1;
+                }else{
+                    status->control.attack=2;
+                }
+
             }else{
                 if(status->isVertical){
                     status->control.attack=1;
@@ -180,6 +207,9 @@ class AttackTask:public ActionNode{
                 return false;
             }
 
+        }
+       virtual void destroy(){
+                      delete this;
         }
 };
 class ParryTask:public ActionNode{
@@ -200,6 +230,9 @@ class ParryTask:public ActionNode{
                 return false;
             }
 
+        }
+       virtual void destroy(){
+          delete this;
         }
 };
 class AttackInterrupt:public Sequence{
@@ -228,6 +261,15 @@ class BehaviorTree{
     public:
         BehaviorTree(){
 
+        }
+        void DestroySelf(){
+            if(root!=nullptr){
+                root->destroy();
+                delete root;
+            }
+            if(attack_ipt!=nullptr){
+                attack_ipt->destroy();
+            }
         }
         void InitInterrupt(){
             attack_ipt=new AttackInterrupt(status);
