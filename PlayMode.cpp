@@ -129,6 +129,24 @@ Load<GLuint> heart_tex(LoadTagDefault,
 		return new GLuint(load_texture(data_path("graphics/enemy-hp.png"), false, true, true));
 	});
 
+Load<GLuint> dodge_tex(LoadTagDefault,
+	[]()
+	{
+		return new GLuint(load_texture(data_path("graphics/dodge.png"), false, true, true));
+	});
+
+Load<GLuint> parry_tex(LoadTagDefault,
+	[]()
+	{
+		return new GLuint(load_texture(data_path("graphics/parry.png"), false, true, true));
+	});
+
+Load<GLuint> attack_tex(LoadTagDefault,
+	[]()
+	{
+		return new GLuint(load_texture(data_path("graphics/attack.png"), false, true, true));
+	});
+
 // Here we set up the drawables correctly
 // Note that this is basically initializing the "mesh rendering" system
 // So other systems that are initialized can follow this same pattern
@@ -525,6 +543,22 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 			enemyHpBars[i] = gui.addElement(enemyHpBar);
 		}
 	}
+
+	// SETTING UP POPUPS
+	auto* dodgeGraphic = new Gui::Popup(*dodge_tex, 
+		glm::vec2(-0.1, -0.4), glm::vec2(0.1,-0.3), 500.0f
+	);
+	dodge_popup_ID = gui.addElement(dodgeGraphic);
+
+	auto* parryGraphic = new Gui::Popup(*parry_tex, 
+		glm::vec2(-0.1, -0.4), glm::vec2(0.1,-0.3), 800.0f
+	);
+	parry_popup_ID = gui.addElement(parryGraphic);
+
+	auto* attackGraphic = new Gui::Popup(*attack_tex, 
+		glm::vec2(-0.1, -0.4), glm::vec2(0.1,-0.3), 800.0f
+	);
+	attack_popup_ID = gui.addElement(attackGraphic);
 
 	DEBUGOUT << "end of loading scene" << std::endl;
 }
@@ -1185,6 +1219,21 @@ void PlayMode::update(float elapsed)
 		player->pawn_control.parry = secondAction.pressed; // Parry input control
 		player->pawn_control.dodge = dodge.pressed;
 
+		auto trigger_popups = [this](int downs, Gui::GuiID popup_ID) -> void
+		{	
+			if (downs > 0){
+				Gui::Element* elem = gui.getElement(popup_ID);
+				if (elem){
+					Gui::Popup* grabbed = static_cast<Gui::Popup*>(elem);
+					grabbed->trigger_render();
+				}	
+			}
+		};
+
+		trigger_popups(dodge.downs, dodge_popup_ID);
+		trigger_popups(secondAction.downs, parry_popup_ID);
+		trigger_popups(mainAction.downs, attack_popup_ID);
+	
 		//reset button press counters:
 		left.downs = 0;
 		right.downs = 0;
@@ -1253,6 +1302,7 @@ void PlayMode::draw(glm::uvec2 const &drawable_size)
 			bar->screenPos = glm::vec3(clipPos.x / clipPos.w, clipPos.y / clipPos.w, (clipPos.w > 0) ? 0.0f : 1.0f);
 		}
 	}
+	
 	gui.render(world_to_clip);
 
 	{ //use DrawLines to overlay some text:
