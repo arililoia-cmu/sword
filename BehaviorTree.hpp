@@ -273,7 +273,7 @@ class BehaviorTree{
         virtual void DestroySelf(){
             if(root!=nullptr){
                 root->destroy();
-                // delete root;
+                delete root;
             }
             if(attack_ipt!=nullptr){
                 attack_ipt->destroy();
