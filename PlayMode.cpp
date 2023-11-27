@@ -323,6 +323,7 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 		enemies[i]->bt->SetEnemy(enemies[i]);
 		enemies[i]->bt->SetPlayer(player);
 		enemies[i]->bt->SetEnemyType(i%3);
+		enemies[i]->bt->InitInterrupt();
 	}
 
 	// TODO This should probably be done by setting the camera to match the properties from the blender camera but this is OK

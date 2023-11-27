@@ -271,7 +271,12 @@ class BehaviorTree{
                 attack_ipt->destroy();
             }
         }
-        void InitInterrupt(){
+        void InitInterruptSoldier(){
+            attack_ipt=nullptr;
+            std::cout<<"SoldierInterrupt"<<std::endl;
+        }
+        void InitInterruptBoss(){
+            std::cout<<"BossInterrupt"<<std::endl;
             attack_ipt=new AttackInterrupt(status);
             CheckDistance* checkDistance=new CheckDistance(status,false,4.5f,0.0f);
             ParryTask* parryTask=new ParryTask(status);
@@ -307,11 +312,11 @@ class BehaviorTree{
             atkSequence->addChild(checkDistanceAttack);
             atkSequence->addChild(attack);
             SetRoot(rt);
-            InitInterrupt();
+           // InitInterrupt();
             DEBUGOUT<<"AI Initialize End"<<std::endl;
         }
         void BossBehaviorTree(){
-
+            SoldierBehaviorTree();
         }
         void InitBlackBoard(){
             BlackBoard* blackBoard = new BlackBoard{};
@@ -320,17 +325,23 @@ class BehaviorTree{
         void Init(){
             InitBlackBoard();
             if(status->isBoss){
-                std::cout<<"3333";
                 BossBehaviorTree();
+            //    InitInterruptBoss();
 
             }else
             {
-                std::cout<<"3333";
                 SoldierBehaviorTree();
+            //    InitInterruptSoldier();
             }
 
         }
-
+        void InitInterrupt(){
+            if(status->isBoss){
+                InitInterruptBoss();
+            }else{
+                InitInterruptSoldier();
+            }
+        }
 
         void Start(){
 
@@ -350,6 +361,7 @@ class BehaviorTree{
         void SetEnemyType(int input){//0==boss;1==soldier+horizontal;2==soldier+vertical
             if(input==0){
                 status->isBoss=true;
+                std::cout<<"BossEnemy"<<std::endl;
             }
             if(input==1){
                 status->isBoss=false;
