@@ -147,6 +147,18 @@ Load<GLuint> attack_tex(LoadTagDefault,
 		return new GLuint(load_texture(data_path("graphics/attack.png"), false, true, true));
 	});
 
+Load<GLuint> roll_tex(LoadTagDefault,
+	[]()
+	{
+		return new GLuint(load_texture(data_path("graphics/roll.png"), false, true, true));
+	});
+
+Load<GLuint> slice_tex(LoadTagDefault,
+	[]()
+	{
+		return new GLuint(load_texture(data_path("graphics/slice.png"), false, true, true));
+	});
+
 // Here we set up the drawables correctly
 // Note that this is basically initializing the "mesh rendering" system
 // So other systems that are initialized can follow this same pattern
@@ -545,22 +557,21 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 	}
 
 	// SETTING UP POPUPS
-	auto* dodgeGraphic = new Gui::Popup(*dodge_tex, 
-		glm::vec2(-0.1, -0.4), glm::vec2(0.1,-0.3), 500.0f
-	);
-	dodge_popup_ID = gui.addElement(dodgeGraphic);
+	auto graphic_setup = [this](Load<GLuint> move_graphic_tex, const std::vector<int>& corresponding_stances){
+		auto* moveGraphic = new Gui::MoveGraphic(*move_graphic_tex);
+		Gui::GuiID move_popup_ID = gui.addElement(moveGraphic);
+		for (int i=0; i<corresponding_stances.size(); i++){
+			stanceGuiIDMap[corresponding_stances[i]] = move_popup_ID;
+		}
+	};
 
-	auto* parryGraphic = new Gui::Popup(*parry_tex, 
-		glm::vec2(-0.1, -0.4), glm::vec2(0.1,-0.3), 800.0f
-	);
-	parry_popup_ID = gui.addElement(parryGraphic);
-
-	auto* attackGraphic = new Gui::Popup(*attack_tex, 
-		glm::vec2(-0.1, -0.4), glm::vec2(0.1,-0.3), 800.0f
-	);
-	attack_popup_ID = gui.addElement(attackGraphic);
-
-	DEBUGOUT << "end of loading scene" << std::endl;
+	// register how stances correspond with which textures will be shown
+	graphic_setup(dodge_tex, {6});
+	graphic_setup(parry_tex, {4,5});
+	graphic_setup(attack_tex, {1,3});
+	graphic_setup(roll_tex, {7});
+	graphic_setup(slice_tex, {9});
+	
 }
 
 PlayMode::~PlayMode()
@@ -1219,21 +1230,6 @@ void PlayMode::update(float elapsed)
 		player->pawn_control.parry = secondAction.pressed; // Parry input control
 		player->pawn_control.dodge = dodge.pressed;
 
-		auto trigger_popups = [this](int downs, Gui::GuiID popup_ID) -> void
-		{	
-			if (downs > 0){
-				Gui::Element* elem = gui.getElement(popup_ID);
-				if (elem){
-					Gui::Popup* grabbed = static_cast<Gui::Popup*>(elem);
-					grabbed->trigger_render();
-				}	
-			}
-		};
-
-		trigger_popups(dodge.downs, dodge_popup_ID);
-		trigger_popups(secondAction.downs, parry_popup_ID);
-		trigger_popups(mainAction.downs, attack_popup_ID);
-	
 		//reset button press counters:
 		left.downs = 0;
 		right.downs = 0;
@@ -1242,8 +1238,32 @@ void PlayMode::update(float elapsed)
 		dodge.downs = 0;
 		mainAction.downs = 0;
 		secondAction.downs = 0;
+
+		auto trigger_move_graphic = [this](int prev_stance, int new_stance){
+
+			if (stanceGuiIDMap.find(prev_stance) != stanceGuiIDMap.end()){
+				Gui::Element* elem = gui.getElement(stanceGuiIDMap[prev_stance]);
+				if (elem){
+					Gui::MoveGraphic* grabbed = static_cast<Gui::MoveGraphic*>(elem);
+					grabbed->trigger_render(false);
+				}	
+			}
+
+			if (stanceGuiIDMap.find(new_stance) != stanceGuiIDMap.end()){
+				Gui::Element* elem = gui.getElement(stanceGuiIDMap[new_stance]);
+				if (elem){
+					Gui::MoveGraphic* grabbed = static_cast<Gui::MoveGraphic*>(elem);
+					grabbed->trigger_render(true);
+				}	
+			}
+		};
 		
+		static int prev_stance = player->pawn_control.stance;
 		processPawnControl(*player, elapsed);
+		if (player->pawn_control.stance != prev_stance){
+			trigger_move_graphic(prev_stance, player->pawn_control.stance);
+		}
+		prev_stance = player->pawn_control.stance;
 
 		for(int i=0;i<5;++i)
 		{

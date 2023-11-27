@@ -16,6 +16,7 @@
 #include <deque>
 #include <ctime>
 #include <iostream>
+#include <map>
 
 struct PlayMode : Mode
 {
@@ -41,10 +42,15 @@ struct PlayMode : Mode
 	std::array<Enemy*, 5> enemies;
 	std::array<Gui::GuiID, 5> enemyHpBars;
 
-	Gui::GuiID dodge_popup_ID;
-	Gui::GuiID parry_popup_ID;
-	Gui::GuiID attack_popup_ID;
+	// Gui::GuiID dodge_popup_ID;
+	// Gui::GuiID parry_popup_ID;
+	// Gui::GuiID attack_popup_ID;
+	// Gui::GuiID roll_popup_ID;
+	// Gui::GuiID slice_popup_ID;
 	
+	std::map<int, Gui::GuiID> stanceGuiIDMap = {};
+	
+
 	Game game;
 	Scene scene;
 	CollisionEngine collEng;
