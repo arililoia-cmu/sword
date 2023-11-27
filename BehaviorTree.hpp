@@ -15,6 +15,11 @@ class Node
     public:
         virtual bool run()=0;
         virtual void destroy()=0;
+        
+    // note & related classes destructor bug fixed w/ help of this
+    // stack exchange post:
+    // https://stackoverflow.com/questions/10024796/c-virtual-functions-but-no-virtual-destructors
+    virtual ~Node() {};
 
 };
 class CompositeNode :public Node{
@@ -28,6 +33,9 @@ class CompositeNode :public Node{
         void addChild(Node* child){
             children.emplace_back(child);
         }
+
+
+
 };
 class Selector: public CompositeNode{
     public:
@@ -39,7 +47,7 @@ class Selector: public CompositeNode{
             }
             return false;
         }
-        virtual void destroy(){
+        virtual void destroy() override{
            for(Node* child:getChildren()){
                 child->destroy();
             }
@@ -55,7 +63,7 @@ class Sequence: public CompositeNode{
             }
             return true;
         }
-        virtual void destroy(){
+        virtual void destroy() override{
            for(Node* child:getChildren()){
                 child->destroy();
             }
@@ -91,7 +99,7 @@ class CheckIfPlayerExist:public Node{
                 return !isNegative;
             }
         }
-       virtual void destroy(){
+       virtual void destroy() override{
            delete this;
         }
 };
@@ -114,7 +122,7 @@ class CheckDistance:public Node{
                 return isNegative;
             }
         }
-       virtual void destroy(){
+       virtual void destroy() override{
                       delete this;
         }
         
@@ -166,7 +174,7 @@ class WalkToPlayerTask: public ActionNode{
             }
             return true;
         }
-       virtual void destroy(){
+       virtual void destroy() override{
                       delete this;
         }
 };
@@ -208,7 +216,7 @@ class AttackTask:public ActionNode{
             }
 
         }
-       virtual void destroy(){
+       virtual void destroy() override{
                       delete this;
         }
 };
@@ -231,7 +239,7 @@ class ParryTask:public ActionNode{
             }
 
         }
-       virtual void destroy(){
+       virtual void destroy() override{
           delete this;
         }
 };
@@ -262,10 +270,10 @@ class BehaviorTree{
         BehaviorTree(){
 
         }
-        void DestroySelf(){
+        virtual void DestroySelf(){
             if(root!=nullptr){
                 root->destroy();
-                delete root;
+                // delete root;
             }
             if(attack_ipt!=nullptr){
                 attack_ipt->destroy();
