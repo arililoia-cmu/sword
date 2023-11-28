@@ -40,7 +40,7 @@ Load<WalkMeshes> G_WALKMESHES(LoadTagDefault,
 	{
 		WalkMeshes* ret = new WalkMeshes(data_path("sword.w"));
 		// TODO: move this out, this is only relevant for specific scenes
-		walkmesh = &ret->lookup("WalkMesh");
+		walkmesh = &ret->lookup("WalkMesh.021");
 		return ret;
 	});
 
@@ -301,6 +301,7 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 				enemies[i]->wrist_transform = &transform;
 			}
 		}
+		
 		for(int i=0;i<5;++i){
 			char num[5]={'.','0','0','0','\0'};
 			num[3]=(char)(i+48+1);
@@ -560,7 +561,7 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 	auto graphic_setup = [this](Load<GLuint> move_graphic_tex, const std::vector<int>& corresponding_stances){
 		auto* moveGraphic = new Gui::MoveGraphic(*move_graphic_tex);
 		Gui::GuiID move_popup_ID = gui.addElement(moveGraphic);
-		for (int i=0; i<corresponding_stances.size(); i++){
+		for (int i=0; i< (int) corresponding_stances.size(); i++){
 			stanceGuiIDMap[corresponding_stances[i]] = move_popup_ID;
 		}
 	};

@@ -23,8 +23,10 @@ all : \
 	$(DIST)/sword.scene \
 	$(DIST)/sword.c \
 
+#ifdef $(exportmesh)
 $(DIST)/sword.pnct : sword.blend $(EXPORT_MESHES)
 	$(BLENDER) --background --python $(EXPORT_MESHES) -- '$<':Platforms '$@'
+#endif
 
 $(DIST)/sword.scene : sword.blend $(EXPORT_SCENE)
 	$(BLENDER) --background --python $(EXPORT_SCENE) -- '$<':Platforms '$@'
