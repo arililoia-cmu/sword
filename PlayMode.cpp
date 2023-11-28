@@ -282,7 +282,7 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 			player->wrist_transform = &transform;
 		}
 		
-		
+			
 		for(int i=0;i<5;++i)
 		{
 			char num[1]={'\0'};
@@ -319,6 +319,7 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 				enemies[i]->wrist_transform = &transform;
 			}
 		}
+		
 	}
 
 	// Create player transform at player feet and start player walking at nearest walk point:
@@ -685,10 +686,25 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 			glm::mat4x3 frame = player->camera->transform->make_local_to_parent();
 			glm::vec3 forward = -frame[2];
 			float camera_length = 6.0f;
+			/*
 			if (pitch > 0.5f * 3.1415926f) {
 				camera_length = std::min(camera_length, 0.9f * (player->player_height + player->camera_transform->position.z) / sin(pitch - 0.5f * 3.1415926f));
 			}
+			*/
 			player->camera->transform->position = - camera_length * forward; // -glm::length(player.camera->transform->position) * forward; // Camera distance behind player
+			// glm::vec3 original = player->camera->transform->position;
+
+			glm::vec3 wld = player->camera->transform->make_local_to_world() * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f); 
+			glm::vec3 proj = walkmesh->to_world_point(walkmesh->nearest_walk_point(wld));
+
+			float adj_height = (wld.z < proj.z) ? proj.z + 0.1f : wld.z;
+			glm::vec4 newworld = glm::vec4(proj.x, proj.y, adj_height, 1.0f);
+
+			player->camera->transform->position = glm::vec3(0.0f);
+			glm::vec3 newlocal = player->camera_transform->make_world_to_local() * newworld; 
+			//std::cout << newlocal.x << " " << newlocal.y << " " << newlocal.z << "\n\n";
+
+			player->camera->transform->position = newlocal;
 
 			return true;
 		}
@@ -931,8 +947,8 @@ void PlayMode::processPawnControl(Pawn& pawn, float elapsed)
 		}
 		else if(stance == 6) // DODGE ROLL (implemented as attack since it similarly precludes you from taking any action and modifies your transform)
 		{
-			const float dur = 0.20f;
-			const float distance = 3.0f;
+			const float dur = 0.50f;
+			const float distance = 5.0f;
 
 			static auto interpolate = [](float x) -> float
 				{
