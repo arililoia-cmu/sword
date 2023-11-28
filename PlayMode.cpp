@@ -948,7 +948,7 @@ void PlayMode::processPawnControl(Pawn& pawn, float elapsed)
 		else if(stance == 6) // DODGE ROLL (implemented as attack since it similarly precludes you from taking any action and modifies your transform)
 		{
 			const float dur = 0.50f;
-			const float distance = 5.0f;
+			const float distance = 3.0f;
 
 			static auto interpolate = [](float x) -> float
 				{
@@ -968,7 +968,7 @@ void PlayMode::processPawnControl(Pawn& pawn, float elapsed)
 				
 			float amount = after - before;
 
-			movement = pawn.pawn_control.stanceInfo.dodge.dir * distance * amount;
+			movement = pawn.pawn_control.stanceInfo.dodge.dir * (distance * amount + 0.5f * PlayerSpeed * elapsed);
 
 			if(pawn.pawn_control.attack)
 			{
@@ -1209,7 +1209,7 @@ void PlayMode::update(float elapsed)
 	// which is the mode's job
 	{
 		//combine inputs into a move:
-		constexpr float PlayerSpeed = 5.0f;
+		
 		glm::vec2 move = glm::vec2(0.0f);
 		if(left.pressed && !right.pressed) move.x =-1.0f;
 		if(!left.pressed && right.pressed) move.x = 1.0f;

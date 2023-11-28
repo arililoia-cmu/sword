@@ -59,6 +59,8 @@ struct PlayMode : Mode
 	void walk_pawn(Pawn& pawn, glm::vec3 movement);
 	void processPawnControl(Pawn& pawn, float elapsed);
 
+	const float PlayerSpeed = 5.0f;
+
 	// sound stuff starts here:
 	// set previous clang time to something ridiculous
 	clock_t previous_player_sword_clang_time = clock();
