@@ -809,9 +809,9 @@ void PlayMode::processPawnControl(Pawn& pawn, float elapsed)
 			float adt_time = interpolateWeapon(rt); //1 - (1-rt)*(1-rt)*(1-rt) * (2 - (1-rt)*(1-rt)*(1-rt)); // Time scaling, imitates acceleration
 
 
-			pawn.arm_transform->position = glm::vec3(0.0f, 0.0f, 0.5f - adt_time * 1.5f);
+			pawn.arm_transform->position = glm::vec3(0.0f, 0.0f, 0.5f - adt_time * 0.8f);
 			pawn.arm_transform->rotation = glm::angleAxis(M_PI_2f * adt_time / 2.0f, glm::normalize(glm::vec3(0.0f, 0.0f, 1.0f)));
-			pawn.wrist_transform->rotation = glm::angleAxis(M_PI_2f * -adt_time * 1.2f, glm::normalize(glm::vec3(0.0f, 1.0f, 0.0f)));
+			pawn.wrist_transform->rotation = glm::angleAxis(M_PI_2f * -adt_time * 1.0f, glm::normalize(glm::vec3(0.0f, 1.0f, 0.0f)));
 
 			if (stance == 1)
 			{
@@ -896,9 +896,9 @@ void PlayMode::processPawnControl(Pawn& pawn, float elapsed)
 
 			float adt_time = 1 - (1-rt)*(1-rt)*(1-rt) * (2 - (1-rt)*(1-rt)*(1-rt)); // Time scaling, imitates acceleration
 
-			pawn.arm_transform->position = glm::vec3(0.0f, 0.0f, 0.5f - adt_time * 0.8f);
+			pawn.arm_transform->position = glm::vec3(0.0f, 0.0f, 0.5f - adt_time * 0.6f);
 			pawn.arm_transform->rotation = glm::angleAxis(M_PI_2f * adt_time / 2.0f, glm::normalize(glm::vec3(0.0f, 0.0f, 1.0f)));
-			pawn.wrist_transform->rotation = glm::angleAxis(M_PI_2f * -adt_time * 1.2f, glm::normalize(glm::vec3(0.0f, 1.0f, 0.0f)));
+			pawn.wrist_transform->rotation = glm::angleAxis(M_PI_2f * -adt_time * 1.0f, glm::normalize(glm::vec3(0.0f, 1.0f, 0.0f)));
 
 			st -= elapsed;
 			if (st < -delay){
