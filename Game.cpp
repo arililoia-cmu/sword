@@ -31,17 +31,21 @@ void Game::update(float elapsed)
 {
 	size_t activeCreatures = Game::MAX_CREATURE_COUNT - openCreatureSlots.size();
 
+	//DEBUGOUT << "Iterating through game creatures to update" << std::endl;
 	size_t seenSoFar = 0;
 	for(size_t i = 0; i < Game::MAX_CREATURE_COUNT; i++)
 	{
 		auto c = creatures[i];
 		if(std::get<0>(c) == nullptr)
 		{
+			//DEBUGOUT << "Skipping game update because nullptr" << std::endl;
 			continue;
 		}
 		std::get<0>(c)->update(elapsed);
+		//DEBUGOUT << "Updated creature, on " << i << "th creature" << std::endl;
 		if(++seenSoFar == activeCreatures)
 		{
+			//DEBUGOUT << "Done updating game after seeing " << activeCreatures << " creatures" << std::endl;
 			return;
 		}
 	}
@@ -68,11 +72,13 @@ bool Game::destroyCreature(Game::CreatureID id)
 {
 	try
 	{
-		auto c = creatures.at(id.idx);
+		auto& c = creatures.at(id.idx);
 		if(std::get<1>(c)== id.gen)
 		{
 			delete std::get<0>(c);
 			std::get<0>(c) = nullptr;
+
+			DEBUGOUT << "Destroyed creature with id gen " << id.gen << " and with idx " << id.idx << std::endl;
 
 			openCreatureSlots.emplace(id.idx, id.gen + 1);
 			return true;

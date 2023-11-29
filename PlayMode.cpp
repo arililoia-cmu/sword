@@ -1231,7 +1231,74 @@ void PlayMode::walk_pawn(Pawn &pawn, glm::vec3 movement)
 }
 
 void PlayMode::update(float elapsed)
-{	
+{
+	// Clearing 0 HP enemies
+	{
+		auto enemyIDit = enemiesId.begin();
+		while(enemyIDit != enemiesId.end())
+		{
+			Enemy* enemyPtr = static_cast<Enemy*>(game.getCreature(*enemyIDit));
+
+			if(!enemyPtr)
+			{
+				DEBUGOUT << "Trying to check enemy hps to see if they need to be deleted, but an enemy didn't eixst!" << std::endl;
+				enemyIDit++;
+			}
+			else
+			{
+				auto pertainsToEnemy = [enemyPtr](Scene::Drawable& d) -> bool
+					{
+						if(d.transform == enemyPtr->body_transform || d.transform == enemyPtr->sword_transform || d.transform == enemyPtr->wrist_transform)
+						{
+							return true;
+						}
+						return false;
+					};
+
+				// auto pertainsToEnemyTForm = [enemyPtr](Scene::Transform& d) -> bool
+				// 	{
+				// 		if(&d == enemyPtr->body_transform
+				// 		{
+				// 			return true;
+				// 		}
+				// 		return false;
+				// 	};
+			
+				if(enemyPtr->hp <= 0.0f)
+				{
+					DEBUGOUT << "Started deleting enemy" << std::endl;
+					
+					collEng.unregisterCollider(enemyPtr->bodyCollider); 
+					collEng.unregisterCollider(enemyPtr->swordCollider);
+
+					DEBUGOUT << "Deleting enemy, colliders deregistered" << std::endl;
+					
+					scene.drawables.remove_if(pertainsToEnemy);
+
+					DEBUGOUT << "Deleting enemy, drawables removed" << std::endl;
+					
+					//scene.transforms.remove_if(pertainsToEnemyTForm); // Whatever, we will just leave transforms allocated, who cares
+					delete enemyPtr->bt;
+
+					DEBUGOUT << "Deleting enemy, bt deleted" << std::endl;
+					
+					game.destroyCreature(*enemyIDit); // Automatically calls delete (yes I know bad design but we don't have time to fix)
+
+					DEBUGOUT << "Deleting enemy, creature destroyed" << std::endl;
+					
+					auto toDestroyit = enemyIDit++;
+					enemiesId.erase(toDestroyit);
+
+					DEBUGOUT << "Finished deleting enemy" << std::endl;
+				}
+				else
+				{
+					enemyIDit++;
+				}
+			}
+		}
+	}
+	
 	// Handle the input we've received this update
 	// We don't put this in player's own update since we need to get the input
 	// which is the mode's job
@@ -1334,8 +1401,11 @@ void PlayMode::update(float elapsed)
 
 	// Updates the systems
 	collEng.update(elapsed);
+	//DEBUGOUT << "Finished collision update" << std::endl;
 	game.update(elapsed);
+	//DEBUGOUT << "Finished game update" << std::endl;
 	gui.update(elapsed);
+	//DEBUGOUT << "Finished gui update" << std::endl;
 }
 
 void PlayMode::draw(glm::uvec2 const &drawable_size)
@@ -1360,6 +1430,8 @@ void PlayMode::draw(glm::uvec2 const &drawable_size)
 	glm::mat4 world_to_clip; // Just want to reuse this lol
 	scene.draw(*player->camera, world_to_clip);
 
+	//DEBUGOUT << "Started drawing gui bars" << std::endl;
+	
 	// Positioning enemy HP bars (yes I know we can do this much more efficiently on the GPU)
 	for(Gui::GuiID enemyHpBar : enemyHpBars)
 	{
@@ -1373,7 +1445,8 @@ void PlayMode::draw(glm::uvec2 const &drawable_size)
 				Enemy* enemyPtr = static_cast<Enemy*>(game.getCreature(bar->creatureIDForPos));
 				if(!enemyPtr)
 				{
-					DEBUGOUT << "Tried to set position for hp bar, and it exists, but it's enemy for positioning doesn't!" << std::endl;
+					DEBUGOUT << "Tried to set position for hp bar, and it exists, but it's enemy for positioning doesn't, deleting" << std::endl;
+					gui.removeElement(enemyHpBar);
 					continue;
 				}
 				glm::vec4 clipPos = world_to_clip * glm::mat4(enemyPtr->body_transform->make_local_to_world()) * glm::vec4(0.0f, 0.0f, 2.0f, 1.0f);
@@ -1389,6 +1462,8 @@ void PlayMode::draw(glm::uvec2 const &drawable_size)
 	}
 	
 	gui.render(world_to_clip);
+
+	//DEBUGOUT << "Finished drawing gui" << std::endl;
 
 	{ //use DrawLines to overlay some text:
 		glDisable(GL_DEPTH_TEST);

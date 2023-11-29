@@ -3,7 +3,7 @@
 
 #include <iostream>
 
-//#define ENABLE_DEBUG_PRINT
+#define ENABLE_DEBUG_PRINT
 
 #ifdef ENABLE_DEBUG_PRINT
 #define DEBUGOUT std::cerr

@@ -64,7 +64,7 @@ struct Slots
 		{
 			try
 			{
-				auto c = slots.at(id.idx);
+				auto& c = slots.at(id.idx);
 				if(std::get<1>(c) == id.gen)
 				{
 					delete std::get<0>(c);

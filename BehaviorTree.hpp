@@ -270,14 +270,22 @@ class BehaviorTree{
         BehaviorTree(){
 
         }
-        virtual void DestroySelf(){
-            if(root!=nullptr){
+	virtual ~BehaviorTree()
+		{
+			if(root!=nullptr){
                 root->destroy();
-                delete root;
+
+				DEBUGOUT << "Deleting bt root" << std::endl;
             }
             if(attack_ipt!=nullptr){
+
+				DEBUGOUT << "Destroying attack_ipt" << std::endl;
+				
                 attack_ipt->destroy();
             }
+		}
+        virtual void DestroySelf(){
+
         }
         void InitInterruptSoldier(){
             attack_ipt=nullptr;

@@ -53,7 +53,7 @@ struct CollideMeshes
 // MUST BE CONVEX
 struct Collider
 {
-	Collider(Game::CreatureID cid, Scene::Transform* t, CollideMesh const* m, float br, std::function<void(Game::CreatureID, Scene::Transform*)> c) : cId(cid), transform(t), mesh(m), broadRadius(br), callback(c) {};
+	Collider(Game::CreatureID cid, Scene::Transform* t, CollideMesh const* m, float br, std::function<void(Game::CreatureID, Scene::Transform*)> c) : cId(cid), transform(t), mesh(m), broadRadius(br), active(true), callback(c) {};
 	
 	// Finds the farthest point in the direction d
 	// (This obviously is only guaranteed to be useful if we're convex)
@@ -64,6 +64,7 @@ struct Collider
 	Scene::Transform* transform;
 	CollideMesh const* mesh;
 	float broadRadius;
+	bool active = false;;
 
 	std::function<void(Game::CreatureID, Scene::Transform*)> callback;
 };
@@ -113,7 +114,7 @@ public:
 	
 private:
 	ID nextID;
-	
+
 	std::array<std::vector<Collider>, LAYER_COUNT> colliders;
 	std::unordered_map<ID, std::pair<Layer, size_t>> fromID;
 };

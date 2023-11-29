@@ -248,14 +248,20 @@ CollisionEngine::ID CollisionEngine::registerCollider(Game::CreatureID cid, Scen
 {
 	colliders[l].emplace_back(cid, t, m, br, c);
 
-	fromID.emplace(nextID, std::make_pair(l, colliders[l].size()));
+	fromID.emplace(nextID, std::make_pair(l, colliders[l].size() - 1));
 	
 	return nextID++;
 }
 
 void CollisionEngine::unregisterCollider(CollisionEngine::ID id)
 {
-	// TODO: Implement
+	auto toRemove = fromID.at(id);
+	// No bounds checking, whatever, if it works it works
+
+	std::vector<Collider>& onLayer = colliders[toRemove.first];
+
+	onLayer[toRemove.second].active = false;
+	
 	fromID.erase(id);
 }
 
@@ -287,16 +293,22 @@ void CollisionEngine::update(float elapsed)
 			{
 				for(size_t a = 0; a < colliders[i].size(); a++)
 				{
-					for(size_t b = 0; b < colliders[j].size(); b++)
+					if(colliders[i][a].active)
 					{
-						if(i == j && a == b)
+						for(size_t b = 0; b < colliders[j].size(); b++)
 						{
-							continue;
-						}
+							if(colliders[j][b].active)
+							{
+								if(i == j && a == b)
+								{
+									continue;
+								}
 
-						if(GJK(colliders[i][a], colliders[j][b]))
-						{
-							collisionOccurences.emplace_back(a, b, (Layer)i, (Layer)j);
+								if(GJK(colliders[i][a], colliders[j][b]))
+								{
+									collisionOccurences.emplace_back(a, b, (Layer)i, (Layer)j);
+								}
+							}
 						}
 					}
 				}
