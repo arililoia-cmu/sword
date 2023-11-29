@@ -40,7 +40,6 @@ Load<WalkMeshes> G_WALKMESHES(LoadTagDefault,
 	[]() -> WalkMeshes const*
 	{
 		WalkMeshes* ret = new WalkMeshes(data_path("sword.w"));
-		//walkmesh = &ret->lookup("WalkMesh.021");
 		walkmesh = &ret->lookup("WalkMesh");
 		// TODO: line 43 results in a segfault on Mac M1, line
 		// 44 throws an error on other computers. change this so that 
@@ -162,6 +161,20 @@ Load<GLuint> slice_tex(LoadTagDefault,
 	{
 		return new GLuint(load_texture(data_path("graphics/slice.png"), false, true, true));
 	});
+
+Load<GLuint> titlecard_tex(LoadTagDefault,
+	[]()
+	{
+		return new GLuint(load_texture(data_path("graphics/titlecard.png"), false, true, true));
+	});
+
+Load<GLuint> blood_graphic_tex(LoadTagDefault,
+	[]()
+	{
+		return new GLuint(load_texture(data_path("graphics/blood_1.png"), false, true, true));
+	});
+
+
 
 // Here we set up the drawables correctly
 // Note that this is basically initializing the "mesh rendering" system
@@ -586,6 +599,16 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 	graphic_setup(attack_tex, {1,3});
 	graphic_setup(roll_tex, {7});
 	graphic_setup(slice_tex, {9});
+
+	auto* titleGraphic = new Gui::Popup(*titlecard_tex, 10000000.0f, true);
+	titlecard_ID = gui.addElement(titleGraphic);
+
+	auto* bloodGraphic = new Gui::Popup(*blood_graphic_tex, 20.0f, false);
+	bloodGraphic_ID = gui.addElement(bloodGraphic);
+
+		// for (int i=0; i< (int) corresponding_stances.size(); i++){
+		// 	stanceGuiIDMap[corresponding_stances[i]] = move_popup_ID;
+		// }
 }
 
 PlayMode::~PlayMode()
@@ -646,10 +669,20 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 		}
 	} else if (evt.type == SDL_MOUSEBUTTONDOWN) {
 
+			// remove title card
+			Gui::Element* elem = gui.getElement(titlecard_ID);
+			if (elem){
+				Gui::Popup* grabbed = static_cast<Gui::Popup*>(elem);
+				if (grabbed->get_visible()){
+					grabbed->trigger_visibility(false);
+					return true;
+				}
+			}
+
 			if (SDL_GetRelativeMouseMode() == SDL_FALSE) {
 				SDL_SetRelativeMouseMode(SDL_TRUE);
 			}
-		//std::cout<<"sssssssssssssssssssssssssssssssssssss"<<std::endl;
+
 			if(evt.button.button==SDL_BUTTON_LEFT){
 				mainAction.downs += 1;
 				mainAction.pressed = true;

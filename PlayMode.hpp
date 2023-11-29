@@ -45,14 +45,11 @@ struct PlayMode : Mode
 	std::list<Game::CreatureID> enemiesId;
 	std::list<Gui::GuiID> enemyHpBars; // Automatically bound to the correct enemy
 	Game::CreatureID plyr;
-
-	// Gui::GuiID dodge_popup_ID;
-	// Gui::GuiID parry_popup_ID;
-	// Gui::GuiID attack_popup_ID;
-	// Gui::GuiID roll_popup_ID;
-	// Gui::GuiID slice_popup_ID;
 	
 	std::map<int, Gui::GuiID> stanceGuiIDMap = {};
+
+	Gui::GuiID titlecard_ID;
+	Gui::GuiID bloodGraphic_ID;
 
 	Game game;
 	Scene scene;
