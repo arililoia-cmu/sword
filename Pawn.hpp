@@ -2,6 +2,7 @@
 #define PAWN_HPP
 
 #include "Game.hpp"
+#include "Collisions.hpp"
 
 class BehaviorTree;
 
@@ -80,6 +81,9 @@ struct Pawn : public Game::Creature
 
 	int stamina;
 	int maxstamina;
+
+	CollisionEngine::ID swordCollider;
+	CollisionEngine::ID bodyCollider;
 };
 
 struct Enemy : public Pawn

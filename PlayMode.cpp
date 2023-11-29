@@ -1,6 +1,7 @@
 #include "PlayMode.hpp"
 
 #include "LitColorTextureProgram.hpp"
+#include "PrintUtil.hpp"
 #include "TextureProgram.hpp"
 
 #include "DrawLines.hpp"
@@ -254,14 +255,14 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 	// 	}
 	// }
 
-	Game::CreatureID plyr = game.spawnCreature(new Player());
+	plyr = game.spawnCreature(new Player());
 	player = static_cast<Player*>(game.getCreature(plyr));
 
-	std::array<Game::CreatureID, 5> enemiesId;
-	for(size_t i = 0; i < enemies.size(); i++)
+	std::array<Enemy*, 5> enemies;
+	for(size_t i = 0; i < 5; i++)
 	{
-		enemiesId[i] = game.spawnCreature(new Enemy());
-		enemies[i] = static_cast<Enemy*>(game.getCreature(enemiesId[i]));
+		enemiesId.push_back(game.spawnCreature(new Enemy()));
+		enemies[i] = static_cast<Enemy*>(game.getCreature(enemiesId.back()));
 	}
 	
 	for(auto& transform : scene.transforms)
@@ -404,22 +405,33 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 			enemies[i]->arm_transform = &scene.transforms.back();
 			enemies[i]->arm_transform->parent = enemies[i]->body_transform;
 			enemies[i]->wrist_transform->parent = enemies[i]->arm_transform;
+		}
 
-			auto enemyISwordHit = [this, i](Game::CreatureID c, Scene::Transform* t) -> void
+		for(Game::CreatureID myEnemyID : enemiesId)
+		{	
+			auto enemyISwordHit = [this, myEnemyID](Game::CreatureID c, Scene::Transform* t) -> void
 				{
 					if(t == player->sword_transform)
 					{
 						if(player->pawn_control.stance == 4)
 						{
-							if(enemies[i]->pawn_control.stance == 1)
+							Enemy* enemyPtr = static_cast<Enemy*>(game.getCreature(myEnemyID));
+
+							if(!enemyPtr)
 							{
-								enemies[i]->pawn_control.stance = 2;
-								enemies[i]->pawn_control.swingHit = enemies[i]->pawn_control.swingTime;
+								DEBUGOUT << "Enemy no longer exists in enemyISwordHit!" << std::endl;
+								return;
 							}
-							else if(enemies[i]->pawn_control.stance == 9)
+							
+							if(enemyPtr->pawn_control.stance == 1)
 							{
-								enemies[i]->pawn_control.stance = 10;
-								enemies[i]->pawn_control.swingHit = enemies[i]->pawn_control.swingTime;
+								enemyPtr->pawn_control.stance = 2;
+								enemyPtr->pawn_control.swingHit = enemyPtr->pawn_control.swingTime;
+							}
+							else if(enemyPtr->pawn_control.stance == 9)
+							{
+								enemyPtr->pawn_control.stance = 10;
+								enemyPtr->pawn_control.swingHit = enemyPtr->pawn_control.swingTime;
 							}
 							// else if(enemy.pawn_control.stance == 4)
 							// {
@@ -437,26 +449,38 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 					}
 				};
 
-			auto enemyIHit = [this, i](Game::CreatureID c, Scene::Transform* t) -> void
+			auto enemyIHit = [this, myEnemyID](Game::CreatureID c, Scene::Transform* t) -> void
 				{
 					if(t == player->sword_transform)
 					{
-						enemies[i]->hp -= 1;
+						Enemy* enemyPtr = static_cast<Enemy*>(game.getCreature(myEnemyID));
+						
+						if(!enemyPtr)
+						{
+							DEBUGOUT << "Enemy no longer exists in enemyISwordHit!" << std::endl;
+							return;
+						}
+						
+						enemyPtr->hp -= 1;
 						//enemies[i]->hp->change_enemy_hp = true;
-						std::cout << "ENEMY " << i << " HIT WITH SWORD" << std::endl;
+						std::cout << "ENEMY HIT WITH SWORD" << std::endl;
 						// exit(0);
 					}
 				};
 
-			collEng.registerCollider(enemiesId[i], enemies[i]->sword_transform, enemySwordCollMesh, enemySwordCollMesh->containingRadius, enemyISwordHit, CollisionEngine::Layer::ENEMY_SWORD_LAYER);
-			collEng.registerCollider(enemiesId[i], enemies[i]->body_transform, enemyCollMesh, enemyCollMesh->containingRadius, enemyIHit, CollisionEngine::Layer::ENEMY_BODY_LAYER);
+			Enemy* enemyPtr = static_cast<Enemy*>(game.getCreature(myEnemyID));
+
+			enemyPtr->swordCollider = collEng.registerCollider(myEnemyID, enemyPtr->sword_transform, enemySwordCollMesh, enemySwordCollMesh->containingRadius, enemyISwordHit, CollisionEngine::Layer::ENEMY_SWORD_LAYER);
+			enemyPtr->bodyCollider = collEng.registerCollider(myEnemyID, enemyPtr->body_transform, enemyCollMesh, enemyCollMesh->containingRadius, enemyIHit, CollisionEngine::Layer::ENEMY_BODY_LAYER);
 		}
 	
 		auto playerSwordHit = [this](Game::CreatureID c, Scene::Transform* t) -> void
 			{
-				for(int i = 0; i < 5; i++)
+				for(Game::CreatureID enemyID : enemiesId)
 				{
-					if(t == enemies[i]->sword_transform)
+					Enemy* enemyPtr = static_cast<Enemy*>(game.getCreature(enemyID));
+					
+					if(t == enemyPtr->sword_transform)
 					{
 						if(player->pawn_control.stance == 1)
 						{
@@ -486,22 +510,26 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 
 
 		auto playerHit = [this](Game::CreatureID c, Scene::Transform* t) -> void
-			{		
-				for(int i = 0; i < 5; i++){
-					if(t == enemies[i]->sword_transform){
+			{	
+				for(Game::CreatureID enemyID : enemiesId)
+				{
+					Enemy* enemyPtr = static_cast<Enemy*>(game.getCreature(enemyID));
+					
+					if(t == enemyPtr->sword_transform)
+					{
 						player->hp -= 1;
 						//change_player_hp = true;
 					}
 				}
 			};
 	
-		collEng.registerCollider(plyr, player->sword_transform, playerSwordCollMesh, playerSwordCollMesh->containingRadius, playerSwordHit, CollisionEngine::Layer::PLAYER_SWORD_LAYER);
-		collEng.registerCollider(plyr, player->body_transform, playerCollMesh, playerCollMesh->containingRadius, playerHit, CollisionEngine::Layer::PLAYER_BODY_LAYER);
+		player->swordCollider = collEng.registerCollider(plyr, player->sword_transform, playerSwordCollMesh, playerSwordCollMesh->containingRadius, playerSwordHit, CollisionEngine::Layer::PLAYER_SWORD_LAYER);
+		player->bodyCollider = collEng.registerCollider(plyr, player->body_transform, playerCollMesh, playerCollMesh->containingRadius, playerHit, CollisionEngine::Layer::PLAYER_BODY_LAYER);
 	}
 
 	// SETTING UP UI BARS
 	{
-		auto playerHpBarCalculate = [this, plyr](float elapsed) -> float
+		auto playerHpBarCalculate = [this](float elapsed) -> float
 			{
 				Pawn* p = static_cast<Pawn*>(game.getCreature(plyr));
 				if(p)
@@ -518,7 +546,7 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 		playerHpBar->emptyColor = glm::vec3(1.0f, 0.0f, 0.0f);
 		gui.addElement(playerHpBar);
 
-		auto playerStamBarCalculate = [this, plyr](float elapsed) -> float
+		auto playerStamBarCalculate = [this](float elapsed) -> float
 			{
 				Pawn* p = static_cast<Pawn*>(game.getCreature(plyr));
 				if(p)
@@ -535,12 +563,11 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 		playerStamBar->emptyColor = glm::vec3(0.0f, 1.0f, 1.0f);
 		gui.addElement(playerStamBar);
 
-		for(size_t i = 0; i < enemiesId.size(); i++)
+		for(Game::CreatureID enemyID : enemiesId)
 		{
-			auto enemyId = enemiesId[i];
-			auto enemyHpBarCalculate = [this, enemyId](float elapsed) -> float
+			auto enemyHpBarCalculate = [this, enemyID](float elapsed) -> float
 				{
-					Pawn* p = static_cast<Pawn*>(game.getCreature(enemyId));
+					Pawn* p = static_cast<Pawn*>(game.getCreature(enemyID));
 					if(p)
 					{
 						return (float)p->hp / (float)p->maxhp;
@@ -553,8 +580,10 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 			enemyHpBar->alpha = 0.5f;
 			enemyHpBar->fullColor = glm::vec3(0.0f, 1.0f, 0.0f);
 			enemyHpBar->emptyColor = glm::vec3(1.0f, 0.0f, 0.0f);
-		
-			enemyHpBars[i] = gui.addElement(enemyHpBar);
+			enemyHpBar->useCreatureID = true;
+			enemyHpBar->creatureIDForPos = enemyID;
+			
+			enemyHpBars.push_back(gui.addElement(enemyHpBar));
 		}
 	}
 
@@ -573,7 +602,6 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 	graphic_setup(attack_tex, {1,3});
 	graphic_setup(roll_tex, {7});
 	graphic_setup(slice_tex, {9});
-	
 }
 
 PlayMode::~PlayMode()
@@ -1203,7 +1231,7 @@ void PlayMode::walk_pawn(Pawn &pawn, glm::vec3 movement)
 }
 
 void PlayMode::update(float elapsed)
-{
+{	
 	// Handle the input we've received this update
 	// We don't put this in player's own update since we need to get the input
 	// which is the mode's job
@@ -1282,19 +1310,25 @@ void PlayMode::update(float elapsed)
 		}
 		prev_stance = player->pawn_control.stance;
 
-		for(int i=0;i<5;++i)
+		for(Game::CreatureID enemyID : enemiesId)
 		{
-			enemies[i]->bt->tick();// AI Thinking
-			PawnControl& enemy_control=enemies[i]->bt->GetControl();
-			enemies[i]->pawn_control.move = enemy_control.move;
+			Enemy* enemyPtr = static_cast<Enemy*>(game.getCreature(enemyID));
+			if(!enemyPtr)
+			{
+				DEBUGOUT << "Trying to iterate enemy control, but an enemy didn't exist..." << std::endl;
+				continue;
+			}
+			enemyPtr->bt->tick();// AI Thinking
+			PawnControl& enemy_control=enemyPtr->bt->GetControl();
+			enemyPtr->pawn_control.move = enemy_control.move;
 			enemy_control.move=glm::vec3(0,0,0);//like a consumer pattern
-			enemies[i]->pawn_control.rotate = enemy_control.rotate;
-			enemies[i]->pawn_control.attack = enemy_control.attack; // mainAction.pressed; // For demonstration purposes bound to player attack
-			enemies[i]->pawn_control.parry = enemy_control.parry; //secondAction.pressed; 
+			enemyPtr->pawn_control.rotate = enemy_control.rotate;
+			enemyPtr->pawn_control.attack = enemy_control.attack; // mainAction.pressed; // For demonstration purposes bound to player attack
+			enemyPtr->pawn_control.parry = enemy_control.parry; //secondAction.pressed; 
 			enemy_control.attack=0;
 			enemy_control.parry=0;
 			
-			processPawnControl(*enemies[i], elapsed);	
+			processPawnControl(*enemyPtr, elapsed);	
 		}
 	}
 
@@ -1327,16 +1361,30 @@ void PlayMode::draw(glm::uvec2 const &drawable_size)
 	scene.draw(*player->camera, world_to_clip);
 
 	// Positioning enemy HP bars (yes I know we can do this much more efficiently on the GPU)
-	for(size_t i = 0; i < enemyHpBars.size(); i++)
+	for(Gui::GuiID enemyHpBar : enemyHpBars)
 	{
-		Gui::Element* elem = gui.getElement(enemyHpBars[i]);
+		Gui::Element* elem = gui.getElement(enemyHpBar);
 		if(elem)
-		{
+		{	
 			Gui::Bar* bar = static_cast<Gui::Bar*>(elem);
-			glm::vec4 clipPos = world_to_clip * glm::mat4(enemies[i]->body_transform->make_local_to_world()) * glm::vec4(0.0f, 0.0f, 2.0f, 1.0f);
 
-			// Cursed ass cpu clipping LMAO
-			bar->screenPos = glm::vec3(clipPos.x / clipPos.w, clipPos.y / clipPos.w, (clipPos.w > 0) ? 0.0f : 1.0f);
+			if(bar->useCreatureID)
+			{
+				Enemy* enemyPtr = static_cast<Enemy*>(game.getCreature(bar->creatureIDForPos));
+				if(!enemyPtr)
+				{
+					DEBUGOUT << "Tried to set position for hp bar, and it exists, but it's enemy for positioning doesn't!" << std::endl;
+					continue;
+				}
+				glm::vec4 clipPos = world_to_clip * glm::mat4(enemyPtr->body_transform->make_local_to_world()) * glm::vec4(0.0f, 0.0f, 2.0f, 1.0f);
+
+				// Cursed ass cpu clipping LMAO
+				bar->screenPos = glm::vec3(clipPos.x / clipPos.w, clipPos.y / clipPos.w, (clipPos.w > 0) ? 0.0f : 1.0f);
+			}
+		}
+		else
+		{
+			DEBUGOUT << "Enemy hp bar doesn't exist, but it's still in the list!" << std::endl;
 		}
 	}
 	

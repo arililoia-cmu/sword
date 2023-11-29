@@ -6,6 +6,7 @@
 #include "Slots.hpp"
 #include "gl_errors.hpp"
 #include "Scene.hpp"
+#include "Game.hpp"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -288,6 +289,9 @@ struct Gui
 		glm::vec3 screenPos = glm::vec3(0.0f, 0.0f, 0.0f);
 		glm::vec2 scale = glm::vec2(1.0f, 1.0f);
 		float alpha = 1.0f;
+
+		bool useCreatureID = false;
+		Game::CreatureID creatureIDForPos;
 	};
 	
 	Gui() : elements() {};

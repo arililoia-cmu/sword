@@ -39,8 +39,12 @@ struct PlayMode : Mode
 	bool isMouseVertical;
 
 	Player* player;
-	std::array<Enemy*, 5> enemies;
-	std::array<Gui::GuiID, 5> enemyHpBars;
+//	std::array<Enemy*, 5> enemies;
+//	std::array<Gui::GuiID, 5> enemyHpBars;
+	
+	std::list<Game::CreatureID> enemiesId;
+	std::list<Gui::GuiID> enemyHpBars; // Automatically bound to the correct enemy
+	Game::CreatureID plyr;
 
 	// Gui::GuiID dodge_popup_ID;
 	// Gui::GuiID parry_popup_ID;
@@ -49,7 +53,6 @@ struct PlayMode : Mode
 	// Gui::GuiID slice_popup_ID;
 	
 	std::map<int, Gui::GuiID> stanceGuiIDMap = {};
-	
 
 	Game game;
 	Scene scene;
