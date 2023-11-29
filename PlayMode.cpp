@@ -40,8 +40,11 @@ Load<WalkMeshes> G_WALKMESHES(LoadTagDefault,
 	[]() -> WalkMeshes const*
 	{
 		WalkMeshes* ret = new WalkMeshes(data_path("sword.w"));
-		// TODO: move this out, this is only relevant for specific scenes
 		walkmesh = &ret->lookup("WalkMesh.021");
+		// walkmesh = &ret->lookup("WalkMesh");
+		// TODO: line 43 results in a segfault on Mac M1, line
+		// 44 throws an error on other computers. change this so that 
+		// it checks if either walkmesh or walkmesh.021 exists?
 		return ret;
 	});
 
@@ -282,26 +285,7 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 		{
 			player->wrist_transform = &transform;
 		}
-		
-			
-		for(int i=0;i<5;++i)
-		{
-			char num[1]={'\0'};
-			num[0]='0'+(char)i;
-			std::string snum(num);
-			if(transform.name=="Enemy_Body"+snum){
-				enemies[i]->body_transform = &transform;
-				enemies[i]->at = walkmesh->nearest_walk_point(enemies[i]->body_transform->position + glm::vec3(0.0f, 0.0001f, 0.0f));
-				float height = glm::length(enemies[i]->body_transform->position - walkmesh->to_world_point(enemies[i]->at));
-				enemies[i]->body_transform->position = glm::vec3(0.0f, 0.0f, height);
-			}
-			if(transform.name=="Enemy_Sword"+snum){
-				enemies[i]->sword_transform = &transform;
-			}
-			if(transform.name=="Enemy_Wrist"+snum){
-				enemies[i]->wrist_transform = &transform;
-			}
-		}
+	
 		
 		for(int i=0;i<5;++i){
 			char num[5]={'.','0','0','0','\0'};
