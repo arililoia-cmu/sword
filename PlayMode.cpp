@@ -40,8 +40,8 @@ Load<WalkMeshes> G_WALKMESHES(LoadTagDefault,
 	[]() -> WalkMeshes const*
 	{
 		WalkMeshes* ret = new WalkMeshes(data_path("sword.w"));
-		walkmesh = &ret->lookup("WalkMesh.021");
-		// walkmesh = &ret->lookup("WalkMesh");
+		//walkmesh = &ret->lookup("WalkMesh.021");
+		walkmesh = &ret->lookup("WalkMesh");
 		// TODO: line 43 results in a segfault on Mac M1, line
 		// 44 throws an error on other computers. change this so that 
 		// it checks if either walkmesh or walkmesh.021 exists?
