@@ -1433,8 +1433,10 @@ void PlayMode::draw(glm::uvec2 const &drawable_size)
 	//DEBUGOUT << "Started drawing gui bars" << std::endl;
 	
 	// Positioning enemy HP bars (yes I know we can do this much more efficiently on the GPU)
-	for(Gui::GuiID enemyHpBar : enemyHpBars)
-	{
+	auto enemyHpBarit = enemyHpBars.begin();
+	while(enemyHpBarit != enemyHpBars.end())
+	{	
+		Gui::GuiID enemyHpBar = *enemyHpBarit;
 		Gui::Element* elem = gui.getElement(enemyHpBar);
 		if(elem)
 		{	
@@ -1447,7 +1449,13 @@ void PlayMode::draw(glm::uvec2 const &drawable_size)
 				{
 					DEBUGOUT << "Tried to set position for hp bar, and it exists, but it's enemy for positioning doesn't, deleting" << std::endl;
 					gui.removeElement(enemyHpBar);
+					auto hpBarToDeleteit = enemyHpBarit++;
+					enemyHpBars.erase(hpBarToDeleteit);
 					continue;
+				}
+				else
+				{
+					enemyHpBarit++;
 				}
 				glm::vec4 clipPos = world_to_clip * glm::mat4(enemyPtr->body_transform->make_local_to_world()) * glm::vec4(0.0f, 0.0f, 2.0f, 1.0f);
 
@@ -1457,6 +1465,7 @@ void PlayMode::draw(glm::uvec2 const &drawable_size)
 		}
 		else
 		{
+			enemyHpBarit++;
 			DEBUGOUT << "Enemy hp bar doesn't exist, but it's still in the list!" << std::endl;
 		}
 	}
