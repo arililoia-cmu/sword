@@ -120,12 +120,10 @@ struct Gui
 	struct Popup : Element
 	{
 		
-		Popup(GLuint t, glm::vec2 popup_bottom_left_, glm::vec2 popup_top_right_,
-			float display_interval_) : tex(t)
+		Popup(GLuint t, float display_interval_, bool initial_visibility) : tex(t)
 			{
 
-				popup_bottom_left = popup_bottom_left_;
-				popup_top_right = popup_top_right_;
+				visibility_triggered = initial_visibility;
 				display_interval = display_interval_;
 				
 				corners.emplace_back(glm::vec3(popup_bottom_left.x, popup_bottom_left.y, 1.0f), glm::vec2(0.0f, 0.0f), 0.0f); // 1
@@ -148,6 +146,11 @@ struct Gui
 				
 				glBindBuffer(GL_ARRAY_BUFFER, 0);
 				glBindVertexArray(0);
+
+				if (initial_visibility){
+					previous_display_start_time = ((float)clock())/1000.0f;
+				}
+
 			}
 
 		virtual ~Popup()
@@ -157,18 +160,35 @@ struct Gui
 			}
 
 		void update(float elapsed) override
-			{
+			{	
+				// turn off the visibility of the element if it is
+				// not turned off after a certain period of time
+				if (visibility_triggered){
+					float current_time = ((float)clock())/1000.0f;
+					if (current_time > (display_interval + previous_display_start_time)){
+						visibility_triggered = false;	
+					}
+				}
 			}
 
-		void trigger_render(){
-			previous_display_start_time = ((float)clock())/1000.0f;
+
+		void trigger_visibility(bool tf){
+			if (tf){
+				visibility_triggered = true;
+				previous_display_start_time = ((float)clock())/1000.0f;
+			}else{
+				visibility_triggered = false;		
+			}
+		}
+
+		bool get_visible(){
+			return visibility_triggered;
 		}
 		
 		void render(glm::mat4 const& world_to_clip) override
 			{
-
-				float current_time = ((float)clock())/1000.0f;
-				if (current_time < display_interval + previous_display_start_time){
+				// std::cout << "render popup " << std::endl;
+				if (visibility_triggered){
 
 					glBindBuffer(GL_ARRAY_BUFFER, vbo);
 					glBufferData(GL_ARRAY_BUFFER, sizeof(Vert) * corners.size(), corners.data(), GL_STREAM_DRAW);
@@ -196,8 +216,9 @@ struct Gui
 		std::vector<Vert> corners;
 		GLuint vao; // It makes these
 		GLuint vbo;
-		glm::vec2 popup_bottom_left;
-	    glm::vec2 popup_top_right;
+		bool visibility_triggered;
+		glm::vec2 popup_bottom_left = glm::vec2(-1.0f, -1.0f);
+	    glm::vec2 popup_top_right = glm::vec2(1.0f, 1.0f);
 		float display_interval; 
 		float previous_display_start_time = 0.0f;
 	};
