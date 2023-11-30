@@ -174,6 +174,12 @@ Load<GLuint> blood_graphic_tex(LoadTagDefault,
 		return new GLuint(load_texture(data_path("graphics/blood_1.png"), false, true, true));
 	});
 
+Load<GLuint> game_over_tex(LoadTagDefault,
+	[]()
+	{
+		return new GLuint(load_texture(data_path("graphics/game_over.png"), false, true, true));
+	});
+
 
 
 // Here we set up the drawables correctly
@@ -380,7 +386,7 @@ void PlayMode::setupEnemy(Game::CreatureID myEnemyID, glm::vec3 pos, int maxhp, 
 		};
 
 	auto* enemyHpBar = new Gui::Bar(enemyHpBarCalculate, *heart_tex);
-	enemyHpBar->scale = glm::vec2(0.08f, 0.08f);
+	enemyHpBar->scale = glm::vec2(0.05f, 0.08f);
 	enemyHpBar->alpha = 0.5f;
 	enemyHpBar->fullColor = glm::vec3(0.0f, 1.0f, 0.0f);
 	enemyHpBar->emptyColor = glm::vec3(1.0f, 0.0f, 0.0f);
@@ -713,6 +719,9 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 
 	auto* titleGraphic = new Gui::Popup(*titlecard_tex, 10000000.0f, true);
 	titlecard_ID = gui.addElement(titleGraphic);
+
+	auto* gameOverGraphic = new Gui::Popup(*game_over_tex, std::numeric_limits<float>::max(), false);
+	gameOver_ID = gui.addElement(gameOverGraphic);
 
 	auto* bloodGraphic = new Gui::Popup(*blood_graphic_tex, 20.0f, false);
 	bloodGraphic_ID = gui.addElement(bloodGraphic);
@@ -1576,6 +1585,23 @@ void PlayMode::update(float elapsed)
 			processPawnControl(*enemyPtr, elapsed);	
 		}
 	}
+
+	Pawn* p = static_cast<Pawn*>(game.getCreature(plyr));
+	if(p)
+	{
+		if (p->hp <= 0.0f){
+			Gui::Element* elem = gui.getElement(gameOver_ID);
+			if (elem){
+				Gui::Popup* grabbed = static_cast<Gui::Popup*>(elem);
+				if (!grabbed->get_visible()){
+					grabbed->trigger_visibility(true);
+					Sound::stop_all_samples();
+				}
+			}
+
+		}
+	}
+
 
 	// Updates the systems
 	collEng.update(elapsed);

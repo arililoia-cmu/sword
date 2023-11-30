@@ -51,6 +51,7 @@ struct PlayMode : Mode
 
 	Gui::GuiID titlecard_ID;
 	Gui::GuiID bloodGraphic_ID;
+	Gui::GuiID gameOver_ID;
 
 	Game game;
 	Scene scene;
