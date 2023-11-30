@@ -715,6 +715,7 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 
 	for(size_t i = 0; i < 5; i++)
 	{
+		/*
 		enemiesId.push_back(game.spawnCreature(new Enemy()));
 		if(i==0){
 			setupEnemy(enemiesId.back(), glm::vec3(80.0f, 5.0f * i - 10.0f, 0.001f), 100.0f, 1);
@@ -731,6 +732,7 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 		if(i==4){
 			setupEnemy(enemiesId.back(), glm::vec3(20.0f, 5.0f * i - 10.0f, 0.001f), 100.0f, 2);
 		}
+		*/
 		//setupEnemy(enemiesId.back(), glm::vec3(i*20.0f, 5.0f * i - 10.0f, 0.001f), 100.0f, i % 3);
 	}
 
@@ -1727,6 +1729,71 @@ void PlayMode::update(float elapsed)
 			}
 
 		}
+	}
+
+	// Level progression
+	{
+		if (player->transform->position.x > 90.0f) {
+			glm::quat forward = player->transform->rotation;
+			if (std::abs(forward.w) < std::abs(forward.z)) {
+				// don't go back!
+			}
+		}
+
+		if (player->transform->position.x < -90.0f) {
+			glm::quat forward = player->transform->rotation;
+			if (std::abs(forward.w) > std::abs(forward.z)) {
+
+				if (enemiesId.size() != 0){
+					// defeat all enemies!
+				} else {
+					player->transform->position.x = 90.0f;
+					player->at = walkmesh->nearest_walk_point(player->transform->position + glm::vec3(0.0f, 0.0001f, 0.0f));
+
+					game_level += 1;
+					for (int i=0; i<game_level; i++){
+
+						float radius = 60.0f + 10.0f * std::sin(i * 1.4f);
+						float theta = 1.0f + 1.9f * i;
+						float phi = 1.0f + 3.14f + 1.9f * i;
+
+						enemiesId.push_back(game.spawnCreature(new Enemy()));
+						setupEnemy(enemiesId.back(), glm::vec3(radius * std::cos(theta), radius * std::sin(theta), 0.001f), 30.0f, 1);
+						enemiesId.push_back(game.spawnCreature(new Enemy()));
+						setupEnemy(enemiesId.back(), glm::vec3(radius * std::cos(phi), radius * std::sin(phi), 0.001f), 30.0f, 2);
+					}
+					int num_boss = std::min((game_level + 1)/ 3, 8);
+					for (int j=0; j<num_boss; j++){
+						float radius = (num_boss - 1) * 5.0f; 
+						float theta = (1.0f * j + 0.5f) / ((float)num_boss) * 2 * 3.1415f; 
+						enemiesId.push_back(game.spawnCreature(new Enemy()));
+						setupEnemy(enemiesId.back(), glm::vec3(radius * std::cos(theta), radius * std::sin(theta), 0.001f), 30.0f, 0);
+					}
+				}
+			}
+		}
+		if (enemiesId.size() == 0){
+
+		}
+		/*
+			enemiesId.push_back(game.spawnCreature(new Enemy()));
+		if(i==0){
+			setupEnemy(enemiesId.back(), glm::vec3(80.0f, 5.0f * i - 10.0f, 0.001f), 100.0f, 1);
+		}
+		if(i==1){
+			setupEnemy(enemiesId.back(), glm::vec3(60.0f, 5.0f * i - 10.0f, 0.001f), 100.0f, 2);
+		}
+		if(i==2){
+			setupEnemy(enemiesId.back(), glm::vec3(0.0f, 5.0f * i - 10.0f, 0.001f), 100.0f, 0);
+		}
+		if(i==3){
+			setupEnemy(enemiesId.back(), glm::vec3(40.0f, 5.0f * i - 10.0f, 0.001f), 100.0f, 1);
+		}
+		if(i==4){
+			setupEnemy(enemiesId.back(), glm::vec3(20.0f, 5.0f * i - 10.0f, 0.001f), 100.0f, 2);
+		}
+		*/
+
 	}
 
 
