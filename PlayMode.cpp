@@ -565,10 +565,11 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 	player->body_transform->parent = player->transform;
 	player->transform->position = walkmesh->to_world_point(player->at);
 	player->is_player = true;
-	player->hp = 100;
-	player->maxhp = 100;
-	player->stamina = 100;
-	player->maxstamina = 100;
+	player->hp = 100.0f;
+	player->maxhp = 100.0f;
+	player->stamina = 100.0f;
+	player->maxstamina = 100.0f;
+	player->staminaRegenRate = 15.0f;
 
 	player->walkCollRad = 1.0f;
 	player->swordDamage = 10.0f;
@@ -712,7 +713,7 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 	for(size_t i = 0; i < 5; i++)
 	{
 		enemiesId.push_back(game.spawnCreature(new Enemy()));
-		setupEnemy(enemiesId.back(), glm::vec3(0.0f, 5.0f * i - 10.0f, 0.001f), 100, i % 3);
+		setupEnemy(enemiesId.back(), glm::vec3(0.0f, 5.0f * i - 10.0f, 0.001f), 100.0f, i % 3);
 	}
 
 	// SETTING UP POPUPS
@@ -940,41 +941,66 @@ void PlayMode::processPawnControl(Pawn& pawn, float elapsed)
 			pawn.wrist_transform->rotation = glm::angleAxis(0.0f, glm::vec3(0.0f, 1.0f, 0.0f));
 			if(pawn.pawn_control.attack)
 			{
-				if (stance != 1){ stance_changed_in_attack = true; }
-				pawn.pawn_control.stanceInfo.attack.dir = pawn.pawn_control.move;
-				pawn.gameplay_tags="attack";
-
-				if(pawn.pawn_control.attack==1){// Here you can change whether the pawn is casting vertical(stance=1) or horizontal(stance=9)
-					stance = 1;
-					pawn.pawn_control.attack=0;
+				if(pawn.is_player && pawn.stamina <= 10.0f)
+				{
+					DEBUGOUT << "Player doesn't have enough stamina to attack" << std::endl;
 				}
-				if(pawn.pawn_control.attack==2){
-					stance = 9;
-				//	std::cout<<"DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"<<std::endl;
-					pawn.pawn_control.attack=0;
+				else
+				{
+					if (stance != 1){ stance_changed_in_attack = true; }
+					pawn.pawn_control.stanceInfo.attack.dir = pawn.pawn_control.move;
+					pawn.gameplay_tags="attack";
+
+					if(pawn.pawn_control.attack==1){// Here you can change whether the pawn is casting vertical(stance=1) or horizontal(stance=9)
+						stance = 1;
+						pawn.pawn_control.attack=0;
+					}
+					if(pawn.pawn_control.attack==2){
+						stance = 9;
+						pawn.pawn_control.attack=0;
+					}
+
+					pawn.stamina -= 10.0f;
+
+					pawn.pawn_control.stanceInfo.attack.attackAfter = 0;
 				}
-
-
-				pawn.pawn_control.stanceInfo.attack.attackAfter = 0;
 			}
 			else if (pawn.pawn_control.parry)
 			{
-				if(stance != 4){ stance_changed_in_attack = true; }
-				pawn.gameplay_tags="parry";
-				stance = 4;
-				pawn.pawn_control.parry=0;
+				if(pawn.is_player && pawn.stamina <= 5.0f)
+				{
+					DEBUGOUT << "Player doesn't have enough stamina to parry" << std::endl;
+				}
+				else
+				{
+					if(stance != 4){ stance_changed_in_attack = true; }
+					pawn.gameplay_tags="parry";
+					stance = 4;
+					pawn.pawn_control.parry=0;
+
+					pawn.stamina -= 5.0f;
+				}
 			}
 			else if(pawn.pawn_control.dodge)
 			{
-				if(glm::length2(pawn.pawn_control.move) > 0.001f)
+				if(pawn.is_player && pawn.stamina <= 15.0f)
 				{
-					pawn.gameplay_tags = "dodge";
-					stance = 6;
-					pawn.pawn_control.stanceInfo.dodge.dir = glm::normalize(pawn.pawn_control.move);
-					pawn.pawn_control.stanceInfo.dodge.attackAfter = 0;
+					DEBUGOUT << "Player doesn't have enough stamina to dodge" << std::endl;
 				}
+				else
+				{
+					if(glm::length2(pawn.pawn_control.move) > 0.001f)
+					{
+						pawn.gameplay_tags = "dodge";
+						stance = 6;
+						pawn.pawn_control.stanceInfo.dodge.dir = glm::normalize(pawn.pawn_control.move);
+						pawn.pawn_control.stanceInfo.dodge.attackAfter = 0;
+
+						pawn.stamina -= 15.0f;
+					}
 				
-				pawn.pawn_control.dodge = 0;
+					pawn.pawn_control.dodge = 0;
+				}
 			}
 		} else if (stance == 1 || stance == 3){ // fast downswing, fast upswing, slow upswing
 			const float dur = (stance < 3) ? 0.4f : 1.0f; //total time of downswing/upswing
@@ -1160,8 +1186,18 @@ void PlayMode::processPawnControl(Pawn& pawn, float elapsed)
 				st = 0.0f;
 				if(pawn.pawn_control.stanceInfo.dodge.attackAfter)
 				{
-					pawn.pawn_control.stanceInfo.lunge.dir = pawn.pawn_control.stanceInfo.dodge.dir;
-					stance = 7;
+					if(pawn.is_player && pawn.stamina <= 10.0f)
+					{
+						DEBUGOUT << "Player doesn't have enough stamina to lunge" << std::endl;
+						stance = 0;
+					}
+					else
+					{
+						pawn.pawn_control.stanceInfo.lunge.dir = pawn.pawn_control.stanceInfo.dodge.dir;
+						stance = 7;
+
+						pawn.stamina -= 10.0f;
+					}
 				}
 				else
 				{
@@ -1530,6 +1566,15 @@ void PlayMode::update(float elapsed)
 				it->timeLeft -= elapsed;
 				it++;
 			}
+		}
+	}
+
+	// Replenishing player stamina
+	{
+		player->stamina += player->staminaRegenRate * elapsed;
+		if(player->stamina >= player->maxstamina)
+		{
+			player->stamina = player->maxstamina;
 		}
 	}
 	

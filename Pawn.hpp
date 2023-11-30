@@ -82,6 +82,7 @@ struct Pawn : public Game::Creature
 
 	float stamina;
 	float maxstamina;
+	float staminaRegenRate = 0.0f;
 
 	CollisionEngine::ID swordCollider;
 	CollisionEngine::ID bodyCollider;
