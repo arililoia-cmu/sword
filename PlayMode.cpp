@@ -596,7 +596,7 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 	for(size_t i = 0; i < 5; i++)
 	{
 		enemiesId.push_back(game.spawnCreature(new Enemy()));
-		setupEnemy(enemiesId.back(), glm::vec3(0.0f, 5.0f * i - 10.0f, 0.001f), 100, 0);
+		setupEnemy(enemiesId.back(), glm::vec3(0.0f, 5.0f * i - 10.0f, 0.001f), 100, i % 3);
 	}
 
 	// SETTING UP POPUPS
