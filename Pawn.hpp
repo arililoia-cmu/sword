@@ -54,7 +54,7 @@ struct PawnControl
 
 struct Pawn : public Game::Creature
 {
-	Pawn() {};
+	Pawn() { recentHitters.clear(); };
 	virtual ~Pawn() {};
 
 	void update(float elapsed) override {};

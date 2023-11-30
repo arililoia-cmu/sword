@@ -956,21 +956,21 @@ void PlayMode::processPawnControl(Pawn& pawn, float elapsed)
 
 					if(pawn.pawn_control.attack==1){// Here you can change whether the pawn is casting vertical(stance=1) or horizontal(stance=9)
 						stance = 1;
+						pawn.stamina -= 10.0f;
 						pawn.pawn_control.attack=0;
 					}
 					if(pawn.pawn_control.attack==2){
 						stance = 9;
+						pawn.stamina -= 10.0f;
 						pawn.pawn_control.attack=0;
 					}
-
-					pawn.stamina -= 10.0f;
 
 					pawn.pawn_control.stanceInfo.attack.attackAfter = 0;
 				}
 			}
 			else if (pawn.pawn_control.parry)
 			{
-				if(pawn.is_player && pawn.stamina <= 5.0f)
+				if(pawn.is_player && pawn.stamina <= 20.0f)
 				{
 					DEBUGOUT << "Player doesn't have enough stamina to parry" << std::endl;
 				}
@@ -981,7 +981,7 @@ void PlayMode::processPawnControl(Pawn& pawn, float elapsed)
 					stance = 4;
 					pawn.pawn_control.parry=0;
 
-					pawn.stamina -= 5.0f;
+					pawn.stamina -= 20.0f;
 				}
 			}
 			else if(pawn.pawn_control.dodge)
