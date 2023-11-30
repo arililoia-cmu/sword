@@ -123,7 +123,13 @@ Load<GLuint> path_tex(LoadTagDefault,
 Load<GLuint> hp_bar_tex(LoadTagDefault,
 	[]()
 	{
-		return new GLuint(load_texture(data_path("graphics/healthbar_base.png"), false, true, true));
+		return new GLuint(load_texture(data_path("graphics/hp_bar.png"), false, true, true));
+	});
+
+Load<GLuint> stamina_bar_tex(LoadTagDefault,
+	[]()
+	{
+		return new GLuint(load_texture(data_path("graphics/stamina_bar.png"), false, true, true));
 	});
 
 Load<GLuint> heart_tex(LoadTagDefault,
@@ -706,7 +712,7 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 				}
 				return 0.0f;
 			};
-		auto* playerStamBar = new Gui::Bar(playerStamBarCalculate, *hp_bar_tex);
+		auto* playerStamBar = new Gui::Bar(playerStamBarCalculate, *stamina_bar_tex);
 		playerStamBar->screenPos = glm::vec3(0.0f, 0.6f, 0.0f);
 		playerStamBar->scale = glm::vec2(0.9f, 0.1f);
 		playerStamBar->alpha = 0.5f;
