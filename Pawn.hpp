@@ -3,6 +3,7 @@
 
 #include "Game.hpp"
 #include "Collisions.hpp"
+#include <list>
 
 class BehaviorTree;
 
@@ -76,11 +77,11 @@ struct Pawn : public Game::Creature
 	PawnControl pawn_control;
 	//HpBar* hp;
 
-	int hp;
-	int maxhp;
+	float hp;
+	float maxhp;
 
-	int stamina;
-	int maxstamina;
+	float stamina;
+	float maxstamina;
 
 	CollisionEngine::ID swordCollider;
 	CollisionEngine::ID bodyCollider;
@@ -88,6 +89,17 @@ struct Pawn : public Game::Creature
 	float walkCollRad = 1.0f;
 
 	float swordDamage = 1.0f; // This is how much damage we do to others
+
+	struct RecentHitter
+	{
+		RecentHitter(float tl, Scene::Transform* tf) : timeLeft(tl), hitter(tf) {};
+		
+		float timeLeft = 0.0f;
+		Scene::Transform* hitter = nullptr;
+	};
+	
+	std::list<RecentHitter> recentHitters;
+	float hitInvulnTime = 1.0f; // On a per enemy basis
 };
 
 struct Enemy : public Pawn

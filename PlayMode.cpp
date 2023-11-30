@@ -251,7 +251,7 @@ Load< Sound::Sample > footstep_wconv1(LoadTagDefault, []() -> Sound::Sample cons
 // sound stuff ends here
 
 // type should be 0 1 or 2
-void PlayMode::setupEnemy(Game::CreatureID myEnemyID, glm::vec3 pos, int maxhp, int type)
+void PlayMode::setupEnemy(Game::CreatureID myEnemyID, glm::vec3 pos, float maxhp, int type)
 {
 	Enemy* enemy = static_cast<Enemy*>(game.getCreature(myEnemyID));
 	
@@ -283,9 +283,10 @@ void PlayMode::setupEnemy(Game::CreatureID myEnemyID, glm::vec3 pos, int maxhp, 
 	enemy->maxhp = maxhp;
 	enemy->is_player = false;
 	enemy->type = type;
-	enemy->swordDamage = 1.0f;
 
+	enemy->swordDamage = 7.5f;
 	enemy->walkCollRad = 1.0f;
+	enemy->hitInvulnTime = 0.3f;
 
 	enemy->bt=new BehaviorTree();
 	enemy->bt->Init();//AI Initialize
@@ -358,10 +359,16 @@ void PlayMode::setupEnemy(Game::CreatureID myEnemyID, glm::vec3 pos, int maxhp, 
 					return;
 				}
 
+
 				if(player->pawn_control.stance == 1 || player->pawn_control.stance == 7 || player->pawn_control.stance == 9)
 				{
-					enemyPtr->hp -= player->swordDamage;
-					DEBUGOUT << "ENEMY HIT WITH SWORD while player was in stance " << player->pawn_control.stance << std::endl;
+					if(std::find_if(enemyPtr->recentHitters.begin(), enemyPtr->recentHitters.end(),
+									 [this](Pawn::RecentHitter& rh) -> bool { return rh.hitter == player->sword_transform; }) == enemyPtr->recentHitters.end())
+					{
+						enemyPtr->hp -= player->swordDamage;
+						enemyPtr->recentHitters.push_front(Pawn::RecentHitter(enemyPtr->hitInvulnTime, player->sword_transform));
+						DEBUGOUT << "ENEMY HIT WITH SWORD while player was in stance " << player->pawn_control.stance << std::endl;
+					}
 				}
 			}
 		};
@@ -558,7 +565,8 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 	player->maxstamina = 100;
 
 	player->walkCollRad = 1.0f;
-	player->swordDamage = 2.0f;
+	player->swordDamage = 10.0f;
+	player->hitInvulnTime = 0.3f;
 
 	// TODO This should probably be done by setting the camera to match the properties from the blender camera but this is OK
 	if (scene.cameras.size() != 1) throw std::runtime_error("Expecting scene to have exactly one camera, but it has " + std::to_string(scene.cameras.size()));
@@ -637,11 +645,17 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 				{
 					Enemy* enemyPtr = static_cast<Enemy*>(game.getCreature(enemyID));
 					
-					if(t == enemyPtr->sword_transform)
+					if(t == enemyPtr->sword_transform &&
+					   (std::find_if(player->recentHitters.begin(), player->recentHitters.end(),
+									 [enemyPtr](Pawn::RecentHitter& rh) -> bool { return rh.hitter == enemyPtr->sword_transform; }) == player->recentHitters.end()))
 					{
 						if(enemyPtr->pawn_control.stance == 1 || enemyPtr->pawn_control.stance == 7 || enemyPtr->pawn_control.stance == 9)
 						{
+							// Could add damage based on stance (best done by actually having a table inside each pawn that says
+							// how much damage it does in each stance).
+							// Generalize stances to moves?
 							player->hp -= enemyPtr->swordDamage;
+							player->recentHitters.push_back(Pawn::RecentHitter(player->hitInvulnTime, enemyPtr->sword_transform));
 							DEBUGOUT << "Player hit with sword while enemy was in stance " << enemyPtr->pawn_control.stance << std::endl;
 						}
 					}
@@ -1471,8 +1485,41 @@ void PlayMode::update(float elapsed)
 			if(enemyPtr->flagToBreakSword == true)
 			{
 				swapEnemyToBrokenSword(myEnemyID);
-				enemyPtr->swordDamage = 0.5f;
+				enemyPtr->swordDamage = 3.5f;
 				enemyPtr->flagToBreakSword = false;
+			}
+		}
+	}
+
+	// Also processing invuln timer decrements
+	{
+		for(Game::CreatureID myEnemyID : enemiesId)
+		{
+			Enemy* enemyPtr = static_cast<Enemy*>(game.getCreature(myEnemyID));
+			for(auto it = enemyPtr->recentHitters.begin(); it != enemyPtr->recentHitters.end();)
+			{
+				if(it->timeLeft <= 0.0f)
+				{
+					it = enemyPtr->recentHitters.erase(it);
+				}
+				else
+				{
+					it->timeLeft -= elapsed;
+					it++;
+				}
+			}
+		}
+
+		for(auto it = player->recentHitters.begin(); it != player->recentHitters.end();)
+		{
+			if(it->timeLeft <= 0.0f)
+			{
+				it = player->recentHitters.erase(it);
+			}
+			else
+			{
+				it->timeLeft -= elapsed;
+				it++;
 			}
 		}
 	}

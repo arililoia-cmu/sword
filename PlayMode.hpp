@@ -57,7 +57,7 @@ struct PlayMode : Mode
 	CollisionEngine collEng;
 	Gui gui;
 
-	void setupEnemy(Game::CreatureID myEnemyID, glm::vec3 pos, int maxhp, int type);
+	void setupEnemy(Game::CreatureID myEnemyID, glm::vec3 pos, float maxhp, int type);
 	void swapEnemyToBrokenSword(Game::CreatureID myEnemyID);
 
 	struct EnemyPreset
