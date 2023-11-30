@@ -283,6 +283,8 @@ void PlayMode::setupEnemy(Game::CreatureID myEnemyID, glm::vec3 pos, int maxhp, 
 	enemy->maxhp = maxhp;
 	enemy->is_player = false;
 
+	enemy->walkCollRad = 1.0f;
+
 	enemy->bt=new BehaviorTree();
 	enemy->bt->Init();//AI Initialize
 	enemy->bt->SetEnemy(enemy);
@@ -467,6 +469,8 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 	player->maxhp = 100;
 	player->stamina = 100;
 	player->maxstamina = 100;
+
+	player->walkCollRad = 1.0f;
 
 	// TODO This should probably be done by setting the camera to match the properties from the blender camera but this is OK
 	if (scene.cameras.size() != 1) throw std::runtime_error("Expecting scene to have exactly one camera, but it has " + std::to_string(scene.cameras.size()));
@@ -1189,10 +1193,41 @@ void PlayMode::processPawnControl(Pawn& pawn, float elapsed)
 	walk_pawn(pawn, movement);
 }
 
-void PlayMode::walk_pawn(Pawn &pawn, glm::vec3 movement)
+void PlayMode::walk_pawn(Pawn& pawn, glm::vec3 movement)
 {
 	glm::vec3 remain = movement;
 
+	for(Game::CreatureID enemyID : enemiesId)
+	{
+		Enemy* enemyPtr = static_cast<Enemy*>(game.getCreature(enemyID));
+		if(enemyPtr && (enemyPtr != &pawn))
+		{
+			glm::vec3 toOther = enemyPtr->transform->position - pawn.transform->position;
+			float toOtherLength = glm::length(toOther);
+			if(toOtherLength < (enemyPtr->walkCollRad + pawn.walkCollRad))
+			{
+				float remainLength = glm::length(remain);
+				if(remainLength * toOtherLength > 0.0001f)
+				{
+					remain = remain - remain * glm::dot(toOther / toOtherLength, remain / remainLength);
+				}
+			}
+		}
+	}
+	if(&pawn != player)
+	{
+		glm::vec3 toOther = player->transform->position - pawn.transform->position;
+		float toOtherLength = glm::length(toOther);
+		if(toOtherLength < (player->walkCollRad + pawn.walkCollRad))
+		{
+			float remainLength = glm::length(remain);
+			if(remainLength * toOtherLength > 0.0001f)
+			{
+				remain = remain - remain * glm::dot(toOther / toOtherLength, remain / remainLength);
+			}
+		}
+	}
+	
 	///std::cout << remain.x << "," << remain.y << "," << remain.z << "\n";
 
 	//using a for() instead of a while() here so that if walkpoint gets stuck I

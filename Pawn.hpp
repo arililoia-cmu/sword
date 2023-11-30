@@ -84,6 +84,8 @@ struct Pawn : public Game::Creature
 
 	CollisionEngine::ID swordCollider;
 	CollisionEngine::ID bodyCollider;
+
+	float walkCollRad = 1.0f;
 };
 
 struct Enemy : public Pawn
