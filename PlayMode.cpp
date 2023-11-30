@@ -1812,6 +1812,8 @@ void PlayMode::update(float elapsed)
 						player->at = walkmesh->nearest_walk_point(player->transform->position + glm::vec3(0.0f, 0.0001f, 0.0f));
 
 						game_level += 1;
+						PlayerSpeed = std::max(PlayerSpeed + 1.5f, 15.0f);
+
 						level_change_sound = Sound::play(*level_change_sample, 1.0f, 0.0f);
 
 						prompts.push(Prompt("Level " + std::to_string(game_level), 3.0f));
@@ -1823,16 +1825,16 @@ void PlayMode::update(float elapsed)
 							float phi = 1.0f + 3.14f + 1.9f * i;
 
 							enemiesId.push_back(game.spawnCreature(new Enemy()));
-							setupEnemy(enemiesId.back(), glm::vec3(radius * std::cos(theta), radius * std::sin(theta), 0.001f), 30.0f, 1);
+							setupEnemy(enemiesId.back(), glm::vec3(radius * std::cos(theta), radius * std::sin(theta), 0.001f), 100.0f, 1);
 							enemiesId.push_back(game.spawnCreature(new Enemy()));
-							setupEnemy(enemiesId.back(), glm::vec3(radius * std::cos(phi), radius * std::sin(phi), 0.001f), 30.0f, 2);
+							setupEnemy(enemiesId.back(), glm::vec3(radius * std::cos(phi), radius * std::sin(phi), 0.001f), 100.0f, 2);
 						}
 						int num_boss = std::min((game_level + 1)/ 3, 8);
 						for (int j=0; j<num_boss; j++){
 							float radius = (num_boss - 1) * 5.0f; 
 							float theta = (1.0f * j + 0.5f) / ((float)num_boss) * 2 * 3.1415f; 
 							enemiesId.push_back(game.spawnCreature(new Enemy()));
-							setupEnemy(enemiesId.back(), glm::vec3(radius * std::cos(theta), radius * std::sin(theta), 0.001f), 30.0f, 0);
+							setupEnemy(enemiesId.back(), glm::vec3(radius * std::cos(theta), radius * std::sin(theta), 0.001f), 200.0f, 0);
 						}
 						}
 				}

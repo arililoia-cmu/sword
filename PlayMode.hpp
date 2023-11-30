@@ -74,7 +74,7 @@ struct PlayMode : Mode
 	void walk_pawn(Pawn& pawn, glm::vec3 movement);
 	void processPawnControl(Pawn& pawn, float elapsed);
 
-	const float PlayerSpeed = 30.0f; // for ease of testing only
+	float PlayerSpeed = 5.0f; // for ease of testing only
 
 	int game_level = 0;
 
