@@ -1746,6 +1746,7 @@ void PlayMode::update(float elapsed)
 
 				if (enemiesId.size() != 0){
 					// defeat all enemies!
+
 				} else {
 					player->transform->position.x = 90.0f;
 					player->at = walkmesh->nearest_walk_point(player->transform->position + glm::vec3(0.0f, 0.0001f, 0.0f));
@@ -1772,27 +1773,6 @@ void PlayMode::update(float elapsed)
 				}
 			}
 		}
-		if (enemiesId.size() == 0){
-
-		}
-		/*
-			enemiesId.push_back(game.spawnCreature(new Enemy()));
-		if(i==0){
-			setupEnemy(enemiesId.back(), glm::vec3(80.0f, 5.0f * i - 10.0f, 0.001f), 100.0f, 1);
-		}
-		if(i==1){
-			setupEnemy(enemiesId.back(), glm::vec3(60.0f, 5.0f * i - 10.0f, 0.001f), 100.0f, 2);
-		}
-		if(i==2){
-			setupEnemy(enemiesId.back(), glm::vec3(0.0f, 5.0f * i - 10.0f, 0.001f), 100.0f, 0);
-		}
-		if(i==3){
-			setupEnemy(enemiesId.back(), glm::vec3(40.0f, 5.0f * i - 10.0f, 0.001f), 100.0f, 1);
-		}
-		if(i==4){
-			setupEnemy(enemiesId.back(), glm::vec3(20.0f, 5.0f * i - 10.0f, 0.001f), 100.0f, 2);
-		}
-		*/
 
 	}
 
@@ -1818,7 +1798,18 @@ void PlayMode::draw(glm::uvec2 const &drawable_size)
 	glUniform3fv(lit_color_texture_program->LIGHT_ENERGY_vec3, 1, glm::value_ptr(glm::vec3(1.0f, 1.0f, 0.95f)));
 	// glUseProgram(0);
 
-	glClearColor(140.0f / 256.0f, 190.0f / 256.0f, 250.0f / 256.0f, 1.0f);
+	glm::vec3 xyy_blue = glm::vec3(0.24f, 0.3f, 0.65f);
+	glm::vec3 xyy_red = glm::vec3(0.8f, 0.3f, 0.65f);
+	float factor = (game_level < 2) ? 0.0f : (1 - 4.0f / (game_level + 3)) * 0.5f; 
+	glm::vec3 xyy = xyy_blue * (1-factor) + xyy_red * factor;
+
+	glm::vec3 xyz = glm::vec3((xyy.x * xyy.z) / xyy.y, xyy.z, (1-xyy.x - xyy.y) * xyy.z / xyy.y); 
+
+	glm::vec3 cr = glm::vec3(2.04, -0.56, -0.34);
+	glm::vec3 cg = glm::vec3(-0.97, 1.88, 0.04);
+	glm::vec3 cb = glm::vec3(0.01, -0.12, 1.01);
+
+	glClearColor(glm::dot(cr, xyz), glm::dot(cg, xyz), glm::dot(cb, xyz), 1.0f);
 	glClearDepth(1.0f); //1.0 is actually the default value to clear the depth buffer to, but FYI you can change it.
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
