@@ -261,6 +261,7 @@ void PlayMode::setupEnemy(Game::CreatureID myEnemyID, glm::vec3 pos, int maxhp, 
 	
 	scene.transforms.emplace_back();
 	enemy->body_transform = &scene.transforms.back();
+	*(enemy->body_transform) = enemyPresets[type].body_transform;
 	enemy->body_transform->parent = enemy->transform;
 
 	scene.transforms.emplace_back();
@@ -269,10 +270,12 @@ void PlayMode::setupEnemy(Game::CreatureID myEnemyID, glm::vec3 pos, int maxhp, 
 
 	scene.transforms.emplace_back();
 	enemy->wrist_transform = &scene.transforms.back();
+	*(enemy->wrist_transform) = enemyPresets[type].wrist_transform;
 	enemy->wrist_transform->parent = enemy->arm_transform;
 
 	scene.transforms.emplace_back();
 	enemy->sword_transform = &scene.transforms.back();
+	*(enemy->sword_transform) = enemyPresets[type].sword_transform;
 	enemy->sword_transform->parent = enemy->wrist_transform;
 
 	// Customize
@@ -391,9 +394,9 @@ void PlayMode::setupEnemy(Game::CreatureID myEnemyID, glm::vec3 pos, int maxhp, 
 			drawable.pipeline.count = mesh.count;
 		};
 
-	addDrawable(enemy->body_transform, "Player.001");
-	addDrawable(enemy->wrist_transform, "Wrist.001");
-	addDrawable(enemy->sword_transform, "Sword.001");
+	addDrawable(enemy->body_transform, "Player" + enemyPresets[type].postfix);
+	addDrawable(enemy->wrist_transform, "Wrist" + enemyPresets[type].postfix);
+	addDrawable(enemy->sword_transform, "Sword" + enemyPresets[type].postfix);
 }
 
 // Right now, this makes a proper fully copy of the scene, which is fine, but
@@ -401,6 +404,11 @@ void PlayMode::setupEnemy(Game::CreatureID myEnemyID, glm::vec3 pos, int maxhp, 
 // like this. Unsure what to do.
 PlayMode::PlayMode() : scene(*G_SCENE)
 {
+	for(size_t i = 0; i < enemyPresets.size(); i++)
+	{
+		enemyPresets[i].postfix = ".00" + std::to_string(i + 1);
+	}
+	
 	plyr = game.spawnCreature(new Player());
 	player = static_cast<Player*>(game.getCreature(plyr));
 	
@@ -425,6 +433,22 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 		}
 		else if(transform.name.length() >= 5 && transform.name.substr(0, 5) == "Enemy")
 		{
+			// Yes, we are adding them and then removing them again, no it doesn't matter this is startup cost
+			for(size_t i = 0; i < enemyPresets.size(); i++)
+			{
+				if(transform.name == ("Enemy_Body" + enemyPresets[i].postfix))
+				{
+					enemyPresets[i].body_transform = transform;
+				}
+				else if(transform.name == ("Enemy_Sword" + enemyPresets[i].postfix))
+				{
+					enemyPresets[i].sword_transform = transform;
+				}
+				else if(transform.name == ("Enemy_Wrist" + enemyPresets[i].postfix))
+				{
+					enemyPresets[i].wrist_transform = transform;
+				}
+			}
 			auto toDestroyit = tformit++;
 			scene.transforms.erase(toDestroyit);
 			continue;

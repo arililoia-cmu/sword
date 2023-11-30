@@ -15,6 +15,7 @@
 #include <vector>
 #include <deque>
 #include <ctime>
+#include <array>
 #include <iostream>
 #include <map>
 
@@ -57,6 +58,16 @@ struct PlayMode : Mode
 	Gui gui;
 
 	void setupEnemy(Game::CreatureID myEnemyID, glm::vec3 pos, int maxhp, int type);
+
+	struct EnemyPreset
+	{
+		std::string postfix;
+		Scene::Transform body_transform;
+		Scene::Transform wrist_transform;
+		Scene::Transform sword_transform;
+	};
+	
+	std::array<EnemyPreset, 3> enemyPresets;	
 
 	void walk_pawn(Pawn& pawn, glm::vec3 movement);
 	void processPawnControl(Pawn& pawn, float elapsed);
