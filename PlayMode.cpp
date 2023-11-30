@@ -360,12 +360,14 @@ void PlayMode::setupEnemy(Game::CreatureID myEnemyID, glm::vec3 pos, float maxhp
 						// This code is really blegh cuz it's hidden that dergistering doesn't work while collisions being processed
 					}
 
-					clock_t current_time = clock();
-					float elapsed = (float)(current_time - previous_enemy_sword_clang_time);
+					float current_time = (float)clock();
+					float elapsed = current_time - enemyPtr->previous_sword_clang_time;
+					std::cout << "time since this enemy's sword last hit: " << elapsed << std::endl;
 
 					if ((elapsed / CLOCKS_PER_SEC) > min_enemy_sword_clang_interval){
 						w_conv2_sound = Sound::play(*w_conv2, 1.0f, 0.0f);
-						previous_enemy_sword_clang_time = clock();
+						enemyPtr->previous_sword_clang_time = current_time;
+						
 					}
 				}
 			}
@@ -504,13 +506,16 @@ void PlayMode::swapEnemyToBrokenSword(Game::CreatureID myEnemyID)
 					// 	enemy.pawn_control.stance = 5;
 					// }
 
-					clock_t current_time = clock();
-					float elapsed = (float)(current_time - previous_enemy_sword_clang_time);
+					float current_time = (float)clock();
+					float elapsed = current_time - enemyPtr->previous_sword_clang_time;
+					std::cout << "time since this enemy's sword last hit: " << elapsed << std::endl;
 
 					if ((elapsed / CLOCKS_PER_SEC) > min_enemy_sword_clang_interval){
 						w_conv2_sound = Sound::play(*w_conv2, 1.0f, 0.0f);
-						previous_enemy_sword_clang_time = clock();
+						enemyPtr->previous_sword_clang_time = current_time;
+						
 					}
+
 				}
 			}
 		};
@@ -650,14 +655,18 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 						}
 						
 						// sound stuff starts here:
-						clock_t current_time = clock();
-						float elapsed = (float)(current_time - previous_player_sword_clang_time);
+						float current_time = (float)clock();
+						float elapsed = current_time - enemyPtr->previous_sword_clang_time;
+						std::cout << "time since this enemy's sword last hit: " << elapsed << std::endl;
 
-						if ((elapsed / CLOCKS_PER_SEC) > min_player_sword_clang_interval){
+						if ((elapsed / CLOCKS_PER_SEC) > min_enemy_sword_clang_interval){
 							w_conv1_sound = Sound::play(*w_conv1, 1.0f, 0.0f);
-							previous_player_sword_clang_time = clock();
+							enemyPtr->previous_sword_clang_time = current_time;
+							
 						}
 						// sound stuff ends here
+
+						
 
 						return;
 					}
@@ -1161,12 +1170,18 @@ void PlayMode::processPawnControl(Pawn& pawn, float elapsed)
 			}
 
 			{
-				clock_t current_time = clock();
-				elapsed = (float)(current_time - previous_sword_whoosh_time);
+	
+				float current_time = (float)clock();
+				float elapsed = current_time - pawn.previous_sword_whoosh_time;
+				std::cout << "time since this last whoosh: " << elapsed << std::endl;
+
 				if ((elapsed / CLOCKS_PER_SEC) > min_sword_whoosh_interval){
 					fast_upswing_sound = Sound::play(*fast_upswing, 1.0f, 0.0f);
-					previous_sword_whoosh_time = clock();
+					pawn.previous_sword_whoosh_time = current_time;
+					
 				}
+
+				
 			}
 		} else if (stance == 4 || stance == 5){ // parry
 			if(stance==5){
@@ -1661,6 +1676,8 @@ void PlayMode::update(float elapsed)
 			}
 		}
 		
+		if (!is_game_over){
+		// restrict player movement if ga
 		//make it so that moving diagonally doesn't go faster:
 		if (move != glm::vec2(0.0f)) move = glm::normalize(move) * PlayerSpeed;
 
@@ -1716,6 +1733,7 @@ void PlayMode::update(float elapsed)
 			trigger_move_graphic(prev_stance, player->pawn_control.stance);
 		}
 		prev_stance = player->pawn_control.stance;
+		}
 
 		for(Game::CreatureID enemyID : enemiesId)
 		{
@@ -1748,11 +1766,11 @@ void PlayMode::update(float elapsed)
 				Gui::Popup* grabbed = static_cast<Gui::Popup*>(elem);
 				if (!grabbed->get_visible()){
 					grabbed->trigger_visibility(true);
-					Sound::stop_all_samples();
+					// Sound::stop_all_samples();
 					game_over_sound = Sound::play(*game_over_sample, 1.0f, 0.0f);
+					is_game_over = true;
 				}
 			}
-
 		}
 	}
 

@@ -87,6 +87,8 @@ struct Pawn : public Game::Creature
 	CollisionEngine::ID swordCollider;
 	CollisionEngine::ID bodyCollider;
 
+	float previous_sword_whoosh_time = 0.0f;
+
 	float walkCollRad = 1.0f;
 
 	float swordDamage = 1.0f; // This is how much damage we do to others
@@ -109,6 +111,7 @@ struct Enemy : public Pawn
 
 	bool flagToBreakSword = false;
 	int type = 0;
+	float previous_sword_clang_time = 0.0f;
 };
 	
 struct Player : public Pawn
