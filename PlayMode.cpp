@@ -839,10 +839,14 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 			if(evt.button.button==SDL_BUTTON_LEFT){
 				mainAction.downs += 1;
 				mainAction.pressed = true;
+				isMouseVertical=true;
 				return true;
 			}else if(evt.button.button==SDL_BUTTON_RIGHT){
-				secondAction.downs += 1;
-				secondAction.pressed = true;
+				//secondAction.downs += 1;
+				//secondAction.pressed = true;
+				mainAction.downs+=1;
+				mainAction.pressed=true;
+				isMouseVertical=false;
 				return true;
 			}
 
@@ -852,7 +856,8 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 				mainAction.pressed = false;
 				return true;
 			}else if(evt.button.button==SDL_BUTTON_RIGHT){
-				secondAction.pressed = false;
+				//secondAction.pressed = false;
+				mainAction.pressed=false;
 				return true;
 			}
 	}
@@ -865,11 +870,11 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 			);
 			
 			//deciding attacking direction
-			if(abs(motion.x)>abs(motion.y)){
+		/*	if(abs(motion.x)>abs(motion.y)){
 				isMouseVertical=false;
 			}else{
 				isMouseVertical=true;
-			}
+			}*/
 
 			glm::vec3 upDir = walkmesh->to_world_smooth_normal(player->at);
 			player->transform->rotation = glm::angleAxis(-motion.x * player->camera->fovy, upDir) * player->transform->rotation;
