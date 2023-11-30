@@ -260,6 +260,14 @@ Load< Sound::Sample > fast_upswing(LoadTagDefault, []() -> Sound::Sample const *
 Load< Sound::Sample > footstep_wconv1(LoadTagDefault, []() -> Sound::Sample const * {
 	return new Sound::Sample(data_path("sound/footstep/footstep_wconv1.wav"));
 });
+
+Load< Sound::Sample > level_change_sample(LoadTagDefault, []() -> Sound::Sample const * {
+	return new Sound::Sample(data_path("sound/game_over_sound.wav"));
+});
+
+Load< Sound::Sample > game_over_sample(LoadTagDefault, []() -> Sound::Sample const * {
+	return new Sound::Sample(data_path("sound/level_change_sound.wav"));
+});
 // sound stuff ends here
 
 // type should be 0 1 or 2
@@ -1741,6 +1749,7 @@ void PlayMode::update(float elapsed)
 				if (!grabbed->get_visible()){
 					grabbed->trigger_visibility(true);
 					Sound::stop_all_samples();
+					game_over_sound = Sound::play(*game_over_sample, 1.0f, 0.0f);
 				}
 			}
 
@@ -1785,6 +1794,7 @@ void PlayMode::update(float elapsed)
 						player->at = walkmesh->nearest_walk_point(player->transform->position + glm::vec3(0.0f, 0.0001f, 0.0f));
 
 						game_level += 1;
+						level_change_sound = Sound::play(*level_change_sample, 1.0f, 0.0f);
 
 						prompts.push(Prompt("Level " + std::to_string(game_level), 3.0f));
 
@@ -1923,7 +1933,7 @@ void PlayMode::draw(glm::uvec2 const &drawable_size)
 				lines.draw_text(prompts.front().text,
 					glm::vec3(0.1f -aspect + 0.1f * H + ofs, 0.1 -1.0 + + 0.1f * H + ofs, 0.0),
 					glm::vec3(H, 0.0f, 0.0f), glm::vec3(0.0f, H, 0.0f),
-					glm::u8vec4(0xff, 0xff, 0xff, 0x00));
+					glm::u8vec4(0x00, 0x00, 0x00, 0x00));
 			}
 			/*
 			if (closeto){

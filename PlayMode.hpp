@@ -94,6 +94,9 @@ struct PlayMode : Mode
 	std::shared_ptr< Sound::PlayingSample > fast_upswing_sound;
 	std::shared_ptr< Sound::PlayingSample > fast_downswing_sound;
 	std::shared_ptr< Sound::PlayingSample > footstep_wconv1_sound;
+	std::shared_ptr< Sound::PlayingSample > level_change_sound;
+	std::shared_ptr< Sound::PlayingSample > game_over_sound;
+
 
 	CollideMesh const* playerSwordCollMesh = nullptr;
 	CollideMesh const* enemySwordCollMesh = nullptr;
