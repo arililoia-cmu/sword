@@ -191,6 +191,11 @@ Load<Scene> G_SCENE(LoadTagDefault,
 		return new Scene(data_path("sword.scene"),
 			[&](Scene& scene, Scene::Transform* transform, std::string const& mesh_name)
 			{
+				if(transform->name.length() >= 5 && transform->name.substr(0, 5) == "Enemy")
+				{
+					return;
+				}
+				
 				Mesh const& mesh = G_MESHES->lookup(mesh_name);
 
 				scene.drawables.emplace_back(transform);
@@ -399,8 +404,10 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 	plyr = game.spawnCreature(new Player());
 	player = static_cast<Player*>(game.getCreature(plyr));
 	
-	for(auto& transform : scene.transforms)
+	auto tformit = scene.transforms.begin();
+	while(tformit != scene.transforms.end())
 	{
+		Scene::Transform& transform = *tformit;
 		if(transform.name == "Player_Body")
 		{
 			player->body_transform = &transform;
@@ -415,7 +422,14 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 		else if(transform.name == "Player_Wrist")
 		{
 			player->wrist_transform = &transform;
-		}	
+		}
+		else if(transform.name.length() >= 5 && transform.name.substr(0, 5) == "Enemy")
+		{
+			auto toDestroyit = tformit++;
+			scene.transforms.erase(toDestroyit);
+			continue;
+		}
+		tformit++;
 	}
 
 	// Create player transform at player feet and start player walking at nearest walk point:
@@ -555,6 +569,12 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 		gui.addElement(playerStamBar);
 	}
 
+	for(size_t i = 0; i < 5; i++)
+	{
+		enemiesId.push_back(game.spawnCreature(new Enemy()));
+		setupEnemy(enemiesId.back(), glm::vec3(5.0f, 0.001f, 3.0f), 100, 0);
+	}
+
 	// SETTING UP POPUPS
 	auto graphic_setup = [this](Load<GLuint> move_graphic_tex, const std::vector<int>& corresponding_stances){
 		auto* moveGraphic = new Gui::MoveGraphic(*move_graphic_tex);
@@ -580,12 +600,6 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 		// for (int i=0; i< (int) corresponding_stances.size(); i++){
 		// 	stanceGuiIDMap[corresponding_stances[i]] = move_popup_ID;
 		// }
-
-	for(size_t i = 0; i < 5; i++)
-	{
-		enemiesId.push_back(game.spawnCreature(new Enemy()));
-		setupEnemy(enemiesId.back(), glm::vec3(5.0f, 0.001f, 3.0f), 100, 0);
-	}
 }
 
 PlayMode::~PlayMode()
@@ -1249,14 +1263,18 @@ void PlayMode::update(float elapsed)
 						return false;
 					};
 
-				// auto pertainsToEnemyTForm = [enemyPtr](Scene::Transform& d) -> bool
-				// 	{
-				// 		if(&d == enemyPtr->body_transform
-				// 		{
-				// 			return true;
-				// 		}
-				// 		return false;
-				// 	};
+				auto pertainsToEnemyTForm = [enemyPtr](Scene::Transform& d) -> bool
+					{
+						if(&d == enemyPtr->body_transform ||
+						   &d == enemyPtr->transform ||
+						   &d == enemyPtr->arm_transform ||
+						   &d == enemyPtr->wrist_transform ||
+						   &d == enemyPtr->sword_transform)
+						{
+							return true;
+						}
+						return false;
+					};
 			
 				if(enemyPtr->hp <= 0.0f)
 				{
@@ -1270,8 +1288,9 @@ void PlayMode::update(float elapsed)
 					scene.drawables.remove_if(pertainsToEnemy);
 
 					DEBUGOUT << "Deleting enemy, drawables removed" << std::endl;
-					
-					//scene.transforms.remove_if(pertainsToEnemyTForm); // Whatever, we will just leave transforms allocated, who cares
+
+					// This is ridiculously inefficient since we have pointers already, but we never stored iterators, and I don't want to add it rn
+					scene.transforms.remove_if(pertainsToEnemyTForm); // Whatever, we will just leave transforms allocated, who cares
 					delete enemyPtr->bt;
 
 					DEBUGOUT << "Deleting enemy, bt deleted" << std::endl;
