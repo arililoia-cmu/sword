@@ -354,7 +354,15 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 		enemies[i]->bt->Init();//AI Initialize
 		enemies[i]->bt->SetEnemy(enemies[i]);
 		enemies[i]->bt->SetPlayer(player);
-		enemies[i]->bt->SetEnemyType(i%3);
+		if(i==0||i==3){
+			enemies[i]->bt->SetEnemyType(1);
+		}
+		if(i==1||i==4){
+			enemies[i]->bt->SetEnemyType(2);
+		}
+		if(i==2){
+			enemies[i]->bt->SetEnemyType(0);			
+		}
 		enemies[i]->bt->InitInterrupt();
 	}
 
