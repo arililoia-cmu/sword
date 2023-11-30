@@ -716,7 +716,22 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 	for(size_t i = 0; i < 5; i++)
 	{
 		enemiesId.push_back(game.spawnCreature(new Enemy()));
-		setupEnemy(enemiesId.back(), glm::vec3(0.0f, 5.0f * i - 10.0f, 0.001f), 100.0f, i % 3);
+		if(i==0){
+			setupEnemy(enemiesId.back(), glm::vec3(80.0f, 5.0f * i - 10.0f, 0.001f), 100.0f, 1);
+		}
+		if(i==1){
+			setupEnemy(enemiesId.back(), glm::vec3(60.0f, 5.0f * i - 10.0f, 0.001f), 100.0f, 2);
+		}
+		if(i==2){
+			setupEnemy(enemiesId.back(), glm::vec3(0.0f, 5.0f * i - 10.0f, 0.001f), 100.0f, 0);
+		}
+		if(i==3){
+			setupEnemy(enemiesId.back(), glm::vec3(40.0f, 5.0f * i - 10.0f, 0.001f), 100.0f, 1);
+		}
+		if(i==4){
+			setupEnemy(enemiesId.back(), glm::vec3(20.0f, 5.0f * i - 10.0f, 0.001f), 100.0f, 2);
+		}
+		//setupEnemy(enemiesId.back(), glm::vec3(i*20.0f, 5.0f * i - 10.0f, 0.001f), 100.0f, i % 3);
 	}
 
 	// SETTING UP POPUPS
