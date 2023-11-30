@@ -73,6 +73,7 @@ WalkPoint WalkMesh::nearest_walk_point(glm::vec3 const &world_point) const {
 		glm::vec3 const &b = vertices[tri.y];
 		glm::vec3 const &c = vertices[tri.z];
 
+
 		//get barycentric coordinates of closest point in the plane of (a,b,c):
 		glm::vec3 coords = barycentric_weights(a,b,c, world_point);
 

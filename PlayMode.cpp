@@ -308,7 +308,7 @@ void PlayMode::setupEnemy(Game::CreatureID myEnemyID, glm::vec3 pos, float maxhp
 	
 	enemy->at = walkmesh->nearest_walk_point(enemy->body_transform->position + glm::vec3(0.0f, 0.0001f, 0.0f));
 	glm::vec3 worldPoint = walkmesh->to_world_point(enemy->at);
-	float height = 1.4f;
+	float height = 1.21f;
 	enemy->body_transform->position = glm::vec3(0.0f, 0.0f, height);
 	enemy->transform->position = worldPoint;
 	enemy->default_rotation = glm::angleAxis(glm::radians(180.0f), glm::vec3(0.0f, 0.0f, 1.0f)); //dictates enemy's original rotation wrt +x
@@ -524,9 +524,11 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 		if(transform.name == "Player_Body")
 		{
 			player->body_transform = &transform;
+			glm::vec3 pos = player->body_transform->position;
+			std::cout << pos.x << " " << pos.y << " " << pos.z << " herreee \n";
 			player->at = walkmesh->nearest_walk_point(player->body_transform->position + glm::vec3(0.0f, 0.0001f, 0.0f));
 			player->player_height = glm::length(player->body_transform->position - walkmesh->to_world_point(player->at));
-			player->body_transform->position = glm::vec3(0.0f, 0.0f, player->player_height);
+			player->body_transform->position = glm::vec3(0.0f, 0.0f, 1.21f);
 		}
 		else if(transform.name == "Player_Sword")
 		{
@@ -764,6 +766,12 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 		// for (int i=0; i< (int) corresponding_stances.size(); i++){
 		// 	stanceGuiIDMap[corresponding_stances[i]] = move_popup_ID;
 		// }
+
+
+	prompts.push(Prompt("You wake up...", 5.0f));
+	prompts.push(Prompt("with nothing but a sword in hand.", 3.0f));
+	prompts.push(Prompt("Your instincts tell you...", 5.0f));
+	prompts.push(Prompt("to move forward and defeat all enemies you find!", 5.0f));
 }
 
 PlayMode::~PlayMode()
@@ -833,6 +841,8 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 					return true;
 				}
 			}
+
+			prompts_en = true;
 
 			if (SDL_GetRelativeMouseMode() == SDL_FALSE) {
 				SDL_SetRelativeMouseMode(SDL_TRUE);
@@ -1733,43 +1743,64 @@ void PlayMode::update(float elapsed)
 
 	// Level progression
 	{
-		if (player->transform->position.x > 90.0f) {
-			glm::quat forward = player->transform->rotation;
-			if (std::abs(forward.w) < std::abs(forward.z)) {
-				// don't go back!
+		if (prompts_en){
+			if (!prompts.empty()) {
+				prompts.front().time -= elapsed;
+				if (prompts.front().time < 0.0f){
+					prompts.pop();
+				}
 			}
 		}
 
-		if (player->transform->position.x < -90.0f) {
+		if (player->transform->position.x > 95.0f) {
+			glm::quat forward = player->transform->rotation;
+			if (std::abs(forward.w) < std::abs(forward.z)) {
+				if (prompts.empty()){
+					prompts.push(Prompt("A swordmaster does not turn back!", 2.0f));
+				}
+			}
+		}
+
+		if ((game_level == 0 && player->transform->position.x < -22.0f) || player->transform->position.x < -95.0f) {
 			glm::quat forward = player->transform->rotation;
 			if (std::abs(forward.w) > std::abs(forward.z)) {
 
 				if (enemiesId.size() != 0){
-					// defeat all enemies!
+					if (prompts.empty()){
+						prompts.push(Prompt("A swordmaster defeats all enemies!", 2.0f));
+					}
 
 				} else {
-					player->transform->position.x = 90.0f;
-					player->at = walkmesh->nearest_walk_point(player->transform->position + glm::vec3(0.0f, 0.0001f, 0.0f));
+					if (prompts.empty()) {
+						player->transform->position.x = 95.0f;
+						if (game_level == 0){
+							player->transform->position.y = 0.0f;
+						}
+						player->at = walkmesh->nearest_walk_point(player->transform->position + glm::vec3(0.0f, 0.0001f, 0.0f));
 
-					game_level += 1;
-					for (int i=0; i<game_level; i++){
+						game_level += 1;
 
-						float radius = 60.0f + 10.0f * std::sin(i * 1.4f);
-						float theta = 1.0f + 1.9f * i;
-						float phi = 1.0f + 3.14f + 1.9f * i;
+						prompts.push(Prompt("Level " + std::to_string(game_level), 3.0f));
 
-						enemiesId.push_back(game.spawnCreature(new Enemy()));
-						setupEnemy(enemiesId.back(), glm::vec3(radius * std::cos(theta), radius * std::sin(theta), 0.001f), 30.0f, 1);
-						enemiesId.push_back(game.spawnCreature(new Enemy()));
-						setupEnemy(enemiesId.back(), glm::vec3(radius * std::cos(phi), radius * std::sin(phi), 0.001f), 30.0f, 2);
-					}
-					int num_boss = std::min((game_level + 1)/ 3, 8);
-					for (int j=0; j<num_boss; j++){
-						float radius = (num_boss - 1) * 5.0f; 
-						float theta = (1.0f * j + 0.5f) / ((float)num_boss) * 2 * 3.1415f; 
-						enemiesId.push_back(game.spawnCreature(new Enemy()));
-						setupEnemy(enemiesId.back(), glm::vec3(radius * std::cos(theta), radius * std::sin(theta), 0.001f), 30.0f, 0);
-					}
+						for (int i=0; i<game_level; i++){
+
+							float radius = 60.0f + 10.0f * std::sin(i * 1.4f);
+							float theta = 1.0f + 1.9f * i;
+							float phi = 1.0f + 3.14f + 1.9f * i;
+
+							enemiesId.push_back(game.spawnCreature(new Enemy()));
+							setupEnemy(enemiesId.back(), glm::vec3(radius * std::cos(theta), radius * std::sin(theta), 0.001f), 30.0f, 1);
+							enemiesId.push_back(game.spawnCreature(new Enemy()));
+							setupEnemy(enemiesId.back(), glm::vec3(radius * std::cos(phi), radius * std::sin(phi), 0.001f), 30.0f, 2);
+						}
+						int num_boss = std::min((game_level + 1)/ 3, 8);
+						for (int j=0; j<num_boss; j++){
+							float radius = (num_boss - 1) * 5.0f; 
+							float theta = (1.0f * j + 0.5f) / ((float)num_boss) * 2 * 3.1415f; 
+							enemiesId.push_back(game.spawnCreature(new Enemy()));
+							setupEnemy(enemiesId.back(), glm::vec3(radius * std::cos(theta), radius * std::sin(theta), 0.001f), 30.0f, 0);
+						}
+						}
 				}
 			}
 		}
@@ -1863,5 +1894,41 @@ void PlayMode::draw(glm::uvec2 const &drawable_size)
 
 	//DEBUGOUT << "Finished drawing gui" << std::endl;
 
+	{ //use DrawLines to overlay some text:
+
+		if (prompts_en){
+			glDisable(GL_DEPTH_TEST);
+			float aspect = float(drawable_size.x) / float(drawable_size.y);
+			DrawLines lines(glm::mat4(
+				1.0f / aspect, 0.0f, 0.0f, 0.0f,
+				0.0f, 1.0f, 0.0f, 0.0f,
+				0.0f, 0.0f, 1.0f, 0.0f,
+				0.0f, 0.0f, 0.0f, 1.0f
+			));
+
+			constexpr float H = 0.09f;
+			/*
+			lines.draw_text("Mouse motion looks; WASD moves; escape ungrabs mouse",
+				glm::vec3(-aspect + 0.1f * H, -1.0 + 0.1f * H, 0.0),
+				glm::vec3(H, 0.0f, 0.0f), glm::vec3(0.0f, H, 0.0f),
+				glm::u8vec4(0x00, 0x00, 0x00, 0x00)); */
+			if (!prompts.empty()){
+				float ofs = 2.0f / drawable_size.y;
+				lines.draw_text(prompts.front().text,
+					glm::vec3(0.1f -aspect + 0.1f * H + ofs, 0.1 -1.0 + + 0.1f * H + ofs, 0.0),
+					glm::vec3(H, 0.0f, 0.0f), glm::vec3(0.0f, H, 0.0f),
+					glm::u8vec4(0xff, 0xff, 0xff, 0x00));
+			}
+			/*
+			if (closeto){
+				float ofs = 2.0f / drawable_size.y;
+				lines.draw_text("Press f to move to next area",
+					glm::vec3(1.2f -aspect + 0.1f * H + ofs, 0.5f -1.0 + + 0.1f * H + ofs, 0.0),
+					glm::vec3(H, 0.0f, 0.0f), glm::vec3(0.0f, H, 0.0f),
+					glm::u8vec4(0xff, 0xff, 0xff, 0x00));
+			}
+			*/
+		}
+	}
 	GL_ERRORS();
 }

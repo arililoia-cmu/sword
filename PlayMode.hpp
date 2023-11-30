@@ -101,4 +101,15 @@ struct PlayMode : Mode
 	CollideMesh const* enemyCollMesh = nullptr;
 	CollideMesh const* playerCollMesh = nullptr;
 	// sound stuff ends here:
+
+	struct Prompt {
+		std::string text;
+		float time;
+		Prompt(std::string text_, float time_){
+			text = text_;
+			time = time_;
+		}
+	};
+	std::queue<Prompt> prompts; 
+	bool prompts_en = false;
 };
