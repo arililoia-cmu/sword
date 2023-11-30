@@ -575,7 +575,7 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 	player->staminaRegenRate = 10.0f;
 
 	player->walkCollRad = 1.0f;
-	player->swordDamage = 10.0f;
+	player->swordDamage = 34.0f;
 	player->hitInvulnTime = 0.3f;
 
 	// TODO This should probably be done by setting the camera to match the properties from the blender camera but this is OK
@@ -716,7 +716,22 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 	for(size_t i = 0; i < 5; i++)
 	{
 		enemiesId.push_back(game.spawnCreature(new Enemy()));
-		setupEnemy(enemiesId.back(), glm::vec3(0.0f, 5.0f * i - 10.0f, 0.001f), 100.0f, (i+1) % 3);
+		if(i==0){
+			setupEnemy(enemiesId.back(), glm::vec3(80.0f, 5.0f * i - 10.0f, 0.001f), 100.0f, 1);
+		}
+		if(i==1){
+			setupEnemy(enemiesId.back(), glm::vec3(60.0f, 5.0f * i - 10.0f, 0.001f), 100.0f, 2);
+		}
+		if(i==2){
+			setupEnemy(enemiesId.back(), glm::vec3(0.0f, 5.0f * i - 10.0f, 0.001f), 100.0f, 0);
+		}
+		if(i==3){
+			setupEnemy(enemiesId.back(), glm::vec3(40.0f, 5.0f * i - 10.0f, 0.001f), 100.0f, 1);
+		}
+		if(i==4){
+			setupEnemy(enemiesId.back(), glm::vec3(20.0f, 5.0f * i - 10.0f, 0.001f), 100.0f, 2);
+		}
+		//setupEnemy(enemiesId.back(), glm::vec3(i*20.0f, 5.0f * i - 10.0f, 0.001f), 100.0f, i % 3);
 	}
 
 	// SETTING UP POPUPS
@@ -824,10 +839,14 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 			if(evt.button.button==SDL_BUTTON_LEFT){
 				mainAction.downs += 1;
 				mainAction.pressed = true;
+				isMouseVertical=true;
 				return true;
 			}else if(evt.button.button==SDL_BUTTON_RIGHT){
-				secondAction.downs += 1;
-				secondAction.pressed = true;
+				//secondAction.downs += 1;
+				//secondAction.pressed = true;
+				mainAction.downs+=1;
+				mainAction.pressed=true;
+				isMouseVertical=false;
 				return true;
 			}
 
@@ -837,7 +856,8 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 				mainAction.pressed = false;
 				return true;
 			}else if(evt.button.button==SDL_BUTTON_RIGHT){
-				secondAction.pressed = false;
+				//secondAction.pressed = false;
+				mainAction.pressed=false;
 				return true;
 			}
 	}
@@ -850,11 +870,11 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 			);
 			
 			//deciding attacking direction
-			if(abs(motion.x)>abs(motion.y)){
+		/*	if(abs(motion.x)>abs(motion.y)){
 				isMouseVertical=false;
 			}else{
 				isMouseVertical=true;
-			}
+			}*/
 
 			glm::vec3 upDir = walkmesh->to_world_smooth_normal(player->at);
 			player->transform->rotation = glm::angleAxis(-motion.x * player->camera->fovy, upDir) * player->transform->rotation;
