@@ -294,9 +294,9 @@ void PlayMode::setupEnemy(Game::CreatureID myEnemyID, glm::vec3 pos, int maxhp, 
 	
 	enemy->at = walkmesh->nearest_walk_point(enemy->body_transform->position + glm::vec3(0.0f, 0.0001f, 0.0f));
 	glm::vec3 worldPoint = walkmesh->to_world_point(enemy->at);
-	float height = glm::length(enemy->body_transform->position - worldPoint);
+	float height = 1.4f;
 	enemy->body_transform->position = glm::vec3(0.0f, 0.0f, height);
-	enemy->transform->position = walkmesh->to_world_point(enemy->at);
+	enemy->transform->position = worldPoint;
 	enemy->default_rotation = glm::angleAxis(glm::radians(180.0f), glm::vec3(0.0f, 0.0f, 1.0f)); //dictates enemy's original rotation wrt +x
 
 	auto enemySwordHit = [this, myEnemyID](Game::CreatureID c, Scene::Transform* t) -> void
@@ -596,7 +596,7 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 	for(size_t i = 0; i < 5; i++)
 	{
 		enemiesId.push_back(game.spawnCreature(new Enemy()));
-		setupEnemy(enemiesId.back(), glm::vec3(5.0f, 0.001f, 3.0f), 100, 0);
+		setupEnemy(enemiesId.back(), glm::vec3(0.0f, 5.0f * i - 10.0f, 0.001f), 100, 0);
 	}
 
 	// SETTING UP POPUPS
