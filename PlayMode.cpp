@@ -575,7 +575,7 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 	player->staminaRegenRate = 10.0f;
 
 	player->walkCollRad = 1.0f;
-	player->swordDamage = 10.0f;
+	player->swordDamage = 34.0f;
 	player->hitInvulnTime = 0.3f;
 
 	// TODO This should probably be done by setting the camera to match the properties from the blender camera but this is OK
