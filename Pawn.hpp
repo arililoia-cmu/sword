@@ -91,6 +91,9 @@ struct Pawn : public Game::Creature
 struct Enemy : public Pawn
 {
 	BehaviorTree* bt;
+
+	bool flagToBreakSword = false;
+	int type = 0;
 };
 	
 struct Player : public Pawn

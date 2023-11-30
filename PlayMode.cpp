@@ -282,6 +282,7 @@ void PlayMode::setupEnemy(Game::CreatureID myEnemyID, glm::vec3 pos, int maxhp, 
 	enemy->hp = maxhp;
 	enemy->maxhp = maxhp;
 	enemy->is_player = false;
+	enemy->type = type;
 
 	enemy->walkCollRad = 1.0f;
 
@@ -325,10 +326,6 @@ void PlayMode::setupEnemy(Game::CreatureID myEnemyID, glm::vec3 pos, int maxhp, 
 						enemyPtr->pawn_control.stance = 10;
 						enemyPtr->pawn_control.swingHit = enemyPtr->pawn_control.swingTime;
 					}
-					// else if(enemy.pawn_control.stance == 4)
-					// {
-					// 	enemy.pawn_control.stance = 5;
-					// }
 
 					clock_t current_time = clock();
 					float elapsed = (float)(current_time - previous_enemy_sword_clang_time);
@@ -337,6 +334,10 @@ void PlayMode::setupEnemy(Game::CreatureID myEnemyID, glm::vec3 pos, int maxhp, 
 						w_conv2_sound = Sound::play(*w_conv2, 1.0f, 0.0f);
 						previous_enemy_sword_clang_time = clock();
 					}
+
+					DEBUGOUT << "Player parried enemy, flagging to swap  enemy to broken sword!" << std::endl;
+                    enemyPtr->flagToBreakSword = true;// Can't just switch since collisions still be processed and don't want to deregister
+					// This code is really blegh cuz it's hidden that dergistering doesn't work while collisions being processed
 				}
 			}
 		};
@@ -399,6 +400,86 @@ void PlayMode::setupEnemy(Game::CreatureID myEnemyID, glm::vec3 pos, int maxhp, 
 	addDrawable(enemy->body_transform, "Player" + enemyPresets[type].postfix);
 	addDrawable(enemy->wrist_transform, "Wrist" + enemyPresets[type].postfix);
 	addDrawable(enemy->sword_transform, "Sword" + enemyPresets[type].postfix);
+}
+
+void PlayMode::swapEnemyToBrokenSword(Game::CreatureID myEnemyID)
+{
+	Enemy* enemy = static_cast<Enemy*>(game.getCreature(myEnemyID));
+
+	if(!enemy)
+	{
+		return;
+	}
+	
+	auto pertainsToEnemySword = [enemy](Scene::Drawable& d) -> bool
+		{
+			if(d.transform == enemy->sword_transform)
+			{
+				return true;
+			}
+			return false;
+		};
+	scene.drawables.remove_if(pertainsToEnemySword);
+	collEng.unregisterCollider(enemy->swordCollider);
+
+	auto addDrawable = [this](Scene::Transform* tform, std::string mesh_name) -> void
+		{
+			Mesh const& mesh = G_MESHES->lookup(mesh_name);
+	
+			scene.drawables.emplace_back(tform);
+			Scene::Drawable& drawable = scene.drawables.back();
+
+			drawable.pipeline = lit_color_texture_program_pipeline;
+			drawable.pipeline.vao = G_LIT_COLOR_TEXTURE_PROGRAM_VAO;
+			drawable.pipeline.type = mesh.type;
+			drawable.pipeline.start = mesh.start;
+			drawable.pipeline.count = mesh.count;
+		};
+
+	addDrawable(enemy->sword_transform, "Player" + enemyPresets[enemy->type].postfix); // SWAP ME
+	// addDrawable(enemy->sword_transform, "Sword_Broken" + enemyPresets[enemy->type].postfix); 
+
+	auto enemySwordHit = [this, myEnemyID](Game::CreatureID c, Scene::Transform* t) -> void
+		{
+			if(t == player->sword_transform)
+			{
+				if(player->pawn_control.stance == 4)
+				{
+					Enemy* enemyPtr = static_cast<Enemy*>(game.getCreature(myEnemyID));
+
+					if(!enemyPtr)
+					{
+						DEBUGOUT << "Enemy no longer exists on enemySwordHit!" << std::endl;
+						return;
+					}
+							
+					if(enemyPtr->pawn_control.stance == 1)
+					{
+						enemyPtr->pawn_control.stance = 2;
+						enemyPtr->pawn_control.swingHit = enemyPtr->pawn_control.swingTime;
+					}
+					else if(enemyPtr->pawn_control.stance == 9)
+					{
+						enemyPtr->pawn_control.stance = 10;
+						enemyPtr->pawn_control.swingHit = enemyPtr->pawn_control.swingTime;
+					}
+					// else if(enemy.pawn_control.stance == 4)
+					// {
+					// 	enemy.pawn_control.stance = 5;
+					// }
+
+					clock_t current_time = clock();
+					float elapsed = (float)(current_time - previous_enemy_sword_clang_time);
+
+					if ((elapsed / CLOCKS_PER_SEC) > min_enemy_sword_clang_interval){
+						w_conv2_sound = Sound::play(*w_conv2, 1.0f, 0.0f);
+						previous_enemy_sword_clang_time = clock();
+					}
+				}
+			}
+		};
+	
+	enemy->swordCollider = collEng.registerCollider(myEnemyID, enemy->sword_transform, enemySwordBrokenCollMesh, enemySwordBrokenCollMesh->containingRadius, enemySwordHit, CollisionEngine::Layer::ENEMY_SWORD_LAYER);
 }
 
 // Right now, this makes a proper fully copy of the scene, which is fine, but
@@ -504,6 +585,7 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 		playerSwordCollMesh = &G_COLLIDEMESHES->lookup("PlayerSwordCollMesh");
 		enemySwordCollMesh = &G_COLLIDEMESHES->lookup("EnemySwordCollMesh");
 		//enemySwordBrokenCollMesh = &G_COLLIDEMESHES->lookup("EnemySwordBrokenCollMesh");
+		enemySwordBrokenCollMesh = &G_COLLIDEMESHES->lookup("EnemyCollMesh"); // Replace when broken sword is ready
 		enemyCollMesh = &G_COLLIDEMESHES->lookup("EnemyCollMesh");
 		playerCollMesh = &G_COLLIDEMESHES->lookup("PlayerCollMesh");
 	
@@ -1367,6 +1449,19 @@ void PlayMode::update(float elapsed)
 				{
 					enemyIDit++;
 				}
+			}
+		}
+	}
+	
+	// Proccessing previous sword breaks
+	{
+		for(Game::CreatureID myEnemyID : enemiesId)
+		{
+			Enemy* enemyPtr = static_cast<Enemy*>(game.getCreature(myEnemyID));
+			if(enemyPtr->flagToBreakSword == true)
+			{
+				swapEnemyToBrokenSword(myEnemyID);
+				enemyPtr->flagToBreakSword = false;
 			}
 		}
 	}
