@@ -287,6 +287,9 @@ void PlayMode::setupEnemy(Game::CreatureID myEnemyID, glm::vec3 pos, float maxhp
 	// Customize
 	enemy->hp = maxhp;
 	enemy->maxhp = maxhp;
+	enemy->stamina = 100.0f;
+	enemy->maxstamina = 100.0f;
+	enemy->staminaRegenRate = 10.0f;
 	enemy->is_player = false;
 	enemy->type = type;
 
@@ -569,7 +572,7 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 	player->maxhp = 100.0f;
 	player->stamina = 100.0f;
 	player->maxstamina = 100.0f;
-	player->staminaRegenRate = 15.0f;
+	player->staminaRegenRate = 10.0f;
 
 	player->walkCollRad = 1.0f;
 	player->swordDamage = 10.0f;
@@ -1571,6 +1574,18 @@ void PlayMode::update(float elapsed)
 
 	// Replenishing player stamina
 	{
+		for(Game::CreatureID myEnemyID : enemiesId)
+		{
+			Enemy* enemyPtr = static_cast<Enemy*>(game.getCreature(myEnemyID));
+
+					
+			enemyPtr->stamina += enemyPtr->staminaRegenRate * elapsed;
+			if(enemyPtr->stamina >= enemyPtr->maxstamina)
+			{
+				enemyPtr->stamina = enemyPtr->maxstamina;
+			}
+		}
+		
 		player->stamina += player->staminaRegenRate * elapsed;
 		if(player->stamina >= player->maxstamina)
 		{
