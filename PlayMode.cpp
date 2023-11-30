@@ -177,7 +177,7 @@ Load<GLuint> blood_graphic_tex(LoadTagDefault,
 Load<GLuint> game_over_tex(LoadTagDefault,
 	[]()
 	{
-		return new GLuint(load_texture(data_path("graphics/game_over.png"), false, true, true));
+		return new GLuint(load_texture(data_path("graphics/blood_1.png"), false, true, true));
 	});
 
 
