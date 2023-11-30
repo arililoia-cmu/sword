@@ -56,6 +56,8 @@ struct PlayMode : Mode
 	CollisionEngine collEng;
 	Gui gui;
 
+	void setupEnemy(Game::CreatureID myEnemyID, glm::vec3 pos, int maxhp, int type);
+
 	void walk_pawn(Pawn& pawn, glm::vec3 movement);
 	void processPawnControl(Pawn& pawn, float elapsed);
 
@@ -77,5 +79,11 @@ struct PlayMode : Mode
 	std::shared_ptr< Sound::PlayingSample > fast_upswing_sound;
 	std::shared_ptr< Sound::PlayingSample > fast_downswing_sound;
 	std::shared_ptr< Sound::PlayingSample > footstep_wconv1_sound;
+
+	CollideMesh const* playerSwordCollMesh = nullptr;
+	CollideMesh const* enemySwordCollMesh = nullptr;
+	CollideMesh const* enemySwordBrokenCollMesh = nullptr;
+	CollideMesh const* enemyCollMesh = nullptr;
+	CollideMesh const* playerCollMesh = nullptr;
 	// sound stuff ends here:
 };

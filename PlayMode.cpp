@@ -245,41 +245,159 @@ Load< Sound::Sample > footstep_wconv1(LoadTagDefault, []() -> Sound::Sample cons
 });
 // sound stuff ends here
 
+// type should be 0 1 or 2
+void PlayMode::setupEnemy(Game::CreatureID myEnemyID, glm::vec3 pos, int maxhp, int type)
+{
+	Enemy* enemy = static_cast<Enemy*>(game.getCreature(myEnemyID));
+	
+	// Assume enemy has literally nothing set up right now
+	scene.transforms.emplace_back();
+	enemy->transform = &scene.transforms.back();
+	
+	scene.transforms.emplace_back();
+	enemy->body_transform = &scene.transforms.back();
+	enemy->body_transform->parent = enemy->transform;
+
+	scene.transforms.emplace_back();
+	enemy->arm_transform = &scene.transforms.back();
+	enemy->arm_transform->parent = enemy->body_transform;
+
+	scene.transforms.emplace_back();
+	enemy->wrist_transform = &scene.transforms.back();
+	enemy->wrist_transform->parent = enemy->arm_transform;
+
+	scene.transforms.emplace_back();
+	enemy->sword_transform = &scene.transforms.back();
+	enemy->sword_transform->parent = enemy->wrist_transform;
+
+	// Customize
+	enemy->hp = maxhp;
+	enemy->maxhp = maxhp;
+	enemy->is_player = false;
+
+	enemy->bt=new BehaviorTree();
+	enemy->bt->Init();//AI Initialize
+	enemy->bt->SetEnemy(enemy);
+	enemy->bt->SetPlayer(player);
+	enemy->bt->SetEnemyType(type); // Customize
+	enemy->bt->InitInterrupt();
+
+	enemy->body_transform->position = pos; // CUSTOMIZE
+	
+	enemy->at = walkmesh->nearest_walk_point(enemy->body_transform->position + glm::vec3(0.0f, 0.0001f, 0.0f));
+	glm::vec3 worldPoint = walkmesh->to_world_point(enemy->at);
+	float height = glm::length(enemy->body_transform->position - worldPoint);
+	enemy->body_transform->position = glm::vec3(0.0f, 0.0f, height);
+	enemy->transform->position = walkmesh->to_world_point(enemy->at);
+	enemy->default_rotation = glm::angleAxis(glm::radians(180.0f), glm::vec3(0.0f, 0.0f, 1.0f)); //dictates enemy's original rotation wrt +x
+
+	auto enemySwordHit = [this, myEnemyID](Game::CreatureID c, Scene::Transform* t) -> void
+		{
+			if(t == player->sword_transform)
+			{
+				if(player->pawn_control.stance == 4)
+				{
+					Enemy* enemyPtr = static_cast<Enemy*>(game.getCreature(myEnemyID));
+
+					if(!enemyPtr)
+					{
+						DEBUGOUT << "Enemy no longer exists on enemySwordHit!" << std::endl;
+						return;
+					}
+							
+					if(enemyPtr->pawn_control.stance == 1)
+					{
+						enemyPtr->pawn_control.stance = 2;
+						enemyPtr->pawn_control.swingHit = enemyPtr->pawn_control.swingTime;
+					}
+					else if(enemyPtr->pawn_control.stance == 9)
+					{
+						enemyPtr->pawn_control.stance = 10;
+						enemyPtr->pawn_control.swingHit = enemyPtr->pawn_control.swingTime;
+					}
+					// else if(enemy.pawn_control.stance == 4)
+					// {
+					// 	enemy.pawn_control.stance = 5;
+					// }
+
+					clock_t current_time = clock();
+					float elapsed = (float)(current_time - previous_enemy_sword_clang_time);
+
+					if ((elapsed / CLOCKS_PER_SEC) > min_enemy_sword_clang_interval){
+						w_conv2_sound = Sound::play(*w_conv2, 1.0f, 0.0f);
+						previous_enemy_sword_clang_time = clock();
+					}
+				}
+			}
+		};
+	auto enemyHit = [this, myEnemyID](Game::CreatureID c, Scene::Transform* t) -> void
+		{
+			if(t == player->sword_transform)
+			{
+				Enemy* enemyPtr = static_cast<Enemy*>(game.getCreature(myEnemyID));
+						
+				if(!enemyPtr)
+				{
+					DEBUGOUT << "Enemy no longer exists in enemyISwordHit!" << std::endl;
+					return;
+				}
+						
+				enemyPtr->hp -= 1;
+				//enemies[i]->hp->change_enemy_hp = true;
+				std::cout << "ENEMY HIT WITH SWORD" << std::endl;
+				// exit(0);
+			}
+		};
+
+	enemy->swordCollider = collEng.registerCollider(myEnemyID, enemy->sword_transform, enemySwordCollMesh, enemySwordCollMesh->containingRadius, enemySwordHit, CollisionEngine::Layer::ENEMY_SWORD_LAYER);
+	enemy->bodyCollider = collEng.registerCollider(myEnemyID, enemy->body_transform, enemyCollMesh, enemyCollMesh->containingRadius, enemyHit, CollisionEngine::Layer::ENEMY_BODY_LAYER);
+
+	auto enemyHpBarCalculate = [this, myEnemyID](float elapsed) -> float
+		{
+			Pawn* p = static_cast<Pawn*>(game.getCreature(myEnemyID));
+			if(p)
+			{
+				return (float)p->hp / (float)p->maxhp;
+			}
+			return 0.0f;
+		};
+
+	auto* enemyHpBar = new Gui::Bar(enemyHpBarCalculate, *heart_tex);
+	enemyHpBar->scale = glm::vec2(0.08f, 0.08f);
+	enemyHpBar->alpha = 0.5f;
+	enemyHpBar->fullColor = glm::vec3(0.0f, 1.0f, 0.0f);
+	enemyHpBar->emptyColor = glm::vec3(1.0f, 0.0f, 0.0f);
+	enemyHpBar->useCreatureID = true;
+	enemyHpBar->creatureIDForPos = myEnemyID;
+			
+	enemyHpBars.push_back(gui.addElement(enemyHpBar));
+
+	auto addDrawable = [this](Scene::Transform* tform, std::string mesh_name) -> void
+		{
+			Mesh const& mesh = G_MESHES->lookup(mesh_name);
+	
+			scene.drawables.emplace_back(tform);
+			Scene::Drawable& drawable = scene.drawables.back();
+
+			drawable.pipeline = lit_color_texture_program_pipeline;
+			drawable.pipeline.vao = G_LIT_COLOR_TEXTURE_PROGRAM_VAO;
+			drawable.pipeline.type = mesh.type;
+			drawable.pipeline.start = mesh.start;
+			drawable.pipeline.count = mesh.count;
+		};
+
+	addDrawable(enemy->body_transform, "Player.001");
+	addDrawable(enemy->wrist_transform, "Wrist.001");
+	addDrawable(enemy->sword_transform, "Sword.001");
+}
+
 // Right now, this makes a proper fully copy of the scene, which is fine, but
 // there's no reason to keep the global scene around if we're only using it
 // like this. Unsure what to do.
 PlayMode::PlayMode() : scene(*G_SCENE)
 {
-	// Binding transforms
-	// TODO: this is a lot of duplicated code, set up something that does this automatically
-	// for pawns
-
-	// Create the pawns that we want for this scene
-	
-	// for(auto& transform : scene.transforms)
-	// {
-	// 	std::string& name = transform.name;
-
-	// 	// This if chain is inefficent but it probably doesn't matter since this is done once
-	// 	if(name.rfind("Player_", 0) == 0)
-	// 	{
-			
-	// 	}
-	// 	else if(name.rfind("Enemy_", 0) == 0)
-	// 	{
-			
-	// 	}
-	// }
-
 	plyr = game.spawnCreature(new Player());
 	player = static_cast<Player*>(game.getCreature(plyr));
-
-	std::array<Enemy*, 5> enemies;
-	for(size_t i = 0; i < 5; i++)
-	{
-		enemiesId.push_back(game.spawnCreature(new Enemy()));
-		enemies[i] = static_cast<Enemy*>(game.getCreature(enemiesId.back()));
-	}
 	
 	for(auto& transform : scene.transforms)
 	{
@@ -297,27 +415,7 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 		else if(transform.name == "Player_Wrist")
 		{
 			player->wrist_transform = &transform;
-		}
-	
-		
-		for(int i=0;i<5;++i){
-			char num[5]={'.','0','0','0','\0'};
-			num[3]=(char)(i+48+1);
-			std::string snum(num);
-			if(transform.name=="Enemy_Body"+snum){
-				enemies[i]->body_transform = &transform;
-				enemies[i]->at = walkmesh->nearest_walk_point(enemies[i]->body_transform->position + glm::vec3(0.0f, 0.0001f, 0.0f));
-				float height = glm::length(enemies[i]->body_transform->position - walkmesh->to_world_point(enemies[i]->at));
-				enemies[i]->body_transform->position = glm::vec3(0.0f, 0.0f, height);
-			}
-			if(transform.name=="Enemy_Sword"+snum){
-				enemies[i]->sword_transform = &transform;
-			}
-			if(transform.name=="Enemy_Wrist"+snum){
-				enemies[i]->wrist_transform = &transform;
-			}
-		}
-		
+		}	
 	}
 
 	// Create player transform at player feet and start player walking at nearest walk point:
@@ -331,30 +429,6 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 	player->maxhp = 100;
 	player->stamina = 100;
 	player->maxstamina = 100;
-
-	scene.transforms.emplace_back();
-	for(int i=0;i<5;++i){
-			//same for enemy
-	 	scene.transforms.emplace_back();
-
-		enemies[i]->transform = &scene.transforms.back();
-		enemies[i]->body_transform->parent = enemies[i]->transform;
-		enemies[i]->transform->position = walkmesh->to_world_point(enemies[i]->at);
-		enemies[i]->default_rotation = glm::angleAxis(glm::radians(180.0f), glm::vec3(0.0f, 0.0f, 1.0f)); //dictates enemy's original rotation wrt +x
-
-		enemies[i]->hp = 100;
-		enemies[i]->maxhp = 100;
-	}
-
-	for(int i=0;i<5;++i)
-	{
-		enemies[i]->bt=new BehaviorTree();
-		enemies[i]->bt->Init();//AI Initialize
-		enemies[i]->bt->SetEnemy(enemies[i]);
-		enemies[i]->bt->SetPlayer(player);
-		enemies[i]->bt->SetEnemyType(i%3);
-		enemies[i]->bt->InitInterrupt();
-	}
 
 	// TODO This should probably be done by setting the camera to match the properties from the blender camera but this is OK
 	if (scene.cameras.size() != 1) throw std::runtime_error("Expecting scene to have exactly one camera, but it has " + std::to_string(scene.cameras.size()));
@@ -381,95 +455,15 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 	player->arm_transform = &scene.transforms.back();
 	player->arm_transform->parent = player->body_transform;
 	player->wrist_transform->parent = player->arm_transform;
-	scene.transforms.emplace_back();
+	// scene.transforms.emplace_back();
 
 	// SETTING UP COLLIDERS
 	{	// Because some objects reuse the same colliders
-		CollideMesh const* playerSwordCollMesh = nullptr;
-		CollideMesh const* enemySwordCollMesh = nullptr;
-		CollideMesh const* enemyCollMesh = nullptr;
-		CollideMesh const* playerCollMesh = nullptr;
-
 		playerSwordCollMesh = &G_COLLIDEMESHES->lookup("PlayerSwordCollMesh");
 		enemySwordCollMesh = &G_COLLIDEMESHES->lookup("EnemySwordCollMesh");
+		//enemySwordBrokenCollMesh = &G_COLLIDEMESHES->lookup("EnemySwordBrokenCollMesh");
 		enemyCollMesh = &G_COLLIDEMESHES->lookup("EnemyCollMesh");
 		playerCollMesh = &G_COLLIDEMESHES->lookup("PlayerCollMesh");
-
-		// Here we register the pawns with the collision system
-		for(int i=0;i<5;++i)
-		{
-			scene.transforms.emplace_back();
-			enemies[i]->arm_transform = &scene.transforms.back();
-			enemies[i]->arm_transform->parent = enemies[i]->body_transform;
-			enemies[i]->wrist_transform->parent = enemies[i]->arm_transform;
-		}
-
-		for(Game::CreatureID myEnemyID : enemiesId)
-		{	
-			auto enemyISwordHit = [this, myEnemyID](Game::CreatureID c, Scene::Transform* t) -> void
-				{
-					if(t == player->sword_transform)
-					{
-						if(player->pawn_control.stance == 4)
-						{
-							Enemy* enemyPtr = static_cast<Enemy*>(game.getCreature(myEnemyID));
-
-							if(!enemyPtr)
-							{
-								DEBUGOUT << "Enemy no longer exists in enemyISwordHit!" << std::endl;
-								return;
-							}
-							
-							if(enemyPtr->pawn_control.stance == 1)
-							{
-								enemyPtr->pawn_control.stance = 2;
-								enemyPtr->pawn_control.swingHit = enemyPtr->pawn_control.swingTime;
-							}
-							else if(enemyPtr->pawn_control.stance == 9)
-							{
-								enemyPtr->pawn_control.stance = 10;
-								enemyPtr->pawn_control.swingHit = enemyPtr->pawn_control.swingTime;
-							}
-							// else if(enemy.pawn_control.stance == 4)
-							// {
-							// 	enemy.pawn_control.stance = 5;
-							// }
-
-							clock_t current_time = clock();
-							float elapsed = (float)(current_time - previous_enemy_sword_clang_time);
-
-							if ((elapsed / CLOCKS_PER_SEC) > min_enemy_sword_clang_interval){
-								w_conv2_sound = Sound::play(*w_conv2, 1.0f, 0.0f);
-								previous_enemy_sword_clang_time = clock();
-							}
-						}
-					}
-				};
-
-			auto enemyIHit = [this, myEnemyID](Game::CreatureID c, Scene::Transform* t) -> void
-				{
-					if(t == player->sword_transform)
-					{
-						Enemy* enemyPtr = static_cast<Enemy*>(game.getCreature(myEnemyID));
-						
-						if(!enemyPtr)
-						{
-							DEBUGOUT << "Enemy no longer exists in enemyISwordHit!" << std::endl;
-							return;
-						}
-						
-						enemyPtr->hp -= 1;
-						//enemies[i]->hp->change_enemy_hp = true;
-						std::cout << "ENEMY HIT WITH SWORD" << std::endl;
-						// exit(0);
-					}
-				};
-
-			Enemy* enemyPtr = static_cast<Enemy*>(game.getCreature(myEnemyID));
-
-			enemyPtr->swordCollider = collEng.registerCollider(myEnemyID, enemyPtr->sword_transform, enemySwordCollMesh, enemySwordCollMesh->containingRadius, enemyISwordHit, CollisionEngine::Layer::ENEMY_SWORD_LAYER);
-			enemyPtr->bodyCollider = collEng.registerCollider(myEnemyID, enemyPtr->body_transform, enemyCollMesh, enemyCollMesh->containingRadius, enemyIHit, CollisionEngine::Layer::ENEMY_BODY_LAYER);
-		}
 	
 		auto playerSwordHit = [this](Game::CreatureID c, Scene::Transform* t) -> void
 			{
@@ -559,29 +553,6 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 		playerStamBar->fullColor = glm::vec3(1.0f, 0.0f, 1.0f);
 		playerStamBar->emptyColor = glm::vec3(0.0f, 1.0f, 1.0f);
 		gui.addElement(playerStamBar);
-
-		for(Game::CreatureID enemyID : enemiesId)
-		{
-			auto enemyHpBarCalculate = [this, enemyID](float elapsed) -> float
-				{
-					Pawn* p = static_cast<Pawn*>(game.getCreature(enemyID));
-					if(p)
-					{
-						return (float)p->hp / (float)p->maxhp;
-					}
-					return 0.0f;
-				};
-
-			auto* enemyHpBar = new Gui::Bar(enemyHpBarCalculate, *heart_tex);
-			enemyHpBar->scale = glm::vec2(0.08f, 0.08f);
-			enemyHpBar->alpha = 0.5f;
-			enemyHpBar->fullColor = glm::vec3(0.0f, 1.0f, 0.0f);
-			enemyHpBar->emptyColor = glm::vec3(1.0f, 0.0f, 0.0f);
-			enemyHpBar->useCreatureID = true;
-			enemyHpBar->creatureIDForPos = enemyID;
-			
-			enemyHpBars.push_back(gui.addElement(enemyHpBar));
-		}
 	}
 
 	// SETTING UP POPUPS
@@ -609,6 +580,12 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 		// for (int i=0; i< (int) corresponding_stances.size(); i++){
 		// 	stanceGuiIDMap[corresponding_stances[i]] = move_popup_ID;
 		// }
+
+	for(size_t i = 0; i < 5; i++)
+	{
+		enemiesId.push_back(game.spawnCreature(new Enemy()));
+		setupEnemy(enemiesId.back(), glm::vec3(5.0f, 0.001f, 3.0f), 100, 0);
+	}
 }
 
 PlayMode::~PlayMode()
