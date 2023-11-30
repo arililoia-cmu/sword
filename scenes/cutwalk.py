@@ -23,6 +23,7 @@ bpy.ops.object.select_all(action='DESELECT')
 
 WalkMesh = bpy.data.collections["WalkMeshes"].all_objects["WalkMesh"]
 Platforms = bpy.data.collections["Platforms"]
+Extra = bpy.data.collections["Extra"]
 bpy.context.view_layer.objects.active = WalkMesh
 
 for obj in Platforms.all_objects:
@@ -35,6 +36,17 @@ for obj in Platforms.all_objects:
         bool_op.solver = "FAST"
         if objname[0:14] == "PillarcCollide":
             bool_op.solver = "EXACT"
+        bpy.context.view_layer.objects.active = obj
+        bpy.ops.object.modifier_apply(modifier=objname)
+
+for obj in Extra.all_objects:
+    objname = obj.name
+    if (objname[0:3] == "Box"):
+        print(objname)
+        bool_op = WalkMesh.modifiers.new(type="BOOLEAN", name=objname)
+        bool_op.object = obj
+        bool_op.operation = "DIFFERENCE"
+        bool_op.solver = "FAST"
         bpy.context.view_layer.objects.active = obj
         bpy.ops.object.modifier_apply(modifier=objname)
 

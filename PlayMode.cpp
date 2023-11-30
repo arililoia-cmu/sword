@@ -458,8 +458,8 @@ void PlayMode::swapEnemyToBrokenSword(Game::CreatureID myEnemyID)
 			drawable.pipeline.count = mesh.count;
 		};
 
-	addDrawable(enemy->sword_transform, "Player" + enemyPresets[enemy->type].postfix); // SWAP ME
-	// addDrawable(enemy->sword_transform, "Sword_Broken" + enemyPresets[enemy->type].postfix); 
+	//addDrawable(enemy->sword_transform, "Player" + enemyPresets[enemy->type].postfix); // SWAP ME
+	 addDrawable(enemy->sword_transform, "Sword_Broken" + enemyPresets[enemy->type].postfix); 
 
 	auto enemySwordHit = [this, myEnemyID](Game::CreatureID c, Scene::Transform* t) -> void
 		{
@@ -609,8 +609,8 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 	{	// Because some objects reuse the same colliders
 		playerSwordCollMesh = &G_COLLIDEMESHES->lookup("PlayerSwordCollMesh");
 		enemySwordCollMesh = &G_COLLIDEMESHES->lookup("EnemySwordCollMesh");
-		//enemySwordBrokenCollMesh = &G_COLLIDEMESHES->lookup("EnemySwordBrokenCollMesh");
-		enemySwordBrokenCollMesh = &G_COLLIDEMESHES->lookup("EnemyCollMesh"); // Replace when broken sword is ready
+		enemySwordBrokenCollMesh = &G_COLLIDEMESHES->lookup("EnemySwordBrokenCollMesh");
+		// enemySwordBrokenCollMesh = &G_COLLIDEMESHES->lookup("EnemyCollMesh"); // Replace when broken sword is ready
 		enemyCollMesh = &G_COLLIDEMESHES->lookup("EnemyCollMesh");
 		playerCollMesh = &G_COLLIDEMESHES->lookup("PlayerCollMesh");
 	
@@ -716,7 +716,7 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 	for(size_t i = 0; i < 5; i++)
 	{
 		enemiesId.push_back(game.spawnCreature(new Enemy()));
-		setupEnemy(enemiesId.back(), glm::vec3(0.0f, 5.0f * i - 10.0f, 0.001f), 100.0f, i % 3);
+		setupEnemy(enemiesId.back(), glm::vec3(0.0f, 5.0f * i - 10.0f, 0.001f), 100.0f, (i+1) % 3);
 	}
 
 	// SETTING UP POPUPS
