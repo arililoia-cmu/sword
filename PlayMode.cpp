@@ -1671,7 +1671,7 @@ void PlayMode::update(float elapsed)
 			clock_t current_time = clock();
 			float footstep_elapsed = (float)(current_time - previous_footstep_time);
 			if ((footstep_elapsed / CLOCKS_PER_SEC) > min_footstep_interval){
-				footstep_wconv1_sound = Sound::play(*footstep_wconv1, 1.0f, 0.0f);
+				footstep_wconv1_sound = Sound::play(*footstep_wconv1, 0.1f, 0.0f);
 				previous_footstep_time = clock();
 			}
 		}
@@ -1843,6 +1843,7 @@ void PlayMode::update(float elapsed)
 
 	}
 
+	min_footstep_interval = PlayerSpeed / 10.0f;
 
 	// Updates the systems
 	collEng.update(elapsed);
