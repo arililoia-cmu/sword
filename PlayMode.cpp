@@ -283,6 +283,7 @@ void PlayMode::setupEnemy(Game::CreatureID myEnemyID, glm::vec3 pos, int maxhp, 
 	enemy->maxhp = maxhp;
 	enemy->is_player = false;
 	enemy->type = type;
+	enemy->swordDamage = 1.0f;
 
 	enemy->walkCollRad = 1.0f;
 
@@ -320,11 +321,19 @@ void PlayMode::setupEnemy(Game::CreatureID myEnemyID, glm::vec3 pos, int maxhp, 
 					{
 						enemyPtr->pawn_control.stance = 2;
 						enemyPtr->pawn_control.swingHit = enemyPtr->pawn_control.swingTime;
+
+						DEBUGOUT << "Player parried enemy, flagging to swap enemy to broken sword, enemy was stance 1!" << std::endl;
+						enemyPtr->flagToBreakSword = true;// Can't just switch since collisions still be processed and don't want to deregister
+						// This code is really blegh cuz it's hidden that dergistering doesn't work while collisions being processed
 					}
 					else if(enemyPtr->pawn_control.stance == 9)
 					{
 						enemyPtr->pawn_control.stance = 10;
 						enemyPtr->pawn_control.swingHit = enemyPtr->pawn_control.swingTime;
+
+						DEBUGOUT << "Player parried enemy, flagging to swap  enemy to broken sword, enemy was stance 9!" << std::endl;
+						enemyPtr->flagToBreakSword = true;// Can't just switch since collisions still be processed and don't want to deregister
+						// This code is really blegh cuz it's hidden that dergistering doesn't work while collisions being processed
 					}
 
 					clock_t current_time = clock();
@@ -334,10 +343,6 @@ void PlayMode::setupEnemy(Game::CreatureID myEnemyID, glm::vec3 pos, int maxhp, 
 						w_conv2_sound = Sound::play(*w_conv2, 1.0f, 0.0f);
 						previous_enemy_sword_clang_time = clock();
 					}
-
-					DEBUGOUT << "Player parried enemy, flagging to swap  enemy to broken sword!" << std::endl;
-                    enemyPtr->flagToBreakSword = true;// Can't just switch since collisions still be processed and don't want to deregister
-					// This code is really blegh cuz it's hidden that dergistering doesn't work while collisions being processed
 				}
 			}
 		};
@@ -352,11 +357,12 @@ void PlayMode::setupEnemy(Game::CreatureID myEnemyID, glm::vec3 pos, int maxhp, 
 					DEBUGOUT << "Enemy no longer exists in enemyISwordHit!" << std::endl;
 					return;
 				}
-						
-				enemyPtr->hp -= 1;
-				//enemies[i]->hp->change_enemy_hp = true;
-				std::cout << "ENEMY HIT WITH SWORD" << std::endl;
-				// exit(0);
+
+				if(player->pawn_control.stance == 1 || player->pawn_control.stance == 7 || player->pawn_control.stance == 9)
+				{
+					enemyPtr->hp -= player->swordDamage;
+					DEBUGOUT << "ENEMY HIT WITH SWORD while player was in stance " << player->pawn_control.stance << std::endl;
+				}
 			}
 		};
 
@@ -552,6 +558,7 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 	player->maxstamina = 100;
 
 	player->walkCollRad = 1.0f;
+	player->swordDamage = 2.0f;
 
 	// TODO This should probably be done by setting the camera to match the properties from the blender camera but this is OK
 	if (scene.cameras.size() != 1) throw std::runtime_error("Expecting scene to have exactly one camera, but it has " + std::to_string(scene.cameras.size()));
@@ -632,8 +639,11 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 					
 					if(t == enemyPtr->sword_transform)
 					{
-						player->hp -= 1;
-						//change_player_hp = true;
+						if(enemyPtr->pawn_control.stance == 1 || enemyPtr->pawn_control.stance == 7 || enemyPtr->pawn_control.stance == 9)
+						{
+							player->hp -= enemyPtr->swordDamage;
+							DEBUGOUT << "Player hit with sword while enemy was in stance " << enemyPtr->pawn_control.stance << std::endl;
+						}
 					}
 				}
 			};
@@ -1461,6 +1471,7 @@ void PlayMode::update(float elapsed)
 			if(enemyPtr->flagToBreakSword == true)
 			{
 				swapEnemyToBrokenSword(myEnemyID);
+				enemyPtr->swordDamage = 0.5f;
 				enemyPtr->flagToBreakSword = false;
 			}
 		}

@@ -86,6 +86,8 @@ struct Pawn : public Game::Creature
 	CollisionEngine::ID bodyCollider;
 
 	float walkCollRad = 1.0f;
+
+	float swordDamage = 1.0f; // This is how much damage we do to others
 };
 
 struct Enemy : public Pawn
