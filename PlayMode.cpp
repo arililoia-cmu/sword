@@ -411,7 +411,7 @@ void PlayMode::setupEnemy(Game::CreatureID myEnemyID, glm::vec3 pos, float maxhp
 			return 0.0f;
 		};
 
-	auto* enemyHpBar = new Gui::Bar(enemyHpBarCalculate, *heart_tex);
+	auto* enemyHpBar = new Gui::Bar(enemyHpBarCalculate, *heart_tex, -0.095f, 1.095f);
 	enemyHpBar->scale = glm::vec2(0.05f, 0.08f);
 	enemyHpBar->alpha = 0.5f;
 	enemyHpBar->fullColor = glm::vec3(0.0f, 1.0f, 0.0f);
@@ -712,7 +712,7 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 				}
 				return 0.0f;
 			};
-		auto* playerHpBar = new Gui::Bar(playerHpBarCalculate, *hp_bar_tex);
+		auto* playerHpBar = new Gui::Bar(playerHpBarCalculate, *hp_bar_tex, -0.383f, 1.035f);
 		playerHpBar->screenPos = glm::vec3(0.0f, 0.8f, 0.0f);
 		playerHpBar->scale = glm::vec2(0.9f, 0.1f);
 		playerHpBar->alpha = 0.5f;
@@ -729,7 +729,7 @@ PlayMode::PlayMode() : scene(*G_SCENE)
 				}
 				return 0.0f;
 			};
-		auto* playerStamBar = new Gui::Bar(playerStamBarCalculate, *stamina_bar_tex);
+		auto* playerStamBar = new Gui::Bar(playerStamBarCalculate, *stamina_bar_tex, -0.383f, 1.035f);
 		playerStamBar->screenPos = glm::vec3(0.0f, 0.6f, 0.0f);
 		playerStamBar->scale = glm::vec2(0.9f, 0.1f);
 		playerStamBar->alpha = 0.5f;

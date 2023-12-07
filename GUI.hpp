@@ -226,17 +226,17 @@ struct Gui
 	struct Bar : Element
 	{
 		
-		Bar(std::function<float(float)> c, GLuint t) : calculateValue(c), tex(t)
+		Bar(std::function<float(float)> c, GLuint t, float leftValue, float rightValue) : calculateValue(c), tex(t)
 			{
 				std::vector<Vert> corners;
 
 				glm::vec2 hpbar_bottom_left = glm::vec2(-1.0f, -1.0f);
 				glm::vec2 hpbar_top_right = glm::vec2(1.0f, 1.0f);
 				
-				corners.emplace_back(glm::vec3(hpbar_bottom_left.x, hpbar_bottom_left.y, 1.0f), glm::vec2(0.0f, 0.0f), 0.0f); // 1
-				corners.emplace_back(glm::vec3(hpbar_bottom_left.x, hpbar_top_right.y, 1.0f), glm::vec2(0.0f, 1.0f), 0.0f); // 2
-				corners.emplace_back(glm::vec3(hpbar_top_right.x, hpbar_bottom_left.y, 0.0f), glm::vec2(1.0f, 0.0f), 1.0f); // 4 
-				corners.emplace_back(glm::vec3(hpbar_top_right.x, hpbar_top_right.y, 0.0f), glm::vec2(1.0f, 1.0f), 1.0f); // 3
+				corners.emplace_back(glm::vec3(hpbar_bottom_left.x, hpbar_bottom_left.y, 1.0f), glm::vec2(0.0f, 0.0f), leftValue); // 1
+				corners.emplace_back(glm::vec3(hpbar_bottom_left.x, hpbar_top_right.y, 1.0f), glm::vec2(0.0f, 1.0f), leftValue); // 2
+				corners.emplace_back(glm::vec3(hpbar_top_right.x, hpbar_bottom_left.y, 0.0f), glm::vec2(1.0f, 0.0f), rightValue); // 4 
+				corners.emplace_back(glm::vec3(hpbar_top_right.x, hpbar_top_right.y, 0.0f), glm::vec2(1.0f, 1.0f), rightValue); // 3
 				
 				glGenBuffers(1, &vbo);
 				glBindBuffer(GL_ARRAY_BUFFER, vbo);
