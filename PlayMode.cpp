@@ -1217,7 +1217,7 @@ void PlayMode::processPawnControl(Pawn& pawn, float elapsed)
 		else if(stance == 6) // DODGE ROLL (implemented as attack since it similarly precludes you from taking any action and modifies your transform)
 		{
 			const float dur = 0.50f;
-			const float distance = 3.0f;
+			const float distance = 4.0f;
 
 			static auto interpolate = [](float x) -> float
 				{
@@ -1250,7 +1250,7 @@ void PlayMode::processPawnControl(Pawn& pawn, float elapsed)
 				st = 0.0f;
 				if(pawn.pawn_control.stanceInfo.dodge.attackAfter)
 				{
-					if(pawn.is_player && pawn.stamina <= 10.0f)
+					if(pawn.is_player && pawn.stamina <= 20.0f)
 					{
 						DEBUGOUT << "Player doesn't have enough stamina to lunge" << std::endl;
 						stance = 0;
@@ -1260,7 +1260,7 @@ void PlayMode::processPawnControl(Pawn& pawn, float elapsed)
 						pawn.pawn_control.stanceInfo.lunge.dir = pawn.pawn_control.stanceInfo.dodge.dir;
 						stance = 7;
 
-						pawn.stamina -= 10.0f;
+						pawn.stamina -= 20.0f;
 					}
 				}
 				else
@@ -1273,7 +1273,7 @@ void PlayMode::processPawnControl(Pawn& pawn, float elapsed)
 		{
 			// Lunge attack
 			const float dur = (stance < 8) ? 0.4f : 0.4f; //total time of downswing/upswing
-			const float distance = 1.5f;
+			const float distance = 3.0f;
 
 			static auto interpolateWeapon = [](float x) -> float
 				{
@@ -1812,7 +1812,7 @@ void PlayMode::update(float elapsed)
 						player->at = walkmesh->nearest_walk_point(player->transform->position + glm::vec3(0.0f, 0.0001f, 0.0f));
 
 						game_level += 1;
-						PlayerSpeed = std::max(PlayerSpeed + 1.5f, 15.0f);
+						PlayerSpeed = std::min(PlayerSpeed + 1.5f, 15.0f);
 
 						level_change_sound = Sound::play(*level_change_sample, 1.0f, 0.0f);
 
@@ -1836,14 +1836,14 @@ void PlayMode::update(float elapsed)
 							enemiesId.push_back(game.spawnCreature(new Enemy()));
 							setupEnemy(enemiesId.back(), glm::vec3(radius * std::cos(theta), radius * std::sin(theta), 0.001f), 200.0f, 0);
 						}
-						}
+					}
 				}
 			}
 		}
 
 	}
 
-	min_footstep_interval = PlayerSpeed / 10.0f;
+	min_footstep_interval = 7.0f / PlayerSpeed;
 
 	// Updates the systems
 	collEng.update(elapsed);
@@ -1860,10 +1860,14 @@ void PlayMode::draw(glm::uvec2 const &drawable_size)
 
 	//set up light type and position for lit_color_texture_program:
 	// TODO: consider using the Light(s) in the scene to do this
+
+	float cscale = (game_level < 2) ? 1.0f : 7.0f / (5.0f + (float) game_level); 
+	float angle = 3.1415926f / 2.0f * 3.0f / (3.0f + 3 * (float) game_level); 
+
 	glUseProgram(lit_color_texture_program->program);
 	glUniform1i(lit_color_texture_program->LIGHT_TYPE_int, 1);
-	glUniform3fv(lit_color_texture_program->LIGHT_DIRECTION_vec3, 1, glm::value_ptr(glm::vec3(0.0f, 0.0f,-1.0f)));
-	glUniform3fv(lit_color_texture_program->LIGHT_ENERGY_vec3, 1, glm::value_ptr(glm::vec3(1.0f, 1.0f, 0.95f)));
+	glUniform3fv(lit_color_texture_program->LIGHT_DIRECTION_vec3, 1, glm::value_ptr(glm::vec3(0.0f, 0.2f * std::cos(angle),-std::sin(angle))));
+	glUniform3fv(lit_color_texture_program->LIGHT_ENERGY_vec3, 1, glm::value_ptr(glm::vec3(1.0f, cscale * 1.0f, cscale * 1.0f)));
 	// glUseProgram(0);
 
 	glm::vec3 xyy_blue = glm::vec3(0.24f, 0.3f, 0.65f);
